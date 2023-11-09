@@ -5,7 +5,7 @@
 
 import unittest
 
-from squirrel import squirrel
+# from squirrel import squirrel
 
 
 class TestSquirrel(unittest.TestCase):
