@@ -1,3 +1,1 @@
-"""
-This module contains class and functions for general use.
-"""
+"""This module contains class and functions for general use."""

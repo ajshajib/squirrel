@@ -1,7 +1,6 @@
-"""
-This module contains the class to compute the likelihood function.
-"""
+"""This module contains the class to compute the likelihood function."""
 import jax.numpy as np
+
 
 class Likelihood(object):
     def __init__(self, data, covariance, model):
@@ -18,4 +17,3 @@ class Likelihood(object):
         log_likelihood = -0.5 * np.dot(diff, np.dot(self.inverse_covariance, diff))
 
         return log_likelihood
-
