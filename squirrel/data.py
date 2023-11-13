@@ -1,7 +1,5 @@
-"""
-This module contains the class to store data products in 3D datacube or 2D detector
-image.
-"""
+"""This module contains the class to store data products in 3D datacube or 2D detector
+image."""
 
 
 class Data(object):
