@@ -1,4 +1,5 @@
 """This module contains the class to compute the likelihood function."""
+
 import jax.numpy as np
 
 

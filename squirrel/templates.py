@@ -1,5 +1,6 @@
 """This module contains the class to store stellar and other templates and process
 them."""
+
 import jax.numpy as np
 
 
