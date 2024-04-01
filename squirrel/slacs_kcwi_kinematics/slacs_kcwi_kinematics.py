@@ -1343,9 +1343,9 @@ class slacs_kcwi_kinematics:
         self.VD_2d = np.zeros((dim, dim))
         self.VD_2d[:] = np.nan
         for i in range(self.pixel_details.shape[1]):
-            self.VD_2d[int(self.pixel_details[1][i])][
-                int(self.pixel_details[0][i])
-            ] = self.pixel_details[3][i]
+            self.VD_2d[int(self.pixel_details[1][i])][int(self.pixel_details[0][i])] = (
+                self.pixel_details[3][i]
+            )
 
         # error in velocity dispersion
         self.dVD_2d = np.zeros((dim, dim))
@@ -1359,17 +1359,17 @@ class slacs_kcwi_kinematics:
         self.V_2d = np.zeros((dim, dim))
         self.V_2d[:] = np.nan
         for i in range(self.pixel_details.shape[1]):
-            self.V_2d[int(self.pixel_details[1][i])][
-                int(self.pixel_details[0][i])
-            ] = self.pixel_details[5][i]
+            self.V_2d[int(self.pixel_details[1][i])][int(self.pixel_details[0][i])] = (
+                self.pixel_details[5][i]
+            )
 
         # error in velocity
         self.dV_2d = np.zeros((dim, dim))
         self.dV_2d[:] = np.nan
         for i in range(self.pixel_details.shape[1]):
-            self.dV_2d[int(self.pixel_details[1][i])][
-                int(self.pixel_details[0][i])
-            ] = self.pixel_details[6][i]
+            self.dV_2d[int(self.pixel_details[1][i])][int(self.pixel_details[0][i])] = (
+                self.pixel_details[6][i]
+            )
 
     #########################################
 
