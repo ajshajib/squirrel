@@ -26,40 +26,30 @@ class Data(object):
         """Return the spectra of the data."""
         if hasattr(self, "_spectra"):
             return self._spectra
-        else:
-            return None
 
     @property
     def wavelengths(self):
         """Return the wavelengths of the data."""
         if hasattr(self, "_wavelengths"):
             return self._wavelengths
-        else:
-            return None
 
     @property
     def spectra_unit(self):
         """Return the unit of the spectra."""
         if hasattr(self, "_spectra_unit"):
             return self._spectra_unit
-        else:
-            return None
 
     @property
     def mask(self):
         """Return the mask of the data."""
         if hasattr(self, "_mask"):
             return self._mask
-        else:
-            return None
 
     @property
     def noise(self):
         """Return the noise of the data."""
         if hasattr(self, "_noise"):
             return self._noise
-        else:
-            return None
 
 
 class Datacube(Data):
