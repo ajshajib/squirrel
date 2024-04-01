@@ -136,3 +136,4 @@ dmypy.json
 
 notebooks/data/mock_datacube.fits
 scratch/
+settings.json
