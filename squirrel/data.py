@@ -32,8 +32,10 @@ class Data(object):
     @property
     def wavelengths(self):
         """Return the wavelengths of the data."""
-        if hasattr(self, "_wavelegnths"):
-            return self._wavelegnths
+        if hasattr(self, "_wavelengths"):
+            return self._wavelengths
+        else:
+            return None
 
     @property
     def spectra_unit(self):
