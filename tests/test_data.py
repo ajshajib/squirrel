@@ -95,6 +95,17 @@ class TestData(unittest.TestCase):
         self.data.deredshift(redshift=1.0)
         npt.assert_equal(self.data.wavelengths, np.array([0.5, 1.0, 1.5]))
 
+        self.data.reset()
+        self.data.deredshift(target_frame="source")
+        npt.assert_equal(self.data.wavelengths, np.array([0.5, 1.0, 1.5]))
+
+        self.data.reset()
+        self.data.deredshift(target_frame="lens")
+        npt.assert_equal(self.data.wavelengths, np.array([1, 2, 3]) / (1 + self.z_lens))
+
+        with self.assertRaises(ValueError):
+            self.data.deredshift(target_frame="unknown")
+
     def test_reset(self):
         self.data.wavelengths = None
         self.data.spectra = None
