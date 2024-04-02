@@ -76,6 +76,20 @@ class TestData(unittest.TestCase):
         self.data.velocity_scale = 1.0
         self.assertEqual(self.data.velocity_scale, 1.0)
 
+    def test_wavelength_state(self):
+        self.assertEqual(self.data.wavelength_state, "original")
+
+    def test_wavelength_state_setter(self):
+        self.data.wavelength_state = "rebinned"
+        self.assertEqual(self.data.wavelength_state, "rebinned")
+
+    def test_wavelengths_frame(self):
+        self.assertIsNone(self.data.wavelengths_frame)
+
+    def test_wavelengths_frame_setter(self):
+        self.data.wavelengths_frame = "rest"
+        self.assertEqual(self.data.wavelengths_frame, "rest")
+
 
 class TestDatacube(unittest.TestCase):
     def setUp(self):

@@ -23,7 +23,7 @@ class Data(object):
         noise=None,
     ):
         """
-        :param wavelengths: wavelengths of the data
+        :param wavelengths: wavelengths of the spectra in observer frame
         :param spectra: spectra of the data
         :param wavelength_unit: unit of the wavelengths
         :param fwhm: full width at half maximum of the data. Needs to be in the same unit as the wavelengths
@@ -40,6 +40,8 @@ class Data(object):
         self._spectra_unit = spectra_unit
         self._wavelength_unit = wavelength_unit
         self._spectra_state = "original"
+        self._wavelengths_frame = "observer"
+        self._wavelengths_state = "original"
 
         self._z_lens = z_lens
         self._z_source = z_source
@@ -73,6 +75,28 @@ class Data(object):
     def wavelengths(self, wavelengths):
         """Set the wavelengths of the data."""
         self._wavelengths = wavelengths
+
+    @property
+    def wavelength_state(self):
+        """Return the state of the wavelengths."""
+        if hasattr(self, "_wavelengths_state"):
+            return self._wavelengths_state
+
+    @wavelength_state.setter
+    def wavelength_state(self, state):
+        """Set the state of the wavelengths."""
+        self._wavelengths_state = state
+
+    @property
+    def wavelengths_frame(self):
+        """Return the frame of the wavelengths."""
+        if hasattr(self, "_wavelengths_frame"):
+            return self._wavelengths_frame
+
+    @wavelengths_frame.setter
+    def wavelengths_frame(self, frame):
+        """Set the frame of the wavelengths."""
+        self._wavelengths_frame = frame
 
     @property
     def spectra_unit(self):
