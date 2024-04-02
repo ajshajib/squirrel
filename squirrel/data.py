@@ -77,19 +77,25 @@ class Data(object):
         self._wavelengths = wavelengths
 
     @property
-    def wavelength_state(self):
-        """Return the state of the wavelengths."""
+    def wavelengths_state(self):
+        """Return the state of the wavelengths.
+
+        Possible states are 'original', 'rebinned', or 'log_rebinned'.
+        """
         if hasattr(self, "_wavelengths_state"):
             return self._wavelengths_state
 
-    @wavelength_state.setter
-    def wavelength_state(self, state):
+    @wavelengths_state.setter
+    def wavelengths_state(self, state):
         """Set the state of the wavelengths."""
         self._wavelengths_state = state
 
     @property
     def wavelengths_frame(self):
-        """Return the frame of the wavelengths."""
+        """Return the frame of the wavelengths.
+
+        Possible frames are 'observed', 'lens', 'source', or 'z={`redshift`}'.
+        """
         if hasattr(self, "_wavelengths_frame"):
             return self._wavelengths_frame
 
@@ -156,6 +162,40 @@ class Data(object):
         """Set the velocity scale of the data."""
         self._velocity_scale = velocity_scale
 
+    def deredshift(self, redshift=None, target_frame=None):
+        """Deredshift the spectra.
+
+        :param data: data to deredshift
+        :type data: `Data` class
+        :param redshift: redshift to deredshift the data to
+        :type redshift: float
+        :param target_frame: frame to deredshift the data to, "lens" or "source"
+        :type target_frame: str
+        """
+        if redshift is None:
+            if target_frame == "lens":
+                redshift = self.z_lens
+                self._wavelengths_frame = "lens"
+            elif target_frame == "source":
+                redshift = self.z_source
+                self._wavelengths_frame = "source"
+            else:
+                raise ValueError(
+                    "If redshift is not provided, frame must be either 'lens' or 'source'"
+                )
+        else:
+            self._wavelengths_frame = f"z={redshift:.3f}"
+
+        self._wavelengths = self._wavelengths / (1.0 + redshift)
+
+    def reset(self):
+        """Reset the data to the original state."""
+        self._wavelengths = deepcopy(self._original_wavelengths)
+        self._spectra = deepcopy(self._original_spectra)
+        self._spectra_state = "original"
+        self._wavelengths_frame = "observed"
+        self._wavelengths_state = "original"
+
 
 class Datacube(Data):
     """A class to store in 3D IFU datacubes."""
@@ -165,11 +205,12 @@ class Datacube(Data):
         wavelengths,
         spectra,
         wavelength_unit,
+        fwhm,
+        z_lens,
+        z_source,
         spectra_unit=None,
         mask=None,
         noise=None,
-        z_lens=None,
-        z_source=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -182,12 +223,13 @@ class Datacube(Data):
         :param z_source: source redshift
         """
         super(Datacube, self).__init__(
-            wavelengths,
-            spectra,
-            wavelength_unit,
-            spectra_unit,
-            mask,
-            noise,
-            z_lens,
-            z_source,
+            wavelengths=wavelengths,
+            spectra=spectra,
+            wavelength_unit=wavelength_unit,
+            fwhm=fwhm,
+            z_lens=z_lens,
+            z_source=z_source,
+            spectra_unit=spectra_unit,
+            mask=mask,
+            noise=noise,
         )
