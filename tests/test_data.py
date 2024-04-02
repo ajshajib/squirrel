@@ -77,13 +77,6 @@ class TestData(unittest.TestCase):
         self.data.velocity_scale = 1.0
         self.assertEqual(self.data.velocity_scale, 1.0)
 
-    def test_wavelengths_state(self):
-        self.assertEqual(self.data.wavelengths_state, "original")
-
-    def test_wavelengths_state_setter(self):
-        self.data.wavelengths_state = "rebinned"
-        self.assertEqual(self.data.wavelengths_state, "rebinned")
-
     def test_wavelengths_frame(self):
         self.assertEqual(self.data.wavelengths_frame, "observed")
 
@@ -117,7 +110,6 @@ class TestData(unittest.TestCase):
         npt.assert_equal(self.data.wavelengths, [1, 2, 3])
         npt.assert_equal(self.data.spectra, [4, 5, 6])
         self.assertEqual(self.data.spectra_state, "original")
-        self.assertEqual(self.data.wavelengths_state, "original")
         self.assertEqual(self.data.wavelengths_frame, "observed")
 
 

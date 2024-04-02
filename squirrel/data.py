@@ -41,7 +41,6 @@ class Data(object):
         self._wavelength_unit = wavelength_unit
         self._spectra_state = "original"
         self._wavelengths_frame = "observed"
-        self._wavelengths_state = "original"
 
         self._z_lens = z_lens
         self._z_source = z_source
@@ -77,20 +76,6 @@ class Data(object):
         self._wavelengths = wavelengths
 
     @property
-    def wavelengths_state(self):
-        """Return the state of the wavelengths.
-
-        Possible states are 'original', 'rebinned', or 'log_rebinned'.
-        """
-        if hasattr(self, "_wavelengths_state"):
-            return self._wavelengths_state
-
-    @wavelengths_state.setter
-    def wavelengths_state(self, state):
-        """Set the state of the wavelengths."""
-        self._wavelengths_state = state
-
-    @property
     def wavelengths_frame(self):
         """Return the frame of the wavelengths.
 
@@ -112,7 +97,10 @@ class Data(object):
 
     @property
     def spectra_state(self):
-        """Return the state of the spectra."""
+        """Return the state of the spectra.
+
+        Possible states are 'original', 'rebinned', or 'log_rebinned'.
+        """
         if hasattr(self, "_spectra_state"):
             return self._spectra_state
 
@@ -194,7 +182,6 @@ class Data(object):
         self._spectra = deepcopy(self._original_spectra)
         self._spectra_state = "original"
         self._wavelengths_frame = "observed"
-        self._wavelengths_state = "original"
 
 
 class Datacube(Data):
