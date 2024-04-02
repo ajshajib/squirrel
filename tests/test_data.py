@@ -84,7 +84,7 @@ class TestData(unittest.TestCase):
         self.assertEqual(self.data.wavelength_state, "rebinned")
 
     def test_wavelengths_frame(self):
-        self.assertIsNone(self.data.wavelengths_frame)
+        self.assertEqual(self.data.wavelengths_frame, "observed")
 
     def test_wavelengths_frame_setter(self):
         self.data.wavelengths_frame = "rest"

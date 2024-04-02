@@ -40,7 +40,7 @@ class Data(object):
         self._spectra_unit = spectra_unit
         self._wavelength_unit = wavelength_unit
         self._spectra_state = "original"
-        self._wavelengths_frame = "observer"
+        self._wavelengths_frame = "observed"
         self._wavelengths_state = "original"
 
         self._z_lens = z_lens
