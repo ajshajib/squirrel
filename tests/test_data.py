@@ -30,8 +30,16 @@ class TestData(unittest.TestCase):
     def test_spectra(self):
         self.assertEqual(self.data.spectra, self.spectra)
 
+    def test_spectra_setter(self):
+        self.data.spectra = [7, 8, 9]
+        self.assertEqual(self.data.spectra, [7, 8, 9])
+
     def test_wavelengths(self):
         self.assertEqual(self.data.wavelengths, self.wavelengths)
+
+    def test_wavelengths_setter(self):
+        self.data.wavelengths = [4, 5, 6]
+        self.assertEqual(self.data.wavelengths, [4, 5, 6])
 
     def test_wavelength_unit(self):
         self.assertEqual(self.data.wavelength_unit, self.wavelength_unit)
@@ -53,6 +61,20 @@ class TestData(unittest.TestCase):
 
     def test_z_source(self):
         self.assertEqual(self.data.z_source, self.z_source)
+
+    def test_spectra_state(self):
+        self.assertEqual(self.data.spectra_state, "original")
+
+    def test_spectra_state_setter(self):
+        self.data.spectra_state = "rebinned"
+        self.assertEqual(self.data.spectra_state, "rebinned")
+
+    def test_velocity_scale(self):
+        self.assertIsNone(self.data.velocity_scale)
+
+    def test_velocity_scale_setter(self):
+        self.data.velocity_scale = 1.0
+        self.assertEqual(self.data.velocity_scale, 1.0)
 
 
 class TestDatacube(unittest.TestCase):

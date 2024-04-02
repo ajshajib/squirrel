@@ -39,6 +39,7 @@ class Data(object):
         self._original_spectra = spectra
         self._spectra_unit = spectra_unit
         self._wavelength_unit = wavelength_unit
+        self._spectra_state = "original"
 
         self._z_lens = z_lens
         self._z_source = z_source
@@ -49,11 +50,18 @@ class Data(object):
         self._mask = mask
         self._noise = noise
 
+        self._velocity_scale = None
+
     @property
     def spectra(self):
         """Return the spectra of the data."""
         if hasattr(self, "_spectra"):
             return self._spectra
+
+    @spectra.setter
+    def spectra(self, spectra):
+        """Set the spectra of the data."""
+        self._spectra = spectra
 
     @property
     def wavelengths(self):
@@ -61,11 +69,27 @@ class Data(object):
         if hasattr(self, "_wavelengths"):
             return self._wavelengths
 
+    @wavelengths.setter
+    def wavelengths(self, wavelengths):
+        """Set the wavelengths of the data."""
+        self._wavelengths = wavelengths
+
     @property
     def spectra_unit(self):
         """Return the unit of the spectra."""
         if hasattr(self, "_spectra_unit"):
             return self._spectra_unit
+
+    @property
+    def spectra_state(self):
+        """Return the state of the spectra."""
+        if hasattr(self, "_spectra_state"):
+            return self._spectra_state
+
+    @spectra_state.setter
+    def spectra_state(self, state):
+        """Set the state of the spectra."""
+        self._spectra_state = state
 
     @property
     def wavelength_unit(self):
@@ -96,6 +120,17 @@ class Data(object):
         """Return the source redshift."""
         if hasattr(self, "_z_source"):
             return self._z_source
+
+    @property
+    def velocity_scale(self):
+        """Return the velocity scale of the data."""
+        if hasattr(self, "_velocity_scale"):
+            return self._velocity_scale
+
+    @velocity_scale.setter
+    def velocity_scale(self, velocity_scale):
+        """Set the velocity scale of the data."""
+        self._velocity_scale = velocity_scale
 
 
 class Datacube(Data):
