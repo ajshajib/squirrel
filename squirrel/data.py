@@ -15,16 +15,18 @@ class Data(object):
         wavelengths,
         spectra,
         wavelength_unit,
-        spectra_unit=None,
+        fwhm,
+        z_lens,
+        z_source,
+        spectra_unit="arbitrary",
         mask=None,
         noise=None,
-        z_lens=None,
-        z_source=None,
     ):
         """
         :param wavelengths: wavelengths of the data
         :param spectra: spectra of the data
         :param wavelength_unit: unit of the wavelengths
+        :param fwhm: full width at half maximum of the data. Needs to be in the same unit as the wavelengths
         :param spectra_unit: unit of the spectra
         :param mask: mask of the data
         :param noise: noise of the data
@@ -37,10 +39,15 @@ class Data(object):
         self._original_spectra = spectra
         self._spectra_unit = spectra_unit
         self._wavelength_unit = wavelength_unit
-        self._mask = mask
-        self._noise = noise
+
         self._z_lens = z_lens
         self._z_source = z_source
+
+        self.fwhm = fwhm
+        self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
+
+        self._mask = mask
+        self._noise = noise
 
     @property
     def spectra(self):
