@@ -68,6 +68,12 @@ class Data(object):
             return self._spectra_unit
 
     @property
+    def wavelength_unit(self):
+        """Return the unit of the wavelengths."""
+        if hasattr(self, "_wavelength_unit"):
+            return self._wavelength_unit
+
+    @property
     def mask(self):
         """Return the mask of the data."""
         if hasattr(self, "_mask"):
