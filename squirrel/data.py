@@ -24,14 +24,23 @@ class Data(object):
     ):
         """
         :param wavelengths: wavelengths of the spectra in observer frame
+        :type wavelengths: numpy.ndarray
         :param spectra: spectra of the data
+        :type spectra: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
+        :type wavelength_unit: str
         :param fwhm: full width at half maximum of the data. Needs to be in the same unit as the wavelengths
+        :type fwhm: float
         :param spectra_unit: unit of the spectra
+        :type spectra_unit: str
         :param mask: mask of the data
+        :type mask: numpy.ndarray
         :param noise: noise of the data
+        :type noise: numpy.ndarray
         :param z_lens: lens redshift
+        :type z_lens: float
         :param z_source: source redshift
+        :type z_source: float
         """
         self._wavelengths = deepcopy(wavelengths)
         self._original_wavelengths = wavelengths
