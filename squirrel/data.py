@@ -1,25 +1,46 @@
 """This module contains the class to store data products in 3D datacube or 2D detector
 image."""
 
+from copy import deepcopy
+
+
 __author__ = "ajshajib"
 
 
 class Data(object):
     """A class to store spectroscopic data."""
 
-    def __init__(self, wavelengths, spectra, spectra_unit, mask=None, noise=None):
+    def __init__(
+        self,
+        wavelengths,
+        spectra,
+        wavelength_unit,
+        spectra_unit=None,
+        mask=None,
+        noise=None,
+        z_lens=None,
+        z_source=None,
+    ):
         """
         :param wavelengths: wavelengths of the data
         :param spectra: spectra of the data
+        :param wavelength_unit: unit of the wavelengths
         :param spectra_unit: unit of the spectra
         :param mask: mask of the data
         :param noise: noise of the data
+        :param z_lens: lens redshift
+        :param z_source: source redshift
         """
-        self._wavelengths = wavelengths
-        self._spectra = spectra
+        self._wavelengths = deepcopy(wavelengths)
+        self._original_wavelengths = wavelengths
+        self._spectra = deepcopy(spectra)
+        self._original_spectra = spectra
         self._spectra_unit = spectra_unit
+        self._wavelength_unit = wavelength_unit
         self._mask = mask
         self._noise = noise
+        self._z_lens = z_lens
+        self._z_source = z_source
 
     @property
     def spectra(self):
@@ -51,16 +72,50 @@ class Data(object):
         if hasattr(self, "_noise"):
             return self._noise
 
+    @property
+    def z_lens(self):
+        """Return the lens redshift."""
+        if hasattr(self, "_z_lens"):
+            return self._z_lens
+
+    @property
+    def z_source(self):
+        """Return the source redshift."""
+        if hasattr(self, "_z_source"):
+            return self._z_source
+
 
 class Datacube(Data):
     """A class to store in 3D IFU datacubes."""
 
-    def __init__(self, wavelengths, spectra, spectra_unit, mask=None, noise=None):
+    def __init__(
+        self,
+        wavelengths,
+        spectra,
+        wavelength_unit,
+        spectra_unit=None,
+        mask=None,
+        noise=None,
+        z_lens=None,
+        z_source=None,
+    ):
         """
         :param wavelengths: wavelengths of the data
         :param spectra: spectra of the data
+        :param wavelength_unit: unit of the wavelengths
         :param spectra_unit: unit of the spectra
         :param mask: mask of the data
         :param noise: noise of the data
+        :param z_lens: lens redshift
+        :param z_source: source redshift
         """
-        super(Datacube, self).__init__(wavelengths, spectra, spectra_unit, mask, noise)
+        super(Datacube, self).__init__(
+            wavelengths,
+            spectra,
+            wavelength_unit,
+            spectra_unit,
+            mask,
+            noise,
+            z_lens,
+            z_source,
+        )
