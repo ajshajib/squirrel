@@ -103,6 +103,13 @@ class TestSpectra(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.spectra.deredshift(target_frame="unknown")
 
+    def test_clip(self):
+        self.spectra.clip(wavelength_min=1.5, wavelength_max=2.5)
+        npt.assert_equal(self.spectra.wavelengths, np.array([2]))
+        npt.assert_equal(self.spectra.flux, np.array([5]))
+        npt.assert_equal(self.spectra.noise, np.array([0.2]))
+        npt.assert_equal(self.spectra.mask, np.array([True]))
+
     def test_reset(self):
         self.spectra.wavelengths = None
         self.spectra.flux = None

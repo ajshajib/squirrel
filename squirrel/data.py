@@ -232,10 +232,12 @@ class Spectra(object):
         self._wavelengths = self._wavelengths[mask]
         if len(self.flux.shape) == 1:
             self._flux = self._flux[mask]
+            self._mask = self._mask[mask]
             if self._noise is not None:
                 self._noise = self._noise[mask]
         else:
             self._flux = self._flux[mask, :]
+            self._mask = self._mask[mask, :]
             if self._noise is not None:
                 self._noise = self._noise[mask, :]
 
