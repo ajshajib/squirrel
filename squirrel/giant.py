@@ -38,7 +38,7 @@ class Shoulder(object):
         data.spectra_modifications += ["log_rebinned"]
 
     @classmethod
-    def stand(
+    def stand_on(
         cls,
         data,
         template,

@@ -71,7 +71,7 @@ class TestShoulder(unittest.TestCase):
             template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
         )
 
-        ppxf_fit = giant.Shoulder.stand(spectra, template, degree=4)
+        ppxf_fit = giant.Shoulder.stand_on(spectra, template, degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
         self.assertAlmostEqual(
