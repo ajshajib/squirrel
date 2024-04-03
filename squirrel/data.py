@@ -19,7 +19,6 @@ class Spectra(object):
         z_lens,
         z_source,
         flux_unit="arbitrary",
-        mask=None,
         noise=None,
     ):
         """
@@ -57,9 +56,6 @@ class Spectra(object):
         self.fwhm = fwhm
         self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
 
-        if mask is None:
-            mask = np.ones_like(flux, dtype=bool)
-        self._mask = mask
         self._noise = deepcopy(noise)
         self._original_noise = noise
 
@@ -138,12 +134,6 @@ class Spectra(object):
         """Return the unit of the wavelengths."""
         if hasattr(self, "_wavelength_unit"):
             return self._wavelength_unit
-
-    @property
-    def mask(self):
-        """Return the mask of the data."""
-        if hasattr(self, "_mask"):
-            return self._mask
 
     @property
     def noise(self):
@@ -232,12 +222,10 @@ class Spectra(object):
         self._wavelengths = self._wavelengths[mask]
         if len(self.flux.shape) == 1:
             self._flux = self._flux[mask]
-            self._mask = self._mask[mask]
             if self._noise is not None:
                 self._noise = self._noise[mask]
         else:
             self._flux = self._flux[mask, :]
-            self._mask = self._mask[mask, :]
             if self._noise is not None:
                 self._noise = self._noise[mask, :]
 
@@ -259,7 +247,6 @@ class Datacube(Spectra):
         center_pixel_y,
         coordinate_transform_matrix,
         flux_unit="arbitrary",
-        mask=None,
         noise=None,
     ):
         """
@@ -279,8 +266,6 @@ class Datacube(Spectra):
         :type z_source: float
         :param flux_unit: unit of the flux
         :type flux_unit: str
-        :param mask: mask of the data
-        :type mask: numpy.ndarray
         :param noise: noise of the data
         :type noise: numpy.ndarray
         """
@@ -292,7 +277,6 @@ class Datacube(Spectra):
             z_lens=z_lens,
             z_source=z_source,
             flux_unit=flux_unit,
-            mask=mask,
             noise=noise,
         )
 
@@ -351,7 +335,6 @@ class VoronoiBinnedSpectra(Spectra):
         y_coordinates,
         bin_num,
         flux_unit="arbitrary",
-        mask=None,
         noise=None,
     ):
         """
@@ -375,8 +358,6 @@ class VoronoiBinnedSpectra(Spectra):
         :type bin_num: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
-        :param mask: mask of the data
-        :type mask: numpy.ndarray
         :param noise: noise of the data
         :type noise: numpy.ndarray
         """
@@ -388,7 +369,6 @@ class VoronoiBinnedSpectra(Spectra):
             z_lens=z_lens,
             z_source=z_source,
             flux_unit=flux_unit,
-            mask=mask,
             noise=noise,
         )
 
@@ -428,7 +408,6 @@ class RadiallyBinnedSpectra(Spectra):
         z_source,
         bin_radii,
         flux_unit="arbitrary",
-        mask=None,
         noise=None,
     ):
         """
@@ -448,8 +427,6 @@ class RadiallyBinnedSpectra(Spectra):
         :type bin_radii: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
-        :param mask: mask of the data
-        :type mask: numpy.ndarray
         :param noise: noise of the data
         :type noise: numpy.ndarray
         """
@@ -465,7 +442,6 @@ class RadiallyBinnedSpectra(Spectra):
             z_lens=z_lens,
             z_source=z_source,
             flux_unit=flux_unit,
-            mask=mask,
             noise=noise,
         )
 

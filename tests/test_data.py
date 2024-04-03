@@ -13,7 +13,6 @@ class TestSpectra(unittest.TestCase):
         self.flux = np.array([4, 5, 6])
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "nm"
-        self.mask = None
         self.noise = np.array([0.1, 0.2, 0.3])
         self.fwhm = 2.0
         self.z_lens = 0.5
@@ -26,7 +25,6 @@ class TestSpectra(unittest.TestCase):
             self.z_lens,
             self.z_source,
             self.flux_unit,
-            self.mask,
             self.noise,
         )
 
@@ -52,9 +50,6 @@ class TestSpectra(unittest.TestCase):
 
     def test_fwhm(self):
         self.assertEqual(self.spectra.fwhm, self.fwhm)
-
-    def test_mask(self):
-        npt.assert_array_equal(self.spectra.mask, np.ones_like(self.flux, dtype=bool))
 
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)
@@ -108,7 +103,6 @@ class TestSpectra(unittest.TestCase):
         npt.assert_equal(self.spectra.wavelengths, np.array([2]))
         npt.assert_equal(self.spectra.flux, np.array([5]))
         npt.assert_equal(self.spectra.noise, np.array([0.2]))
-        npt.assert_equal(self.spectra.mask, np.array([True]))
 
     def test_reset(self):
         self.spectra.wavelengths = None
@@ -130,7 +124,6 @@ class TestDatacube(unittest.TestCase):
         self.flux = np.random.normal(size=(10, 3, 3))
         self.flux_unit = "arbitrary"
         self.wavelength_unit = "nm"
-        self.mask = np.ones_like(self.flux, dtype=bool)
         self.noise = np.ones_like(self.flux)
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -150,7 +143,6 @@ class TestDatacube(unittest.TestCase):
             self.center_pixel_y,
             self.coordinate_transform_matrix,
             self.flux_unit,
-            self.mask,
             self.noise,
         )
 
@@ -179,7 +171,6 @@ class TestVoronoiBinnedSpectra(unittest.TestCase):
         self.flux = np.random.normal(size=(10, 3))
         self.flux_unit = "arbitrary"
         self.wavelength_unit = "nm"
-        self.mask = np.ones_like(self.flux, dtype=bool)
         self.noise = np.ones_like(self.flux)
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -198,7 +189,6 @@ class TestVoronoiBinnedSpectra(unittest.TestCase):
             self.y_coordinates,
             self.bin_num,
             self.flux_unit,
-            self.mask,
             self.noise,
         )
 
@@ -222,7 +212,6 @@ class TestRadiallyBinnedSpectra(unittest.TestCase):
         self.flux = np.random.normal(size=(10, 3))
         self.flux_unit = "arbitrary"
         self.wavelength_unit = "nm"
-        self.mask = np.ones_like(self.flux, dtype=bool)
         self.noise = np.ones_like(self.flux)
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -238,7 +227,6 @@ class TestRadiallyBinnedSpectra(unittest.TestCase):
             self.z_source,
             self.bin_radii,
             self.flux_unit,
-            self.mask,
             self.noise,
         )
 
