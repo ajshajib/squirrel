@@ -13,7 +13,7 @@ class TestSpectra(unittest.TestCase):
         self.flux = np.array([4, 5, 6])
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "nm"
-        self.mask = [True, False, True]
+        self.mask = None
         self.noise = np.array([0.1, 0.2, 0.3])
         self.fwhm = 2.0
         self.z_lens = 0.5
@@ -54,7 +54,7 @@ class TestSpectra(unittest.TestCase):
         self.assertEqual(self.spectra.fwhm, self.fwhm)
 
     def test_mask(self):
-        npt.assert_array_equal(self.spectra.mask, self.mask)
+        npt.assert_array_equal(self.spectra.mask, np.ones_like(self.flux, dtype=bool))
 
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)

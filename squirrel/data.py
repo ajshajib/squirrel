@@ -57,6 +57,8 @@ class Spectra(object):
         self.fwhm = fwhm
         self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
 
+        if mask is None:
+            mask = np.ones_like(flux, dtype=bool)
         self._mask = mask
         self._noise = deepcopy(noise)
         self._original_noise = noise
