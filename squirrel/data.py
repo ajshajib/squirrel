@@ -16,8 +16,8 @@ class Spectra(object):
         flux,
         wavelength_unit,
         fwhm,
-        z_lens,
-        z_source,
+        z_lens=0.0,
+        z_source=0.0,
         flux_unit="arbitrary",
         noise=None,
     ):
