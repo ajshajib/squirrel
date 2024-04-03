@@ -2,7 +2,7 @@
 image."""
 
 from copy import deepcopy
-
+import numpy as np
 
 __author__ = "ajshajib"
 
@@ -58,7 +58,8 @@ class Data(object):
         self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
 
         self._mask = mask
-        self._noise = noise
+        self._noise = deepcopy(noise)
+        self._original_noise = noise
 
         self._velocity_scale = None
 
@@ -72,6 +73,18 @@ class Data(object):
     def spectra(self, spectra):
         """Set the spectra of the data."""
         self._spectra = spectra
+
+    @property
+    def original_spectra(self):
+        """Return the original spectra of the data."""
+        if hasattr(self, "_original_spectra"):
+            return self._original_spectra
+
+    @property
+    def original_wavelengths(self):
+        """Return the original wavelengths of the data."""
+        if hasattr(self, "_original_wavelengths"):
+            return self._original_wavelengths
 
     @property
     def wavelengths(self):
@@ -136,6 +149,17 @@ class Data(object):
         if hasattr(self, "_noise"):
             return self._noise
 
+    @noise.setter
+    def noise(self, noise):
+        """Set the noise of the data."""
+        self._noise = noise
+
+    @property
+    def original_noise(self):
+        """Return the original noise of the data."""
+        if hasattr(self, "_original_noise"):
+            return self._original_noise
+
     @property
     def z_lens(self):
         """Return the lens redshift."""
@@ -172,10 +196,10 @@ class Data(object):
         if redshift is None:
             if target_frame == "lens":
                 redshift = self.z_lens
-                self._wavelengths_frame = "lens"
+                self._wavelengths_frame = "lens frame"
             elif target_frame == "source":
                 redshift = self.z_source
-                self._wavelengths_frame = "source"
+                self._wavelengths_frame = "source frame"
             else:
                 raise ValueError(
                     "If redshift is not provided, frame must be either 'lens' or 'source'"
@@ -189,6 +213,7 @@ class Data(object):
         """Reset the data to the original state."""
         self._wavelengths = deepcopy(self._original_wavelengths)
         self._spectra = deepcopy(self._original_spectra)
+        self._noise = deepcopy(self._original_noise)
         self._spectra_modifications = []
         self._wavelengths_frame = "observed"
 
@@ -205,10 +230,14 @@ class Data(object):
         self._wavelengths = self._wavelengths[mask]
         if len(self.spectra.shape) == 1:
             self._spectra = self._spectra[mask]
+            if self._noise is not None:
+                self._noise = self._noise[mask]
         else:
             self._spectra = self._spectra[mask, :]
+            if self._noise is not None:
+                self._noise = self._noise[mask, :]
 
-        self._spectra_modifications += "clipped"
+        self._spectra_modifications += ["clipped"]
 
 
 class Datacube(Data):
@@ -222,19 +251,34 @@ class Datacube(Data):
         fwhm,
         z_lens,
         z_source,
-        spectra_unit=None,
+        center_pixel_x,
+        center_pixel_y,
+        coordinate_transform_matrix,
+        spectra_unit="arbitrary",
         mask=None,
         noise=None,
     ):
         """
         :param wavelengths: wavelengths of the data
+        :type wavelengths: numpy.ndarray
         :param spectra: spectra of the data
+        :type spectra: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
-        :param spectra_unit: unit of the spectra
-        :param mask: mask of the data
-        :param noise: noise of the data
+        :type wavelength_unit: str
+        :param fwhm: full width at half maximum of the data
+        :type fwhm: float
+        :param spatial_pixel_size: size of the spatial pixels
+        :type spatial_pixel_size: float
         :param z_lens: lens redshift
+        :type z_lens: float
         :param z_source: source redshift
+        :type z_source: float
+        :param spectra_unit: unit of the spectra
+        :type spectra_unit: str
+        :param mask: mask of the data
+        :type mask: numpy.ndarray
+        :param noise: noise of the data
+        :type noise: numpy.ndarray
         """
         super(Datacube, self).__init__(
             wavelengths=wavelengths,
@@ -247,3 +291,46 @@ class Datacube(Data):
             mask=mask,
             noise=noise,
         )
+
+        self._center_pixel_x = center_pixel_x
+        self._center_pixel_y = center_pixel_y
+
+        x_pixels = np.arange(self._spectra.shape[2]) - self._center_pixel_x
+        y_pixels = np.arange(self._spectra.shape[1]) - self._center_pixel_y
+
+        xx_pixels, yy_pixels = np.meshgrid(x_pixels, y_pixels)
+
+        transformed_coordinates = np.dot(
+            coordinate_transform_matrix,
+            np.array([xx_pixels.flatten(), yy_pixels.flatten()]),
+        )
+        self._x_coordinates = transformed_coordinates[0].reshape(
+            self._spectra.shape[1:]
+        )
+        self._y_coordinates = transformed_coordinates[1].reshape(
+            self._spectra.shape[1:]
+        )
+
+    @property
+    def center_pixel_x(self):
+        """Return the x coordinate of the center pixel."""
+        if hasattr(self, "_center_pixel_x"):
+            return self._center_pixel_x
+
+    @property
+    def center_pixel_y(self):
+        """Return the y coordinate of the center pixel."""
+        if hasattr(self, "_center_pixel_y"):
+            return self._center_pixel_y
+
+    @property
+    def x_coordinates(self):
+        """Return the x coordinates of the data."""
+        if hasattr(self, "_x_coordinates"):
+            return self._x_coordinates
+
+    @property
+    def y_coordinates(self):
+        """Return the y coordinates of the data."""
+        if hasattr(self, "_y_coordinates"):
+            return self._y_coordinates

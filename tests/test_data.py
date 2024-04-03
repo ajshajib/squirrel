@@ -115,15 +115,18 @@ class TestData(unittest.TestCase):
 
 class TestDatacube(unittest.TestCase):
     def setUp(self):
-        self.wavelengths = [1, 2, 3]
-        self.spectra = [[4, 5, 6], [7, 8, 9], [10, 11, 12]]
+        self.wavelengths = np.arange
+        self.spectra = np.random.normal(size=(10, 3, 3))
         self.spectra_unit = "arbitrary"
         self.wavelength_unit = "nm"
-        self.mask = [[True, False, True], [False, True, False], [True, False, True]]
-        self.noise = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]
+        self.mask = np.ones_like(self.spectra, dtype=bool)
+        self.noise = np.ones_like(self.spectra)
         self.z_lens = 0.5
         self.z_source = 1.0
         self.fwhm = 2.0
+        self.center_pixel_x = 1
+        self.center_pixel_y = 1
+        self.coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
 
         self.datacube = Datacube(
             self.wavelengths,
@@ -132,9 +135,30 @@ class TestDatacube(unittest.TestCase):
             self.fwhm,
             self.z_lens,
             self.z_source,
+            self.center_pixel_x,
+            self.center_pixel_y,
+            self.coordinate_transform_matrix,
             self.spectra_unit,
             self.mask,
             self.noise,
+        )
+
+    def test_center_pixel_x(self):
+        self.assertEqual(self.datacube.center_pixel_x, self.center_pixel_x)
+
+    def test_center_pixel_y(self):
+        self.assertEqual(self.datacube.center_pixel_y, self.center_pixel_y)
+
+    def test_x_coordinates(self):
+        npt.assert_array_equal(
+            self.datacube.x_coordinates,
+            [[-0.1, 0, 0.1], [-0.1, 0, 0.1], [-0.1, 0, 0.1]],
+        )
+
+    def test_y_coordinates(self):
+        npt.assert_array_equal(
+            self.datacube.y_coordinates,
+            [[-0.1, -0.1, -0.1], [0, 0, 0], [0.1, 0.1, 0.1]],
         )
 
 
