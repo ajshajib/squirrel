@@ -16,7 +16,7 @@ class Shoulder(object):
     _speed_of_light = 299792.458  # speed of light in km/s
 
     @classmethod
-    def log_rebin(cls, data):
+    def log_rebin(cls, data, velocity_scale=None):
         """Rebin the data to log scale.
 
         :param data: data to rebin
@@ -25,7 +25,7 @@ class Shoulder(object):
         wavelength_range = data.wavelengths[[0, -1]]
 
         rebinned_spectra, log_rebinned_wavelength, velocity_scale = ppxf_util.log_rebin(
-            wavelength_range, data.flux
+            wavelength_range, data.flux, velscale=velocity_scale
         )
 
         # this may be problematic, just using this line as a placeholder for now until further checks
@@ -41,11 +41,11 @@ class Shoulder(object):
     def stand(
         cls,
         data,
-        template_library,
+        template,
         velocity_dispersion_guess=250.0,
         degree=2,
         velocity_scale_ratio=2,
-        background_spectra=None,
+        background_template=None,
         spectra_indices=None,
     ):
         """Perform the kinematic analysis using pPXF.
@@ -91,9 +91,12 @@ class Shoulder(object):
                 raise ValueError(
                     f"Data must have 2 or 3 dimensions, not {data.spectra.ndim}."
                 )
+        else:
+            flux = data.flux
+            noise = data.noise
 
         ppxf_fit = ppxf(
-            templates=template_library.templates,
+            templates=template.flux,
             galaxy=flux,
             noise=noise,
             velscale=data.velocity_scale,
@@ -102,10 +105,10 @@ class Shoulder(object):
             moments=2,
             goodpixels=None,
             lam=data.wavelengths,
-            lam_temp=template_library.wavelengths,
+            lam_temp=template.wavelengths,
             degree=degree,
             velscale_ratio=velocity_scale_ratio,
-            sky=background_spectra.spectra if background_spectra else None,
+            sky=background_template.flux if background_template else None,
         )
 
         return ppxf_fit
