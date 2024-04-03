@@ -63,12 +63,12 @@ class TestData(unittest.TestCase):
     def test_z_source(self):
         self.assertEqual(self.data.z_source, self.z_source)
 
-    def test_spectra_state(self):
-        self.assertEqual(self.data.spectra_state, "original")
+    def test_spectra_modifications(self):
+        self.assertEqual(self.data.spectra_modifications, [])
 
-    def test_spectra_state_setter(self):
-        self.data.spectra_state = "rebinned"
-        self.assertEqual(self.data.spectra_state, "rebinned")
+    def test_spectra_modifications_setter(self):
+        self.data.spectra_modifications = "rebinned"
+        self.assertEqual(self.data.spectra_modifications, "rebinned")
 
     def test_velocity_scale(self):
         self.assertIsNone(self.data.velocity_scale)
@@ -102,14 +102,14 @@ class TestData(unittest.TestCase):
     def test_reset(self):
         self.data.wavelengths = None
         self.data.spectra = None
-        self.data.spectra_state = None
+        self.data.spectra_modifications = None
         self.data.wavelengths_state = None
         self.data.wavelengths_frame = None
 
         self.data.reset()
         npt.assert_equal(self.data.wavelengths, [1, 2, 3])
         npt.assert_equal(self.data.spectra, [4, 5, 6])
-        self.assertEqual(self.data.spectra_state, "original")
+        self.assertEqual(self.data.spectra_modifications, [])
         self.assertEqual(self.data.wavelengths_frame, "observed")
 
 

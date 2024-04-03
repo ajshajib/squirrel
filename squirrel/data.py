@@ -48,7 +48,7 @@ class Data(object):
         self._original_spectra = spectra
         self._spectra_unit = spectra_unit
         self._wavelength_unit = wavelength_unit
-        self._spectra_state = "original"
+        self._spectra_modifications = []
         self._wavelengths_frame = "observed"
 
         self._z_lens = z_lens
@@ -105,18 +105,18 @@ class Data(object):
             return self._spectra_unit
 
     @property
-    def spectra_state(self):
+    def spectra_modifications(self):
         """Return the state of the spectra.
 
         Possible states are 'original', 'rebinned', or 'log_rebinned'.
         """
-        if hasattr(self, "_spectra_state"):
-            return self._spectra_state
+        if hasattr(self, "_spectra_modifications"):
+            return self._spectra_modifications
 
-    @spectra_state.setter
-    def spectra_state(self, state):
+    @spectra_modifications.setter
+    def spectra_modifications(self, state):
         """Set the state of the spectra."""
-        self._spectra_state = state
+        self._spectra_modifications = state
 
     @property
     def wavelength_unit(self):
@@ -189,8 +189,26 @@ class Data(object):
         """Reset the data to the original state."""
         self._wavelengths = deepcopy(self._original_wavelengths)
         self._spectra = deepcopy(self._original_spectra)
-        self._spectra_state = "original"
+        self._spectra_modifications = []
         self._wavelengths_frame = "observed"
+
+    def clip(self, wavelength_min, wavelength_max):
+        """Clip the data to the given wavelength range.
+
+        :param wavelength_range: range of the wavelengths to clip
+        :type wavelength_range: list
+        """
+        mask = (self._wavelengths >= wavelength_min) & (
+            self._wavelengths <= wavelength_max
+        )
+
+        self._wavelengths = self._wavelengths[mask]
+        if len(self.spectra.shape) == 1:
+            self._spectra = self._spectra[mask]
+        else:
+            self._spectra = self._spectra[mask, :]
+
+        self._spectra_modifications += "clipped"
 
 
 class Datacube(Data):
