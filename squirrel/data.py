@@ -7,32 +7,32 @@ import numpy as np
 __author__ = "ajshajib"
 
 
-class Data(object):
+class Spectra(object):
     """A class to store spectroscopic data."""
 
     def __init__(
         self,
         wavelengths,
-        spectra,
+        flux,
         wavelength_unit,
         fwhm,
         z_lens,
         z_source,
-        spectra_unit="arbitrary",
+        flux_unit="arbitrary",
         mask=None,
         noise=None,
     ):
         """
         :param wavelengths: wavelengths of the spectra in observer frame
         :type wavelengths: numpy.ndarray
-        :param spectra: spectra of the data
-        :type spectra: numpy.ndarray
+        :param flux: flux of the data
+        :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
         :param fwhm: full width at half maximum of the data. Needs to be in the same unit as the wavelengths
         :type fwhm: float
-        :param spectra_unit: unit of the spectra
-        :type spectra_unit: str
+        :param flux_unit: unit of the flux
+        :type flux_unit: str
         :param mask: mask of the data
         :type mask: numpy.ndarray
         :param noise: noise of the data
@@ -44,9 +44,9 @@ class Data(object):
         """
         self._wavelengths = deepcopy(wavelengths)
         self._original_wavelengths = wavelengths
-        self._spectra = deepcopy(spectra)
-        self._original_spectra = spectra
-        self._spectra_unit = spectra_unit
+        self._flux = deepcopy(flux)
+        self._original_flux = flux
+        self._flux_unit = flux_unit
         self._wavelength_unit = wavelength_unit
         self._spectra_modifications = []
         self._wavelengths_frame = "observed"
@@ -64,21 +64,21 @@ class Data(object):
         self._velocity_scale = None
 
     @property
-    def spectra(self):
-        """Return the spectra of the data."""
-        if hasattr(self, "_spectra"):
-            return self._spectra
+    def flux(self):
+        """Return the flux of the data."""
+        if hasattr(self, "_flux"):
+            return self._flux
 
-    @spectra.setter
-    def spectra(self, spectra):
-        """Set the spectra of the data."""
-        self._spectra = spectra
+    @flux.setter
+    def flux(self, flux):
+        """Set the flux of the data."""
+        self._flux = flux
 
     @property
-    def original_spectra(self):
-        """Return the original spectra of the data."""
-        if hasattr(self, "_original_spectra"):
-            return self._original_spectra
+    def original_flux(self):
+        """Return the original flux of the data."""
+        if hasattr(self, "_original_flux"):
+            return self._original_flux
 
     @property
     def original_wavelengths(self):
@@ -112,10 +112,10 @@ class Data(object):
         self._wavelengths_frame = frame
 
     @property
-    def spectra_unit(self):
-        """Return the unit of the spectra."""
-        if hasattr(self, "_spectra_unit"):
-            return self._spectra_unit
+    def flux_unit(self):
+        """Return the unit of the flux."""
+        if hasattr(self, "_flux_unit"):
+            return self._flux_unit
 
     @property
     def spectra_modifications(self):
@@ -212,7 +212,7 @@ class Data(object):
     def reset(self):
         """Reset the data to the original state."""
         self._wavelengths = deepcopy(self._original_wavelengths)
-        self._spectra = deepcopy(self._original_spectra)
+        self._flux = deepcopy(self._original_flux)
         self._noise = deepcopy(self._original_noise)
         self._spectra_modifications = []
         self._wavelengths_frame = "observed"
@@ -228,25 +228,25 @@ class Data(object):
         )
 
         self._wavelengths = self._wavelengths[mask]
-        if len(self.spectra.shape) == 1:
-            self._spectra = self._spectra[mask]
+        if len(self.flux.shape) == 1:
+            self._flux = self._flux[mask]
             if self._noise is not None:
                 self._noise = self._noise[mask]
         else:
-            self._spectra = self._spectra[mask, :]
+            self._flux = self._flux[mask, :]
             if self._noise is not None:
                 self._noise = self._noise[mask, :]
 
         self._spectra_modifications += ["clipped"]
 
 
-class Datacube(Data):
+class Datacube(Spectra):
     """A class to store in 3D IFU datacubes."""
 
     def __init__(
         self,
         wavelengths,
-        spectra,
+        flux,
         wavelength_unit,
         fwhm,
         z_lens,
@@ -254,15 +254,15 @@ class Datacube(Data):
         center_pixel_x,
         center_pixel_y,
         coordinate_transform_matrix,
-        spectra_unit="arbitrary",
+        flux_unit="arbitrary",
         mask=None,
         noise=None,
     ):
         """
         :param wavelengths: wavelengths of the data
         :type wavelengths: numpy.ndarray
-        :param spectra: spectra of the data
-        :type spectra: numpy.ndarray
+        :param flux: flux of the data
+        :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
         :param fwhm: full width at half maximum of the data
@@ -273,8 +273,8 @@ class Datacube(Data):
         :type z_lens: float
         :param z_source: source redshift
         :type z_source: float
-        :param spectra_unit: unit of the spectra
-        :type spectra_unit: str
+        :param flux_unit: unit of the flux
+        :type flux_unit: str
         :param mask: mask of the data
         :type mask: numpy.ndarray
         :param noise: noise of the data
@@ -282,12 +282,12 @@ class Datacube(Data):
         """
         super(Datacube, self).__init__(
             wavelengths=wavelengths,
-            spectra=spectra,
+            flux=flux,
             wavelength_unit=wavelength_unit,
             fwhm=fwhm,
             z_lens=z_lens,
             z_source=z_source,
-            spectra_unit=spectra_unit,
+            flux_unit=flux_unit,
             mask=mask,
             noise=noise,
         )
@@ -295,8 +295,8 @@ class Datacube(Data):
         self._center_pixel_x = center_pixel_x
         self._center_pixel_y = center_pixel_y
 
-        x_pixels = np.arange(self._spectra.shape[2]) - self._center_pixel_x
-        y_pixels = np.arange(self._spectra.shape[1]) - self._center_pixel_y
+        x_pixels = np.arange(self._flux.shape[2]) - self._center_pixel_x
+        y_pixels = np.arange(self._flux.shape[1]) - self._center_pixel_y
 
         xx_pixels, yy_pixels = np.meshgrid(x_pixels, y_pixels)
 
@@ -304,12 +304,8 @@ class Datacube(Data):
             coordinate_transform_matrix,
             np.array([xx_pixels.flatten(), yy_pixels.flatten()]),
         )
-        self._x_coordinates = transformed_coordinates[0].reshape(
-            self._spectra.shape[1:]
-        )
-        self._y_coordinates = transformed_coordinates[1].reshape(
-            self._spectra.shape[1:]
-        )
+        self._x_coordinates = transformed_coordinates[0].reshape(self._flux.shape[1:])
+        self._y_coordinates = transformed_coordinates[1].reshape(self._flux.shape[1:])
 
     @property
     def center_pixel_x(self):
@@ -334,3 +330,145 @@ class Datacube(Data):
         """Return the y coordinates of the data."""
         if hasattr(self, "_y_coordinates"):
             return self._y_coordinates
+
+
+class VoronoiBinnedSpectra(Spectra):
+    """A class to store binned spectra."""
+
+    def __init__(
+        self,
+        wavelengths,
+        flux,
+        wavelength_unit,
+        fwhm,
+        z_lens,
+        z_source,
+        x_coordinates,
+        y_coordinates,
+        bin_num,
+        flux_unit="arbitrary",
+        mask=None,
+        noise=None,
+    ):
+        """
+        :param wavelengths: wavelengths of the data
+        :type wavelengths: numpy.ndarray
+        :param flux: flux of the data
+        :type flux: numpy.ndarray
+        :param wavelength_unit: unit of the wavelengths
+        :type wavelength_unit: str
+        :param fwhm: full width at half maximum of the data
+        :type fwhm: float
+        :param z_lens: lens redshift
+        :type z_lens: float
+        :param z_source: source redshift
+        :type z_source: float
+        :param x_coordinates: x coordinates of the data
+        :type x_coordinates: numpy.ndarray
+        :param y_coordinates: y coordinates of the data
+        :type y_coordinates: numpy.ndarray
+        :param bin_num: bin number of the data
+        :type bin_num: numpy.ndarray
+        :param flux_unit: unit of the flux
+        :type flux_unit: str
+        :param mask: mask of the data
+        :type mask: numpy.ndarray
+        :param noise: noise of the data
+        :type noise: numpy.ndarray
+        """
+        super(VoronoiBinnedSpectra, self).__init__(
+            wavelengths=wavelengths,
+            flux=flux,
+            wavelength_unit=wavelength_unit,
+            fwhm=fwhm,
+            z_lens=z_lens,
+            z_source=z_source,
+            flux_unit=flux_unit,
+            mask=mask,
+            noise=noise,
+        )
+
+        self._x_coordinates = x_coordinates
+        self._y_coordinates = y_coordinates
+        self._bin_num = bin_num
+
+    @property
+    def x_coordinates(self):
+        """Return the x coordinates of the data."""
+        if hasattr(self, "_x_coordinates"):
+            return self._x_coordinates
+
+    @property
+    def y_coordinates(self):
+        """Return the y coordinates of the data."""
+        if hasattr(self, "_y_coordinates"):
+            return self._y_coordinates
+
+    @property
+    def bin_num(self):
+        """Return the bin number of the data."""
+        if hasattr(self, "_bin_num"):
+            return self._bin_num
+
+
+class RadiallyBinnedSpectra(Spectra):
+    """A class to store radially binned spectra."""
+
+    def __init__(
+        self,
+        wavelengths,
+        flux,
+        wavelength_unit,
+        fwhm,
+        z_lens,
+        z_source,
+        bin_radii,
+        flux_unit="arbitrary",
+        mask=None,
+        noise=None,
+    ):
+        """
+        :param wavelengths: wavelengths of the data
+        :type wavelengths: numpy.ndarray
+        :param flux: flux of the data
+        :type flux: numpy.ndarray
+        :param wavelength_unit: unit of the wavelengths
+        :type wavelength_unit: str
+        :param fwhm: full width at half maximum of the data
+        :type fwhm: float
+        :param z_lens: lens redshift
+        :type z_lens: float
+        :param z_source: source redshift
+        :type z_source: float
+        :param bin_radii: radial edges of the bins, starting with the inner edge of the first bin. The first value should be zero if the first bin is a circle.
+        :type bin_radii: numpy.ndarray
+        :param flux_unit: unit of the flux
+        :type flux_unit: str
+        :param mask: mask of the data
+        :type mask: numpy.ndarray
+        :param noise: noise of the data
+        :type noise: numpy.ndarray
+        """
+        assert (
+            len(bin_radii) - 1 == flux.shape[1]
+        ), "Number of bins must match the number of spectra."
+
+        super(RadiallyBinnedSpectra, self).__init__(
+            wavelengths=wavelengths,
+            flux=flux,
+            wavelength_unit=wavelength_unit,
+            fwhm=fwhm,
+            z_lens=z_lens,
+            z_source=z_source,
+            flux_unit=flux_unit,
+            mask=mask,
+            noise=noise,
+        )
+
+        self._bin_radii = bin_radii
+
+    @property
+    def bin_radii(self):
+        """Return the radii of the bins."""
+        if hasattr(self, "_bin_radii"):
+            return self._bin_radii
