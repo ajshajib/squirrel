@@ -62,7 +62,7 @@ class TestShoulder(unittest.TestCase):
             noise=noise,
         )
         voronoi_binned_spectra = giant.Shoulder.voronoi_bin(
-            datacube, central_snr, 950, 990, 1.0
+            datacube, central_snr, 950, 990, 1.0, plot=True
         )
         npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
         self.assertEqual(
@@ -90,10 +90,9 @@ class TestShoulder(unittest.TestCase):
             -np.exp(-0.5 * (wavelengths - line_mean) ** 2 / line_sigma**2)
             + (wavelengths - line_mean) / 1000
         )
+        noise = np.ones_like(flux) * 0.1
         fwhm = 0.0
-        spectra = Spectra(
-            wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=np.zeros_like(flux) + 0.1
-        )
+        spectra = Spectra(wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=noise)
 
         template_sigma = 1
         template_fwhm = 2.355 * template_sigma
@@ -122,6 +121,28 @@ class TestShoulder(unittest.TestCase):
         ppxf_fit = giant.Shoulder.stand_on(spectra, template, degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
+        self.assertAlmostEqual(
+            ppxf_fit.sol[1],
+            input_velocity_dispersion,
+            delta=0.005 * input_velocity_dispersion,
+        )
+
+        spectra.flux = np.tile(flux, (2, 1)).T
+        spectra.noise = np.tile(noise, (2, 1)).T
+        ppxf_fit = giant.Shoulder.stand_on(
+            spectra, template, degree=4, spectra_indices=0
+        )
+        self.assertAlmostEqual(
+            ppxf_fit.sol[1],
+            input_velocity_dispersion,
+            delta=0.005 * input_velocity_dispersion,
+        )
+
+        spectra.flux = np.tile(flux, (2, 2, 1)).T
+        spectra.noise = np.tile(noise, (2, 2, 1)).T
+        ppxf_fit = giant.Shoulder.stand_on(
+            spectra, template, degree=4, spectra_indices=[0, 0]
+        )
         self.assertAlmostEqual(
             ppxf_fit.sol[1],
             input_velocity_dispersion,
