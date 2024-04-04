@@ -4,8 +4,6 @@ image."""
 from copy import deepcopy
 import numpy as np
 
-__author__ = "ajshajib"
-
 
 class Spectra(object):
     """A class to store spectroscopic data."""
