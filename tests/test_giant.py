@@ -137,6 +137,14 @@ class TestShoulder(unittest.TestCase):
             input_velocity_dispersion,
             delta=0.005 * input_velocity_dispersion,
         )
+        self.assertRaises(
+            ValueError,
+            giant.Shoulder.stand_on,
+            spectra,
+            template,
+            degree=4,
+            spectra_indices=[0, 0],
+        )
 
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
@@ -147,6 +155,15 @@ class TestShoulder(unittest.TestCase):
             ppxf_fit.sol[1],
             input_velocity_dispersion,
             delta=0.005 * input_velocity_dispersion,
+        )
+
+        self.assertRaises(
+            ValueError,
+            giant.Shoulder.stand_on,
+            spectra,
+            template,
+            degree=4,
+            spectra_indices=0,
         )
 
 

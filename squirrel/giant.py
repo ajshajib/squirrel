@@ -79,13 +79,22 @@ class Shoulder(object):
                 ), f"Spectra indices must be an integer for spectra with {data.spectra.ndim} dimensions."
                 flux = data.flux[:, spectra_indices]
                 noise = data.noise[:, spectra_indices]
-            elif len(spectra_indices) == data.flux.ndim - 1 and data.flux.ndim == 3:
+            elif (
+                isinstance(spectra_indices, list)
+                and len(spectra_indices) == data.flux.ndim - 1
+                and data.flux.ndim == 3
+            ):
                 flux = data.flux[:, spectra_indices[0], spectra_indices[1]]
                 noise = data.noise[:, spectra_indices[0], spectra_indices[1]]
             else:
-                raise ValueError(
-                    f"Spectra indices must be a list of {data.flux.ndim - 1} integers for spectra with {data.spectra.ndim} dimensions."
-                )
+                if data.flux.ndim == 2:
+                    raise ValueError(
+                        f"Spectra indices must be an integer for spectra with {data.flux.ndim} dimensions."
+                    )
+                else:
+                    raise ValueError(
+                        f"Spectra indices must be a list of {data.flux.ndim - 1} integers for spectra with {data.flux.ndim} dimensions."
+                    )
         else:
             flux = data.flux
             noise = data.noise
