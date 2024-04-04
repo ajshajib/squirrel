@@ -143,8 +143,6 @@ class Shoulder(object):
         """
 
         clipped_datacube = deepcopy(datacube)
-        clipped_datacube.reset()
-        clipped_datacube.deredshift(target_frame="lens")
         clipped_datacube.clip(
             wavelength_min=min_wavelength_for_snr, wavelength_max=max_wavelength_for_snr
         )
@@ -212,5 +210,10 @@ class Shoulder(object):
             datacube.flux_unit,
             voronoi_binned_noise,
         )
+
+        voronoi_binned_spectra.spectra_modifications = deepcopy(
+            datacube.spectra_modifications
+        )
+        voronoi_binned_spectra.wavelengths_frame = deepcopy(datacube.wavelengths_frame)
 
         return voronoi_binned_spectra
