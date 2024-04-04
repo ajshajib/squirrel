@@ -225,9 +225,9 @@ class Spectra(object):
             if self._noise is not None:
                 self._noise = self._noise[mask]
         else:
-            self._flux = self._flux[mask, :]
+            self._flux = self._flux[mask, ...]
             if self._noise is not None:
-                self._noise = self._noise[mask, :]
+                self._noise = self._noise[mask, ...]
 
         self._spectra_modifications += ["clipped"]
 
