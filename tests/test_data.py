@@ -35,12 +35,18 @@ class TestSpectra(unittest.TestCase):
         self.spectra.flux = np.array([7, 8, 9])
         npt.assert_array_equal(self.spectra.flux, np.array([7, 8, 9]))
 
+    def test_original_flux(self):
+        npt.assert_array_equal(self.spectra.original_flux, self.flux)
+
     def test_wavelengths(self):
         npt.assert_array_equal(self.spectra.wavelengths, self.wavelengths)
 
     def test_wavelengths_setter(self):
         self.spectra.wavelengths = np.array([4, 5, 6])
         npt.assert_array_equal(self.spectra.wavelengths, np.array([4, 5, 6]))
+
+    def test_original_wavelengths(self):
+        npt.assert_array_equal(self.spectra.original_wavelengths, self.wavelengths)
 
     def test_wavelength_unit(self):
         self.assertEqual(self.spectra.wavelength_unit, self.wavelength_unit)
@@ -53,6 +59,13 @@ class TestSpectra(unittest.TestCase):
 
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)
+
+    def test_noise_setter(self):
+        self.spectra.noise = np.array([0.4, 0.5, 0.6])
+        npt.assert_array_equal(self.spectra.noise, np.array([0.4, 0.5, 0.6]))
+
+    def test_original_noise(self):
+        npt.assert_array_equal(self.spectra.original_noise, self.noise)
 
     def test_z_lens(self):
         self.assertEqual(self.spectra.z_lens, self.z_lens)
