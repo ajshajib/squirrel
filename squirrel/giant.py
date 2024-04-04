@@ -183,7 +183,6 @@ class Shoulder(object):
 
         if plot:
             plt.tight_layout()
-            plt.show()
 
         voronoi_binned_flux = np.zeros(
             (datacube.flux.shape[0], int(np.max(bin_num)) + 1)
