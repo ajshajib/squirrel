@@ -72,24 +72,19 @@ class Shoulder(object):
             velocity_dispersion_guess,
         ]  # (km/s), starting guess for [V, sigma]
 
-        if spectra_indices:
-            if data.flux.ndim == 2:
-                assert isinstance(
-                    spectra_indices, int
+        if spectra_indices is not None:
+            if isinstance(spectra_indices, int) and data.flux.ndim == 2:
+                assert (
+                    data.flux.ndim == 2
                 ), f"Spectra indices must be an integer for spectra with {data.spectra.ndim} dimensions."
                 flux = data.flux[:, spectra_indices]
                 noise = data.noise[:, spectra_indices]
-            elif data.flux.ndim == 3:
-                assert (
-                    isinstance(spectra_indices, list)
-                    and len(spectra_indices) == data.flux.ndim - 1
-                ), f"Spectra indices must be a list of {data.flux.ndim - 1} integers for spectra with {data.spectra.ndim} dimensions."
-
+            elif len(spectra_indices) == data.flux.ndim - 1 and data.flux.ndim == 3:
                 flux = data.flux[:, spectra_indices[0], spectra_indices[1]]
                 noise = data.noise[:, spectra_indices[0], spectra_indices[1]]
             else:
                 raise ValueError(
-                    f"Data must have 2 or 3 dimensions, not {data.spectra.ndim}."
+                    f"Spectra indices must be a list of {data.flux.ndim - 1} integers for spectra with {data.spectra.ndim} dimensions."
                 )
         else:
             flux = data.flux
@@ -193,14 +188,14 @@ class Shoulder(object):
             plt.show()
 
         voronoi_binned_flux = np.zeros(
-            (int(np.max(bin_num)) + 1, datacube.flux.shape[0])
+            (datacube.flux.shape[0], int(np.max(bin_num)) + 1)
         )
         voronoi_binned_noise = np.zeros_like(voronoi_binned_flux)
 
         # for i in range(voronoi_bins.shape[0]):
         for x, y, n_bin in zip(xx_pixels_masked, yy_pixels_masked, bin_num):
-            voronoi_binned_flux[n_bin] += datacube.flux[:, y, x]
-            voronoi_binned_noise[n_bin] += datacube.noise[:, y, x] ** 2
+            voronoi_binned_flux[:, n_bin] += datacube.flux[:, y, x]
+            voronoi_binned_noise[:, n_bin] += datacube.noise[:, y, x] ** 2
 
         voronoi_binned_noise = np.sqrt(voronoi_binned_noise)
 
