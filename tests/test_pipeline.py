@@ -1,13 +1,13 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from squirrel import giant
+from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
 from squirrel.data import Datacube
 from squirrel.template import Template
 
 
-class TestShoulder(unittest.TestCase):
+class TestPipeline(unittest.TestCase):
     def setUp(self):
         """Set up the test."""
         self.wavelengths = np.arange(1, 100)
@@ -30,7 +30,7 @@ class TestShoulder(unittest.TestCase):
         )
 
     def test_log_rebin(self):
-        giant.Shoulder.log_rebin(self.spectra)
+        Pipeline.log_rebin(self.spectra)
         self.assertIn("log_rebinned", self.spectra.spectra_modifications)
 
     def test_voronoi_bin(self):
@@ -61,7 +61,7 @@ class TestShoulder(unittest.TestCase):
             coordinate_transform_matrix,
             noise=noise,
         )
-        voronoi_binned_spectra = giant.Shoulder.voronoi_bin(
+        voronoi_binned_spectra = Pipeline.voronoi_bin(
             datacube, central_snr, 950, 990, 1.0, plot=True
         )
         npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
@@ -111,14 +111,14 @@ class TestShoulder(unittest.TestCase):
             templates_wavelengths, template_fluxes.T, "AA", template_fwhm
         )
 
-        giant.Shoulder.log_rebin(spectra)
+        Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
-        giant.Shoulder.log_rebin(
+        Pipeline.log_rebin(
             template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
         )
 
-        ppxf_fit = giant.Shoulder.stand_on(spectra, template, degree=4)
+        ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
         self.assertAlmostEqual(
@@ -129,9 +129,7 @@ class TestShoulder(unittest.TestCase):
 
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
-        ppxf_fit = giant.Shoulder.stand_on(
-            spectra, template, degree=4, spectra_indices=0
-        )
+        ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4, spectra_indices=0)
         self.assertAlmostEqual(
             ppxf_fit.sol[1],
             input_velocity_dispersion,
@@ -139,7 +137,7 @@ class TestShoulder(unittest.TestCase):
         )
         self.assertRaises(
             ValueError,
-            giant.Shoulder.stand_on,
+            Pipeline.run_ppxf,
             spectra,
             template,
             degree=4,
@@ -148,7 +146,7 @@ class TestShoulder(unittest.TestCase):
 
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
-        ppxf_fit = giant.Shoulder.stand_on(
+        ppxf_fit = Pipeline.run_ppxf(
             spectra, template, degree=4, spectra_indices=[0, 0]
         )
         self.assertAlmostEqual(
@@ -159,7 +157,7 @@ class TestShoulder(unittest.TestCase):
 
         self.assertRaises(
             ValueError,
-            giant.Shoulder.stand_on,
+            Pipeline.run_ppxf,
             spectra,
             template,
             degree=4,

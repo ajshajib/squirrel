@@ -10,7 +10,7 @@ from vorbin.voronoi_2d_binning import voronoi_2d_binning
 from .data import VoronoiBinnedSpectra
 
 
-class Shoulder(object):
+class Pipeline(object):
     """A class to wrap the pPXF package for kinematic analysis."""
 
     _speed_of_light = 299792.458  # speed of light in km/s
@@ -40,7 +40,7 @@ class Shoulder(object):
         data.spectra_modifications += ["log_rebinned"]
 
     @classmethod
-    def stand_on(
+    def run_ppxf(
         cls,
         data,
         template,
