@@ -1,4 +1,4 @@
-import unittest
+import pytest
 import numpy as np
 import numpy.testing as npt
 from squirrel.pipeline import Pipeline
@@ -7,8 +7,8 @@ from squirrel.data import Datacube
 from squirrel.template import Template
 
 
-class TestPipeline(unittest.TestCase):
-    def setUp(self):
+class TestPipeline:
+    def setup_method(self):
         """Set up the test."""
         self.wavelengths = np.arange(1, 100)
         self.flux = np.ones_like(self.wavelengths)
@@ -31,7 +31,7 @@ class TestPipeline(unittest.TestCase):
 
     def test_log_rebin(self):
         Pipeline.log_rebin(self.spectra)
-        self.assertIn("log_rebinned", self.spectra.spectra_modifications)
+        assert "log_rebinned" in self.spectra.spectra_modifications
 
     def test_voronoi_bin(self):
         x = np.arange(11)
@@ -65,13 +65,11 @@ class TestPipeline(unittest.TestCase):
             datacube, central_snr, 950, 990, 1.0, plot=True
         )
         npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
-        self.assertEqual(
-            datacube.wavelength_unit, voronoi_binned_spectra.wavelength_unit
-        )
-        self.assertEqual(datacube.fwhm, voronoi_binned_spectra.fwhm)
-        self.assertEqual(datacube.z_lens, voronoi_binned_spectra.z_lens)
-        self.assertEqual(datacube.z_source, voronoi_binned_spectra.z_source)
-        self.assertEqual(datacube.flux_unit, voronoi_binned_spectra.flux_unit)
+        assert datacube.wavelength_unit == voronoi_binned_spectra.wavelength_unit
+        assert datacube.fwhm == voronoi_binned_spectra.fwhm
+        assert datacube.z_lens == voronoi_binned_spectra.z_lens
+        assert datacube.z_source == voronoi_binned_spectra.z_source
+        assert datacube.flux_unit == voronoi_binned_spectra.flux_unit
         npt.assert_equal(
             datacube.spectra_modifications, voronoi_binned_spectra.spectra_modifications
         )
@@ -79,7 +77,7 @@ class TestPipeline(unittest.TestCase):
             datacube.wavelengths_frame, voronoi_binned_spectra.wavelengths_frame
         )
 
-    def test_stand_on(self):
+    def test_run_ppxf(self):
         start_wavelength = 9100
         end_wavelength = 9600
         line_mean = 9350
@@ -121,49 +119,37 @@ class TestPipeline(unittest.TestCase):
         ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
-        self.assertAlmostEqual(
-            ppxf_fit.sol[1],
-            input_velocity_dispersion,
-            delta=0.005 * input_velocity_dispersion,
-        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
         ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4, spectra_indices=0)
-        self.assertAlmostEqual(
-            ppxf_fit.sol[1],
-            input_velocity_dispersion,
-            delta=0.005 * input_velocity_dispersion,
-        )
-        self.assertRaises(
-            ValueError,
-            Pipeline.run_ppxf,
-            spectra,
-            template,
-            degree=4,
-            spectra_indices=[0, 0],
-        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
+
+        with pytest.raises(ValueError):
+            Pipeline.run_ppxf(
+                spectra,
+                template,
+                degree=4,
+                spectra_indices=[0, 0],
+            )
 
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
         ppxf_fit = Pipeline.run_ppxf(
             spectra, template, degree=4, spectra_indices=[0, 0]
         )
-        self.assertAlmostEqual(
-            ppxf_fit.sol[1],
-            input_velocity_dispersion,
-            delta=0.005 * input_velocity_dispersion,
-        )
 
-        self.assertRaises(
-            ValueError,
-            Pipeline.run_ppxf,
-            spectra,
-            template,
-            degree=4,
-            spectra_indices=0,
-        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
+
+        with pytest.raises(ValueError):
+            Pipeline.run_ppxf(
+                spectra,
+                template,
+                degree=4,
+                spectra_indices=0,
+            )
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main()
