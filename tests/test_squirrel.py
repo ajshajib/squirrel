@@ -3,19 +3,20 @@
 """Tests for `squirrel` package."""
 
 
-import unittest
+import pytest
 
 # from squirrel import squirrel
 
 
-class TestSquirrel(unittest.TestCase):
+class TestSquirrel:
     """Tests for `squirrel` package."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up test fixtures, if any."""
 
-    def tearDown(self):
+    def teardown_method(self):
         """Tear down test fixtures, if any."""
 
-    def test_000_something(self):
-        """Test something."""
+
+if __name__ == "__main__":
+    pytest.main()

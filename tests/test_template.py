@@ -1,11 +1,11 @@
-import unittest
+import pytest
 import numpy as np
 import numpy.testing as npt
 from squirrel.template import Template
 
 
-class TestTemplate(unittest.TestCase):
-    def setUp(self):
+class TestTemplate:
+    def setup_method(self):
         self.wavelengths = np.array([1, 2, 3])
         self.flux = np.array([[4, 5, 6], [7, 8, 9]])
         self.flux_unit = "arbitrary unit"
@@ -24,3 +24,7 @@ class TestTemplate(unittest.TestCase):
 
     def test_wavelengths(self):
         npt.assert_array_equal(self.template.wavelengths, self.wavelengths)
+
+
+if __name__ == "__main__":
+    pytest.main()

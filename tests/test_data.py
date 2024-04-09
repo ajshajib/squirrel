@@ -1,4 +1,4 @@
-import unittest
+import pytest
 import numpy as np
 import numpy.testing as npt
 from squirrel.data import Spectra
@@ -7,8 +7,8 @@ from squirrel.data import VoronoiBinnedSpectra
 from squirrel.data import RadiallyBinnedSpectra
 
 
-class TestSpectra(unittest.TestCase):
-    def setUp(self):
+class TestSpectra:
+    def setup_method(self):
         self.wavelengths = np.array([1, 2, 3])
         self.flux = np.array([4, 5, 6])
         self.flux_unit = "arbitrary unit"
@@ -49,13 +49,13 @@ class TestSpectra(unittest.TestCase):
         npt.assert_array_equal(self.spectra.original_wavelengths, self.wavelengths)
 
     def test_wavelength_unit(self):
-        self.assertEqual(self.spectra.wavelength_unit, self.wavelength_unit)
+        assert self.spectra.wavelength_unit == self.wavelength_unit
 
     def test_flux_unit(self):
-        self.assertEqual(self.spectra.flux_unit, self.flux_unit)
+        assert self.spectra.flux_unit == self.flux_unit
 
     def test_fwhm(self):
-        self.assertEqual(self.spectra.fwhm, self.fwhm)
+        assert self.spectra.fwhm == self.fwhm
 
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)
@@ -68,31 +68,31 @@ class TestSpectra(unittest.TestCase):
         npt.assert_array_equal(self.spectra.original_noise, self.noise)
 
     def test_z_lens(self):
-        self.assertEqual(self.spectra.z_lens, self.z_lens)
+        assert self.spectra.z_lens == self.z_lens
 
     def test_z_source(self):
-        self.assertEqual(self.spectra.z_source, self.z_source)
+        assert self.spectra.z_source == self.z_source
 
     def test_spectra_modifications(self):
-        self.assertEqual(self.spectra.spectra_modifications, [])
+        assert self.spectra.spectra_modifications == []
 
     def test_spectra_modifications_setter(self):
         self.spectra.spectra_modifications = "rebinned"
-        self.assertEqual(self.spectra.spectra_modifications, "rebinned")
+        assert self.spectra.spectra_modifications == "rebinned"
 
     def test_velocity_scale(self):
-        self.assertIsNone(self.spectra.velocity_scale)
+        assert self.spectra.velocity_scale is None
 
     def test_velocity_scale_setter(self):
         self.spectra.velocity_scale = 1.0
-        self.assertEqual(self.spectra.velocity_scale, 1.0)
+        assert self.spectra.velocity_scale == 1.0
 
     def test_wavelengths_frame(self):
-        self.assertEqual(self.spectra.wavelengths_frame, "observed")
+        assert self.spectra.wavelengths_frame == "observed"
 
     def test_wavelengths_frame_setter(self):
         self.spectra.wavelengths_frame = "rest"
-        self.assertEqual(self.spectra.wavelengths_frame, "rest")
+        assert self.spectra.wavelengths_frame == "rest"
 
     def test_deredshift(self):
         self.spectra.deredshift(redshift=1.0)
@@ -108,7 +108,7 @@ class TestSpectra(unittest.TestCase):
             self.spectra.wavelengths, np.array([1, 2, 3]) / (1 + self.z_lens)
         )
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.spectra.deredshift(target_frame="unknown")
 
     def test_clip(self):
@@ -127,12 +127,12 @@ class TestSpectra(unittest.TestCase):
         self.spectra.reset()
         npt.assert_equal(self.spectra.wavelengths, [1, 2, 3])
         npt.assert_equal(self.spectra.flux, [4, 5, 6])
-        self.assertEqual(self.spectra.spectra_modifications, [])
-        self.assertEqual(self.spectra.wavelengths_frame, "observed")
+        assert self.spectra.spectra_modifications == []
+        assert self.spectra.wavelengths_frame == "observed"
 
 
-class TestDatacube(unittest.TestCase):
-    def setUp(self):
+class TestDatacube:
+    def setup_method(self):
         self.wavelengths = np.arange(10)
         self.flux = np.random.normal(size=(10, 3, 3))
         self.flux_unit = "arbitrary"
@@ -160,10 +160,10 @@ class TestDatacube(unittest.TestCase):
         )
 
     def test_center_pixel_x(self):
-        self.assertEqual(self.datacube.center_pixel_x, self.center_pixel_x)
+        assert self.datacube.center_pixel_x == self.center_pixel_x
 
     def test_center_pixel_y(self):
-        self.assertEqual(self.datacube.center_pixel_y, self.center_pixel_y)
+        assert self.datacube.center_pixel_y == self.center_pixel_y
 
     def test_x_coordinates(self):
         npt.assert_array_equal(
@@ -178,8 +178,8 @@ class TestDatacube(unittest.TestCase):
         )
 
 
-class TestVoronoiBinnedSpectra(unittest.TestCase):
-    def setUp(self):
+class TestVoronoiBinnedSpectra:
+    def setup_method(self):
         self.wavelengths = np.arange(10)
         self.flux = np.random.normal(size=(10, 3))
         self.flux_unit = "arbitrary"
@@ -219,8 +219,8 @@ class TestVoronoiBinnedSpectra(unittest.TestCase):
         npt.assert_array_equal(self.voronoi_binned_spectra.bin_num, self.bin_num)
 
 
-class TestRadiallyBinnedSpectra(unittest.TestCase):
-    def setUp(self):
+class TestRadiallyBinnedSpectra:
+    def setup_method(self):
         self.wavelengths = np.arange(10)
         self.flux = np.random.normal(size=(10, 3))
         self.flux_unit = "arbitrary"
@@ -248,4 +248,4 @@ class TestRadiallyBinnedSpectra(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main()
