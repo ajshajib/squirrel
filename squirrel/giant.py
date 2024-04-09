@@ -29,7 +29,9 @@ class Shoulder(object):
         )
 
         # this may be problematic, just using this line as a placeholder for now until further checks
-        rebinned_variance, _, _ = ppxf_util.log_rebin(wavelength_range, data.noise**2)
+        rebinned_variance, _, _ = ppxf_util.log_rebin(
+            wavelength_range, data.noise**2, velscale=velocity_scale
+        )
 
         data.flux = rebinned_spectra
         data.noise = np.sqrt(rebinned_variance)
