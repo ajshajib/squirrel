@@ -6,6 +6,7 @@ from squirrel.template import Template
 
 class TestTemplate:
     def setup_method(self):
+        """Set up the test."""
         self.wavelengths = np.array([1, 2, 3])
         self.flux = np.array([[4, 5, 6], [7, 8, 9]])
         self.flux_unit = "arbitrary unit"
