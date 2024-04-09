@@ -20,7 +20,7 @@ class TestTemplate:
         )
 
     def test_flux(self):
-        np.testing.assert_array_equal(self.template.flux, self.flux)
+        npt.assert_array_equal(self.template.flux, self.flux)
 
     def test_wavelengths(self):
         npt.assert_array_equal(self.template.wavelengths, self.wavelengths)
