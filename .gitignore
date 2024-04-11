@@ -134,3 +134,6 @@ dmypy.json
 
 .DS_Store
 
+notebooks/data/mock_datacube.fits
+scratch/
+settings.json
