@@ -33,6 +33,9 @@ class TestPipeline:
         Pipeline.log_rebin(self.spectra)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
+        with pytest.raises(ValueError):
+            Pipeline.log_rebin(self.spectra)
+
     def test_voronoi_bin(self):
         x = np.arange(11)
         y = np.arange(11)
