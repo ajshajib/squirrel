@@ -22,6 +22,9 @@ class Pipeline(object):
         :param data: data to rebin
         :type data: `Data` class
         """
+        if "log_rebinned" in data.spectra_modifications:
+            raise ValueError("Data has already been log rebinned.")
+
         wavelength_range = data.wavelengths[[0, -1]]
 
         rebinned_spectra, log_rebinned_wavelength, velocity_scale = ppxf_util.log_rebin(
