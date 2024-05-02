@@ -190,7 +190,9 @@ class TestVoronoiBinnedSpectra:
         self.fwhm = 2.0
         self.x_coordinates = np.array([0, 1, 2])
         self.y_coordinates = np.array([0, 1, 2])
-        self.bin_num = np.array([0, 1, 2])
+        self.bin_numbers = np.array([0, 1, 2])
+        self.x_pixels = np.array([0, 1, 2])
+        self.y_pixels = np.array([0, 1, 2])
         self.voronoi_binned_spectra = VoronoiBinnedSpectra(
             self.wavelengths,
             self.flux,
@@ -200,7 +202,9 @@ class TestVoronoiBinnedSpectra:
             self.z_source,
             self.x_coordinates,
             self.y_coordinates,
-            self.bin_num,
+            self.bin_numbers,
+            self.x_pixels,
+            self.y_pixels,
             self.flux_unit,
             self.noise,
         )
@@ -215,8 +219,20 @@ class TestVoronoiBinnedSpectra:
             self.voronoi_binned_spectra.y_coordinates, self.y_coordinates
         )
 
-    def test_bin_num(self):
-        npt.assert_array_equal(self.voronoi_binned_spectra.bin_num, self.bin_num)
+    def test_bin_numbers(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.bin_numbers, self.bin_numbers
+        )
+
+    def test_x_pixels_of_bins(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.x_pixels_of_bins, self.x_pixels
+        )
+
+    def test_y_pixels_of_bins(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.y_pixels_of_bins, self.y_pixels
+        )
 
 
 class TestRadiallyBinnedSpectra:
