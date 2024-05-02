@@ -331,7 +331,9 @@ class VoronoiBinnedSpectra(Spectra):
         z_source,
         x_coordinates,
         y_coordinates,
-        bin_num,
+        bin_numbers,
+        x_pixels_of_bins,
+        y_pixels_of_bins,
         flux_unit="arbitrary",
         noise=None,
     ):
@@ -348,12 +350,16 @@ class VoronoiBinnedSpectra(Spectra):
         :type z_lens: float
         :param z_source: source redshift
         :type z_source: float
-        :param x_coordinates: x coordinates of the data
+        :param x_coordinates: x coordinates of the original datacube's spatial pixels (2D)
         :type x_coordinates: numpy.ndarray
-        :param y_coordinates: y coordinates of the data
+        :param y_coordinates: y coordinates of the original datacube's spatial pixels (2D)
         :type y_coordinates: numpy.ndarray
-        :param bin_num: bin number of the data
-        :type bin_num: numpy.ndarray
+        :param bin_numbers: bin number of the data
+        :type bin_numbers: numpy.ndarray
+        :param x_pixels_of_bins: pixel_x values corresponding to `bin_numbers`
+        :type x_pixels_of_bins: numpy.ndarray
+        :param y_pixels_of_bins: pixel_y values corresponding to `bin_numbers`
+        :type y_pixels_of_bins: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
         :param noise: noise of the data
@@ -372,7 +378,9 @@ class VoronoiBinnedSpectra(Spectra):
 
         self._x_coordinates = x_coordinates
         self._y_coordinates = y_coordinates
-        self._bin_num = bin_num
+        self._bin_numbers = bin_numbers
+        self._x_pixels_of_bins = x_pixels_of_bins
+        self._y_pixels_of_bins = y_pixels_of_bins
 
     @property
     def x_coordinates(self):
@@ -387,10 +395,43 @@ class VoronoiBinnedSpectra(Spectra):
             return self._y_coordinates
 
     @property
-    def bin_num(self):
+    def bin_numbers(self):
         """Return the bin number of the data."""
-        if hasattr(self, "_bin_num"):
-            return self._bin_num
+        if hasattr(self, "_bin_numbers"):
+            return self._bin_numbers
+
+    @property
+    def x_pixels_of_bins(self):
+        """Return the x pixel values corresponding to the bin numbers."""
+        if hasattr(self, "_x_pixels_of_bins"):
+            return self._x_pixels_of_bins
+
+    @property
+    def y_pixels_of_bins(self):
+        """Return the y pixel values corresponding to the bin numbers."""
+        if hasattr(self, "_y_pixels_of_bins"):
+            return self._y_pixels_of_bins
+
+    def get_spaxel_map_with_bin_number(self):
+        """Return vornoi bin mapping. -1 is masked pixel. Unmasked pixel start counting
+        from 0.
+
+        :return: 2D array with bin mapping
+        :rtype: numpy.ndarray
+        """
+        values = self.bin_numbers
+
+        mapping = np.zeros(self.x_coordinates.shape, dtype=int)
+
+        x_pixels = self.x_pixels_of_bins
+        y_pixels = self.y_pixels_of_bins
+
+        for v, x, y in zip(values, x_pixels, y_pixels):
+            mapping[int(y)][int(x)] = v + 1
+
+        mapping -= 1
+
+        return mapping
 
 
 class RadiallyBinnedSpectra(Spectra):
