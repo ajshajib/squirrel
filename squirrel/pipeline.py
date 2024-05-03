@@ -121,7 +121,6 @@ class Pipeline(object):
             plot=plot,
             quiet=quiet,
         )
-        print(x_node.shape, y_node.shape, bin_numbers.shape)
 
         if plot:
             plt.tight_layout()
