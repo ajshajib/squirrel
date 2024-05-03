@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import ppxf.ppxf_util as ppxf_util
 from ppxf.ppxf import ppxf
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
-from tqdm import tnrange
 
 from .data import VoronoiBinnedSpectra
 
@@ -303,7 +302,7 @@ class Pipeline(object):
         mean_velocities = []
         mean_velocity_uncertainties = []
 
-        for i in tnrange(num_spectra):
+        for i in range(num_spectra):
             ppxf_fit = cls.run_ppxf(
                 binned_spectra,
                 template,
