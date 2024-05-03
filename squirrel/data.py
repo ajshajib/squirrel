@@ -421,15 +421,13 @@ class VoronoiBinnedSpectra(Spectra):
         """
         bin_numbers = self.bin_numbers
 
-        mapping = np.zeros(self.x_coordinates.shape, dtype=int)
+        mapping = np.zeros(self.x_coordinates.shape, dtype=int) - 1
 
         x_pixels = self.x_pixels_of_bins
         y_pixels = self.y_pixels_of_bins
 
         for v, x, y in zip(bin_numbers, x_pixels, y_pixels):
-            mapping[int(y)][int(x)] = v + 1
-
-        mapping -= 1
+            mapping[int(y)][int(x)] = v
 
         return mapping
 

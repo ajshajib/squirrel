@@ -80,6 +80,24 @@ class TestPipeline:
             datacube.wavelengths_frame, voronoi_binned_spectra.wavelengths_frame
         )
 
+    def test_create_kinematic_map_from_bins(self):
+        bin_mapping = np.zeros((4, 4)) - 1
+        bin_mapping[0, 0] = 0
+        bin_mapping[1, 1] = 1
+        bin_mapping[2, 2] = 2
+        bin_mapping[3, 3] = 2
+
+        test_map = np.zeros_like(bin_mapping)
+        test_map[0, 0] = 100
+        test_map[1, 1] = 200
+        test_map[2, 2] = 300
+        test_map[3, 3] = 300
+
+        kinematic_map = Pipeline.create_kinematic_map_from_bins(
+            bin_mapping, [100, 200, 300]
+        )
+        npt.assert_equal(kinematic_map, test_map)
+
     def test_run_ppxf(self):
         start_wavelength = 9100
         end_wavelength = 9600
