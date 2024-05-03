@@ -188,11 +188,13 @@ class TestVoronoiBinnedSpectra:
         self.z_lens = 0.5
         self.z_source = 1.0
         self.fwhm = 2.0
-        self.x_coordinates = np.array([0, 1, 2])
-        self.y_coordinates = np.array([0, 1, 2])
-        self.bin_numbers = np.array([0, 1, 2])
-        self.x_pixels = np.array([0, 1, 2])
-        self.y_pixels = np.array([0, 1, 2])
+        x = np.array([0, 1, 2, 3])
+        xx, yy = np.meshgrid(x, x)
+        self.x_coordinates = xx
+        self.y_coordinates = yy
+        self.bin_numbers = np.array([0, 1, 2, 2])
+        self.x_pixels = np.array([0, 1, 2, 3])
+        self.y_pixels = np.array([0, 1, 2, 3])
         self.voronoi_binned_spectra = VoronoiBinnedSpectra(
             self.wavelengths,
             self.flux,
@@ -233,6 +235,15 @@ class TestVoronoiBinnedSpectra:
         npt.assert_array_equal(
             self.voronoi_binned_spectra.y_pixels_of_bins, self.y_pixels
         )
+
+    def test_get_spaxel_map_with_bin_number(self):
+        spaxel_map = self.voronoi_binned_spectra.get_spaxel_map_with_bin_number()
+        test_map = np.zeros_like(self.x_coordinates) - 1
+        test_map[0, 0] = 0
+        test_map[1, 1] = 1
+        test_map[2, 2] = 2
+        test_map[3, 3] = 2
+        npt.assert_array_equal(spaxel_map, test_map)
 
 
 class TestRadiallyBinnedSpectra:
