@@ -121,12 +121,12 @@ class TestSpectra:
         npt.assert_equal(self.spectra.noise, np.array([0.2]))
 
     def test_reset(self):
+        self.spectra.deredshift(redshift=1.0)
         self.spectra.wavelengths = None
         self.spectra.flux = None
         self.spectra.spectra_modifications = None
         self.spectra.wavelengths_state = None
         self.spectra.wavelengths_frame = None
-        self.spectra.deredshift(redshift=1.0)
 
         self.spectra.reset()
         npt.assert_equal(self.spectra.wavelengths, [1, 2, 3])
