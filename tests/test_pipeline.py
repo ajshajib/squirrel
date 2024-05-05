@@ -103,7 +103,7 @@ class TestPipeline:
         )
         npt.assert_equal(kinematic_map, test_map)
 
-    def test_get_template_from_library(self, get_file):
+    def test_get_template_from_library(self):
         library_path = f"{os.path.dirname(__file__)}/spectra_emiles_short_9.0.npz"
 
         with pytest.raises(AssertionError):
