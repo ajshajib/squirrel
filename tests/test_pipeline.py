@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import os
 import numpy.testing as npt
 from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
@@ -10,10 +11,14 @@ from squirrel.template import Template
 class TestPipeline:
     def setup_method(self):
         """Set up the test."""
-        self.wavelengths = np.arange(1, 100)
+        self.wavelengths = np.arange(
+            9e3,
+            1.2e4,
+            5,
+        )
         self.flux = np.ones_like(self.wavelengths)
         self.flux_unit = "arbitrary unit"
-        self.wavelength_unit = "nm"
+        self.wavelength_unit = "AA"
         self.noise = np.ones_like(self.flux)
         self.fwhm = 2.0
         self.z_lens = 0.5
@@ -97,6 +102,25 @@ class TestPipeline:
             bin_mapping, [100, 200, 300]
         )
         npt.assert_equal(kinematic_map, test_map)
+
+    def test_get_template_from_library(self, get_file):
+        library_path = f"{os.path.dirname(__file__)}/spectra_emiles_short_9.0.npz"
+
+        with pytest.raises(AssertionError):
+            Pipeline.get_template_from_library(
+                library_path,
+                self.spectra,
+                2,
+            )
+
+        Pipeline.log_rebin(self.spectra)
+        template = Pipeline.get_template_from_library(
+            library_path,
+            self.spectra,
+            2,
+        )
+
+        assert template.flux.shape[1] == 2
 
     def test_run_ppxf(self):
         start_wavelength = 9100

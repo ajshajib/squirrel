@@ -5,9 +5,11 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import ppxf.ppxf_util as ppxf_util
 from ppxf.ppxf import ppxf
+import ppxf.sps_util as sps_util
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
 
 from .data import VoronoiBinnedSpectra
+from .template import Template
 
 
 class Pipeline(object):
@@ -181,6 +183,58 @@ class Pipeline(object):
                 kinematic_map[i, j] = kinematic_values[int(bin_mapping[i, j])]
 
         return kinematic_map
+
+    @staticmethod
+    def get_template_from_library(
+        library_path,
+        spectra,
+        velocity_scale_ratio,
+        wavelength_range_extend_factor=1.2,
+    ):
+        """Get the template object created for a stellar template library. The `library_path` should point to a `numpy.savez()` file containing the following arrays for a given SPS models library, like FSPS, Miles, GALEXEV, BPASS. This file will be sent to `ppxf.sps_util.sps_lib()`. See the documentation of that function for the format of the file.
+        The EMILES, FSPS, GALEXEV libraries are available at https://github.com/micappe/ppxf_data.
+
+        :param library_path: path to the library
+        :type library_path: str
+        :param spectra: log rebinned spectra
+        :type spectra: `Data` class
+        :param velocity_scale_ratio: velocity scale ratio for the template
+        :type velocity_scale_ratio: float
+        :param wavelength_range_extend_factor: factor to extend the wavelength range
+        :type wavelength_range_extend_factor: float
+        :return: template
+        :rtype: `Template` class
+        """
+        assert spectra.wavelength_unit == "AA", "Wavelength unit must be in Angstrom."
+        assert (
+            "log_rebinned" in spectra.spectra_modifications
+        ), "Data must be log rebinned."
+
+        wavelength_range_templates = (
+            spectra.wavelengths[0] / wavelength_range_extend_factor,
+            spectra.wavelengths[-1] * wavelength_range_extend_factor,
+        )
+
+        # template library will be sampled at data resolution times the velscale_ratio in the given wavelength range
+        sps = sps_util.sps_lib(
+            library_path,
+            spectra.velocity_scale / velocity_scale_ratio,
+            spectra.fwhm,
+            wave_range=wavelength_range_templates,
+            norm_range=[spectra.wavelengths[0], spectra.wavelengths[-1]],
+        )
+
+        template_fluxes = sps.templates.reshape(sps.templates.shape[0], -1)
+        templates_wavelengths = sps.lam_temp
+
+        template = Template(
+            templates_wavelengths,
+            template_fluxes,
+            wavelength_unit="AA",
+            fwhm=spectra.fwhm,
+        )
+
+        return template
 
     @staticmethod
     def run_ppxf(
