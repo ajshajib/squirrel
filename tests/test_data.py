@@ -57,6 +57,10 @@ class TestSpectra:
     def test_fwhm(self):
         assert self.spectra.fwhm == self.fwhm
 
+    def test_fwhm_setter(self):
+        self.spectra.fwhm = 3.0
+        assert self.spectra.fwhm == 3.0
+
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)
 
