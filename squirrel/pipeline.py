@@ -192,6 +192,7 @@ class Pipeline(object):
         velocity_scale_ratio=2,
         background_template=None,
         spectra_indices=None,
+        quiet=True,
     ):
         """Perform the kinematic analysis using pPXF.
 
@@ -262,7 +263,7 @@ class Pipeline(object):
             degree=degree,
             velscale_ratio=velocity_scale_ratio,
             sky=background_template.flux if background_template else None,
-            quiet=True,
+            quiet=quiet,
         )
 
         return ppxf_fit
