@@ -51,8 +51,7 @@ class Spectra(object):
         self._z_lens = z_lens
         self._z_source = z_source
 
-        self.fwhm = fwhm
-        self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
+        self._fwhm = fwhm
 
         self._noise = deepcopy(noise)
         self._original_noise = noise
@@ -106,6 +105,17 @@ class Spectra(object):
     def wavelengths_frame(self, frame):
         """Set the frame of the wavelengths."""
         self._wavelengths_frame = frame
+
+    @property
+    def fwhm(self):
+        """Return the full width at half maximum of the data."""
+        if hasattr(self, "_fwhm"):
+            return self._fwhm
+
+    @fwhm.setter
+    def fwhm(self, fwhm):
+        """Set the full width at half maximum of the data."""
+        self._fwhm = fwhm
 
     @property
     def flux_unit(self):
@@ -198,6 +208,7 @@ class Spectra(object):
             self._wavelengths_frame = f"z={redshift:.3f}"
 
         self._wavelengths = self._wavelengths / (1.0 + redshift)
+        self._fwhm = self._fwhm / (1.0 + redshift)
 
     def reset(self):
         """Reset the data to the original state."""
@@ -316,6 +327,48 @@ class Datacube(Spectra):
         """Return the y coordinates of the data."""
         if hasattr(self, "_y_coordinates"):
             return self._y_coordinates
+
+    def get_1d_spectra(self, x=None, y=None, mask=None):
+        """Return the spectra at a given pixel, or summed within given a mask. If
+        nothing is provided, the entire datacube will be summed over.
+
+        :param x: x coordinate of the pixel
+        :type x: int
+        :param y: y coordinate of the pixel
+        :type y: int
+        :param slice: slice to sum the spectra
+        :type slice: slice
+        :param mask: mask to sum the spectra
+        :type mask: numpy.ndarray
+        :return: spectrum at the given pixel
+        :rtype: numpy.ndarray
+        """
+        if mask is not None:
+            flux = np.nansum(self.flux * mask[None, :, :], axis=(1, 2))
+            noise = np.sqrt(np.nansum(self.noise**2 * mask[None, :, :], axis=(1, 2)))
+        elif x is not None and y is not None:
+            flux = self.flux[:, y, x]
+            noise = self.noise[:, y, x]
+        elif (x is None and y is not None) or (x is not None and y is None):
+            raise ValueError("Both x and y must be provided if one of them is.")
+        else:
+            flux = np.nansum(self.flux, axis=(1, 2))
+            noise = np.sqrt(np.nansum(self.noise**2, axis=(1, 2)))
+
+        spectra = Spectra(
+            wavelengths=self.wavelengths,
+            flux=flux,
+            wavelength_unit=self.wavelength_unit,
+            fwhm=self.fwhm,
+            z_lens=self.z_lens,
+            z_source=self.z_source,
+            flux_unit=self.flux_unit,
+            noise=noise,
+        )
+
+        spectra.spectra_modifications = deepcopy(self.spectra_modifications)
+
+        return spectra
 
 
 class VoronoiBinnedSpectra(Spectra):
