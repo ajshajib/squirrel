@@ -57,10 +57,6 @@ class TestSpectra:
     def test_fwhm(self):
         assert self.spectra.fwhm == self.fwhm
 
-    def test_fwhm_setter(self):
-        self.spectra.fwhm = 3.0
-        assert self.spectra.fwhm == 3.0
-
     def test_noise(self):
         npt.assert_array_equal(self.spectra.noise, self.noise)
 
@@ -101,16 +97,19 @@ class TestSpectra:
     def test_deredshift(self):
         self.spectra.deredshift(redshift=1.0)
         npt.assert_equal(self.spectra.wavelengths, np.array([0.5, 1.0, 1.5]))
+        assert self.spectra.fwhm == self.fwhm / 2.0
 
         self.spectra.reset()
         self.spectra.deredshift(target_frame="source")
         npt.assert_equal(self.spectra.wavelengths, np.array([0.5, 1.0, 1.5]))
+        assert self.spectra.fwhm == self.fwhm / (1.0 + self.z_source)
 
         self.spectra.reset()
         self.spectra.deredshift(target_frame="lens")
         npt.assert_equal(
             self.spectra.wavelengths, np.array([1, 2, 3]) / (1 + self.z_lens)
         )
+        assert self.spectra.fwhm == self.fwhm / (1.0 + self.z_lens)
 
         with pytest.raises(ValueError):
             self.spectra.deredshift(target_frame="unknown")
@@ -127,10 +126,12 @@ class TestSpectra:
         self.spectra.spectra_modifications = None
         self.spectra.wavelengths_state = None
         self.spectra.wavelengths_frame = None
+        self.spectra.deredshift(redshift=1.0)
 
         self.spectra.reset()
         npt.assert_equal(self.spectra.wavelengths, [1, 2, 3])
         npt.assert_equal(self.spectra.flux, [4, 5, 6])
+        assert self.spectra.fwhm == self.fwhm
         assert self.spectra.spectra_modifications == []
         assert self.spectra.wavelengths_frame == "observed"
 
