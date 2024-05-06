@@ -3,9 +3,9 @@
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
-import ppxf.ppxf_util as ppxf_util
+from ppxf import ppxf_util
 from ppxf.ppxf import ppxf
-import ppxf.sps_util as sps_util
+from ppxf import sps_util
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
 
 from .data import VoronoiBinnedSpectra
@@ -189,7 +189,8 @@ class Pipeline(object):
         library_path,
         spectra,
         velocity_scale_ratio,
-        wavelength_range_extend_factor=1.2,
+        wavelength_factor=1.0,
+        wavelength_range_extend_factor=1.05,
     ):
         """Get the template object created for a stellar template library. The `library_path` should point to a `numpy.savez()` file containing the following arrays for a given SPS models library, like FSPS, Miles, GALEXEV, BPASS. This file will be sent to `ppxf.sps_util.sps_lib()`. See the documentation of that function for the format of the file.
         The EMILES, FSPS, GALEXEV libraries are available at https://github.com/micappe/ppxf_data.
@@ -197,9 +198,11 @@ class Pipeline(object):
         :param library_path: path to the library
         :type library_path: str
         :param spectra: log rebinned spectra
-        :type spectra: `Data` class
+        :type spectra: `Spectra` or a child class
         :param velocity_scale_ratio: velocity scale ratio for the template
         :type velocity_scale_ratio: float
+        :param wavelength_factor: factor to multiply the wavelength range to get the templates for, used for de-redshifting, if necessary
+        :type wavelength_factor: float
         :param wavelength_range_extend_factor: factor to extend the wavelength range
         :type wavelength_range_extend_factor: float
         :return: template
@@ -211,8 +214,10 @@ class Pipeline(object):
         ), "Data must be log rebinned."
 
         wavelength_range_templates = (
-            spectra.wavelengths[0] / wavelength_range_extend_factor,
-            spectra.wavelengths[-1] * wavelength_range_extend_factor,
+            spectra.wavelengths[0] / wavelength_range_extend_factor * wavelength_factor,
+            spectra.wavelengths[-1]
+            * wavelength_range_extend_factor
+            * wavelength_factor,
         )
 
         # template library will be sampled at data resolution times the velscale_ratio in the given wavelength range
@@ -221,11 +226,14 @@ class Pipeline(object):
             spectra.velocity_scale / velocity_scale_ratio,
             spectra.fwhm,
             wave_range=wavelength_range_templates,
-            norm_range=[spectra.wavelengths[0], spectra.wavelengths[-1]],
+            norm_range=[
+                spectra.wavelengths[0] * wavelength_factor,
+                spectra.wavelengths[-1] * wavelength_factor,
+            ],
         )
 
         template_fluxes = sps.templates.reshape(sps.templates.shape[0], -1)
-        templates_wavelengths = sps.lam_temp
+        templates_wavelengths = sps.lam_temp / wavelength_factor
 
         template = Template(
             templates_wavelengths,
@@ -235,6 +243,84 @@ class Pipeline(object):
         )
 
         return template
+
+    @staticmethod
+    def get_emission_line_template(
+        spectra,
+        template_wavelengths,
+        wavelength_factor=1.0,
+        wavelength_range_extend_factor=1.05,
+        **kwargs,
+    ):
+        """Get the emission line template.
+
+        :param spectra: log rebinned spectra
+        :type spectra: `Spectra` or a child class
+        :param template_wavelengths: wavelengths of the template in Angstrom
+        :type template_wavelengths: np.ndarray
+        :param wavelength_factor: factor to multiply the wavelength range to get the templates for, used for de-redshifting, if necessary
+        :type wavelength_factor: float
+        :param wavelength_range_extend_factor: factor to extend the wavelength range
+        :type wavelength_range_extend_factor: float
+        :param kwargs: additional arguments for `ppxf_util.emission_lines`
+        :type kwargs: dict
+        :return: emission line template
+        :rtype: `Template` class
+        """
+        wavelength_range_templates = (
+            spectra.wavelengths[0] / wavelength_range_extend_factor * wavelength_factor,
+            spectra.wavelengths[-1]
+            * wavelength_range_extend_factor
+            * wavelength_factor,
+        )
+        gas_templates, line_names, line_wavelengths = ppxf_util.emission_lines(
+            np.log(template_wavelengths * wavelength_factor),
+            wavelength_range_templates,
+            spectra.fwhm,
+            **kwargs,
+        )
+
+        template = Template(
+            template_wavelengths,
+            gas_templates,
+            wavelength_unit="AA",
+            fwhm=spectra.fwhm,
+        )
+
+        return template, line_names, line_wavelengths
+
+    @staticmethod
+    def join_templates(
+        kinematic_template,
+        kinematic_template_2=None,
+        emission_line_template=None,
+    ):
+        flux = kinematic_template.flux
+        component_indices = [0] * kinematic_template.flux.shape[1]
+
+        if kinematic_template_2 is not None:
+            flux = np.column_stack([flux, kinematic_template_2.flux])
+            component_indices += [1] * kinematic_template_2.flux.shape[1]
+
+        if emission_line_template is not None:
+            flux = np.column_stack([flux, emission_line_template.flux])
+            if kinematic_template_2 is not None:
+                component_indices += [2] * emission_line_template.flux.shape[1]
+                emission_line_indices = np.array(component_indices) > 1.0
+            else:
+                component_indices += [1] * emission_line_template.flux.shape[1]
+                emission_line_indices = np.array(component_indices) > 0.0
+        else:
+            emission_line_indices = np.zeros_like(component_indices)
+
+        template = Template(
+            kinematic_template.wavelengths,
+            flux,
+            wavelength_unit=kinematic_template.wavelength_unit,
+            fwhm=kinematic_template.fwhm,
+        )
+
+        return template, component_indices, emission_line_indices
 
     @staticmethod
     def run_ppxf(
@@ -247,6 +333,9 @@ class Pipeline(object):
         background_template=None,
         spectra_indices=None,
         quiet=True,
+        component_indices=0,
+        emission_line_indices=None,
+        **kwargs,
     ):
         """Perform the kinematic analysis using pPXF.
 
@@ -266,6 +355,14 @@ class Pipeline(object):
         :type background_template: `Data` class
         :param spectra_indices: indices of the spectra to fit, used for datacubes or binned spectra
         :type spectra_indices: list of int or int
+        :param quiet: suppress the output
+        :type quiet: bool
+        :param component_indices: indices indicating which template correspond to which kinematic component, if there are multiple kinematic components. Only 0 if there is one single kinematic component. See documentation of `ppxf.ppxf.ppxf()` for more details.
+        :type component_indices: list of int or int
+        :param emission_line_indices: indices of the emission lines. See documentation of `ppxf.ppxf.ppxf()` for more details.
+        :type emission_line_indices: list of int
+        :param kwargs: additional arguments for `ppxf`
+        :type kwargs: dict
         :return: pPXF fit
         :rtype: `ppxf` class
         """
@@ -274,6 +371,10 @@ class Pipeline(object):
             velocity_dispersion_guess,
         ]  # (km/s), starting guess for [V, sigma]
 
+        component_number = np.max(component_indices) + 1
+        if component_number > 1:
+            initial_guess = [initial_guess] * component_number
+
         if spectra_indices is not None:
             if isinstance(spectra_indices, int) and data.flux.ndim == 2:
                 assert (
@@ -281,8 +382,6 @@ class Pipeline(object):
                 ), f"Spectra indices must be an integer for spectra with {data.spectra.ndim} dimensions."
                 flux = data.flux[:, spectra_indices]
                 noise = data.noise[:, spectra_indices]
-                print(flux.shape, noise.shape)
-                print()
             elif (
                 isinstance(spectra_indices, list)
                 and len(spectra_indices) == data.flux.ndim - 1
@@ -318,6 +417,9 @@ class Pipeline(object):
             velscale_ratio=velocity_scale_ratio,
             sky=background_template.flux if background_template else None,
             quiet=quiet,
+            component=component_indices,
+            gas_component=emission_line_indices,
+            **kwargs,
         )
 
         return ppxf_fit
