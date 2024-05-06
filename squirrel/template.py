@@ -2,6 +2,7 @@
 them."""
 
 import numpy as np
+from copy import deepcopy
 from .data import Spectra
 
 
@@ -42,3 +43,19 @@ class Template(Spectra):
             flux_unit=flux_unit,
             noise=noise if noise else np.zeros_like(flux),
         )
+
+    def merge(self, template):
+        """Merge the template with another template.
+
+        :param template: template to merge with
+        :type template: squirrel.template.Template
+        """
+        assert self.wavelength_unit == template.wavelength_unit
+        assert self.fwhm == template.fwhm
+        np.testing.assert_equal(self.wavelengths, template.wavelengths)
+
+        new_template = deepcopy(self)
+        new_template.flux = np.concatenate((self.flux, template.flux))
+        self.noise = np.concatenate((self.noise, template.noise))
+
+        return new_template
