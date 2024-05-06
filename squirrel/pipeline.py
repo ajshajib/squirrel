@@ -3,6 +3,7 @@
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
+from scipy import ndimage
 from ppxf import ppxf_util
 from ppxf.ppxf import ppxf
 from ppxf import sps_util
@@ -197,7 +198,7 @@ class Pipeline(object):
 
         :param library_path: path to the library
         :type library_path: str
-        :param spectra: log rebinned spectra
+        :param spectra: log rebinned spectra, which the templates will be used for
         :type spectra: `Spectra` or a child class
         :param velocity_scale_ratio: velocity scale ratio for the template
         :type velocity_scale_ratio: float
@@ -311,7 +312,7 @@ class Pipeline(object):
                 component_indices += [1] * emission_line_template.flux.shape[1]
                 emission_line_indices = np.array(component_indices) > 0.0
         else:
-            emission_line_indices = np.zeros_like(component_indices)
+            emission_line_indices = np.zeros_like(component_indices, dtype=bool)
 
         template = Template(
             kinematic_template.wavelengths,
@@ -321,6 +322,80 @@ class Pipeline(object):
         )
 
         return template, component_indices, emission_line_indices
+
+    @staticmethod
+    def make_template_from_array(
+        fluxes,
+        wavelengths,
+        fwhm_template,
+        spectra,
+        velocity_scale_ratio,
+        wavelength_factor=1.0,
+        wavelength_range_extend_factor=1.05,
+    ):
+        """Get the template object from the given fluxes and wavelengths.
+
+        :param fluxes: fluxes of the templates, dimensions must be (n_wavelengths, n_templates)
+        :type fluxes: np.ndarray
+        :param wavelengths: wavelengths of the templates in Angstrom
+        :type wavelengths: np.ndarray
+        :param spectra: log rebinned spectra, which the templates will be used for
+        :type spectra: `Spectra` or a child class
+        :param velocity_scale_ratio: velocity scale ratio for the template
+        :type velocity_scale_ratio: float
+        :param wavelength_factor: factor to multiply the wavelength range to get the templates for, used for de-redshifting, if necessary
+        :type wavelength_factor: float
+        :param wavelength_range_extend_factor: factor to extend the wavelength range
+        :type wavelength_range_extend_factor: float
+        :return: template
+        :rtype: `Template` class
+        """
+        assert spectra.wavelength_unit == "AA", "Wavelength unit must be in Angstrom."
+        assert (
+            "log_rebinned" in spectra.spectra_modifications
+        ), "Data must be log rebinned."
+
+        wavelength_min = (
+            spectra.wavelengths[0] / wavelength_range_extend_factor * wavelength_factor
+        )
+        wavelength_max = (
+            spectra.wavelengths[-1] * wavelength_range_extend_factor * wavelength_factor
+        )
+
+        fluxes = fluxes[
+            (wavelengths >= wavelength_min) & (wavelengths <= wavelength_max), :
+        ]
+        wavelengths = wavelengths[
+            (wavelengths >= wavelength_min) & (wavelengths <= wavelength_max)
+        ]
+
+        wavelength_range_templates = [wavelengths[0], wavelengths[-1]]
+        wavelength_diff = wavelengths[1] - wavelengths[0]
+
+        if fwhm_template < spectra.fwhm:
+            sigma_diff = (
+                np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 / wavelength_diff
+            )
+            convolved_fluxes = ndimage.gaussian_filter1d(fluxes, sigma_diff, axis=0)
+
+        rebinned_fluxes, log_wavelengths, velocity_scale_template = ppxf_util.log_rebin(
+            wavelength_range_templates,
+            convolved_fluxes,
+            velscale=spectra.velocity_scale / velocity_scale_ratio,
+        )
+
+        rebinned_fluxes /= np.median(rebinned_fluxes, axis=0)
+
+        templates_wavelengths = np.exp(log_wavelengths) / wavelength_factor
+
+        template = Template(
+            templates_wavelengths,
+            rebinned_fluxes,
+            wavelength_unit="AA",
+            fwhm=spectra.fwhm,
+        )
+
+        return template
 
     @staticmethod
     def run_ppxf(
