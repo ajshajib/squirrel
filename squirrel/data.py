@@ -214,6 +214,7 @@ class Spectra(object):
         self._fwhm = deepcopy(self._original_fwhm)
         self._spectra_modifications = []
         self._wavelengths_frame = "observed"
+        self._velocity_scale = None
 
     def clip(self, wavelength_min, wavelength_max):
         """Clip the data to the given wavelength range.
@@ -364,6 +365,7 @@ class Datacube(Spectra):
         )
 
         spectra.spectra_modifications = deepcopy(self.spectra_modifications)
+        spectra.velocity_scale = deepcopy(self.velocity_scale)
 
         return spectra
 
