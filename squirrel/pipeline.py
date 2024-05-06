@@ -402,12 +402,14 @@ class Pipeline(object):
         data,
         template,
         velocity_dispersion_guess=250.0,
-        degree=2,
-        moment=2,
+        degree=4,
+        mdegree=0,
+        moments=2,
         velocity_scale_ratio=2,
         background_template=None,
         spectra_indices=None,
         quiet=True,
+        plot=False,
         component_indices=0,
         emission_line_indices=None,
         **kwargs,
@@ -483,12 +485,12 @@ class Pipeline(object):
             noise=noise,
             velscale=data.velocity_scale,
             start=initial_guess,
-            plot=False,
-            moments=moment,
-            goodpixels=None,
+            plot=plot,
+            moments=moments,
+            degree=degree,
+            mdegree=mdegree,
             lam=data.wavelengths,
             lam_temp=template.wavelengths,
-            degree=degree,
             velscale_ratio=velocity_scale_ratio,
             sky=background_template.flux if background_template else None,
             quiet=quiet,
@@ -506,10 +508,11 @@ class Pipeline(object):
         template,
         velocity_dispersion_guess=250.0,
         degree=2,
-        moment=2,
+        moments=2,
         velocity_scale_ratio=2,
         background_template=None,
         spectra_indices=None,
+        **kwargs,
     ):
         """Perform the kinematic analysis using pPXF on binned spectra.
 
@@ -526,6 +529,11 @@ class Pipeline(object):
         :param background_template: background template to fit
         :type background_template: `Template` class
         :param spectra_indices: indices of the spectra to fit
+        :type spectra_indices: list of int or int
+        :param kwargs: additional arguments for `ppxf`
+        :type kwargs: dict
+        :return: velocity dispersions, velocity dispersion uncertainties, mean velocities, mean velocity uncertainties
+        :rtype: tuple of np.ndarray
         """
         num_spectra = binned_spectra.flux.shape[1]
 
@@ -543,6 +551,7 @@ class Pipeline(object):
                 velocity_scale_ratio=velocity_scale_ratio,
                 background_template=background_template,
                 spectra_indices=i,
+                **kwargs,
             )
 
             velocity_dispersions.append(ppxf_fit.sol[1])
