@@ -14,6 +14,7 @@ class TestSpectra:
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "nm"
         self.noise = np.array([0.1, 0.2, 0.3])
+        self.covariance = np.diag(self.noise**2)
         self.fwhm = 2.0
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -26,6 +27,7 @@ class TestSpectra:
             self.z_source,
             self.flux_unit,
             self.noise,
+            self.covariance,
         )
 
     def test_flux(self):
@@ -35,18 +37,12 @@ class TestSpectra:
         self.spectra.flux = np.array([7, 8, 9])
         npt.assert_array_equal(self.spectra.flux, np.array([7, 8, 9]))
 
-    def test_original_flux(self):
-        npt.assert_array_equal(self.spectra.original_flux, self.flux)
-
     def test_wavelengths(self):
         npt.assert_array_equal(self.spectra.wavelengths, self.wavelengths)
 
     def test_wavelengths_setter(self):
         self.spectra.wavelengths = np.array([4, 5, 6])
         npt.assert_array_equal(self.spectra.wavelengths, np.array([4, 5, 6]))
-
-    def test_original_wavelengths(self):
-        npt.assert_array_equal(self.spectra.original_wavelengths, self.wavelengths)
 
     def test_wavelength_unit(self):
         assert self.spectra.wavelength_unit == self.wavelength_unit
@@ -64,8 +60,12 @@ class TestSpectra:
         self.spectra.noise = np.array([0.4, 0.5, 0.6])
         npt.assert_array_equal(self.spectra.noise, np.array([0.4, 0.5, 0.6]))
 
-    def test_original_noise(self):
-        npt.assert_array_equal(self.spectra.original_noise, self.noise)
+    def test_covariance(self):
+        npt.assert_array_equal(self.spectra.covariance, self.covariance)
+
+    def test_covariance_setter(self):
+        self.spectra.covariance = np.diag([0.4, 0.5, 0.6])
+        npt.assert_array_equal(self.spectra.covariance, np.diag([0.4, 0.5, 0.6]))
 
     def test_z_lens(self):
         assert self.spectra.z_lens == self.z_lens
