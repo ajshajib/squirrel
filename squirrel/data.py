@@ -146,8 +146,6 @@ class Spectra(object):
         """Return the covariance of the data."""
         if hasattr(self, "_covariance"):
             return self._covariance
-        elif hasattr(self, "_noise") and self._noise is not None:
-            return np.diag(self._noise**2)
 
     @covariance.setter
     def covariance(self, covariance):
