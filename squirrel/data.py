@@ -281,6 +281,74 @@ class Spectra(object):
 
         return self
 
+    def _concat(self, other, destination):
+        """Concatenate two spectra together.
+
+        :param other: spectra to add
+        :type other: Spectra
+        """
+        assert (
+            self.wavelength_unit == other.wavelength_unit
+        ), "Wavelength units must match."
+        assert self.fwhm == other.fwhm, "FWHM must match."
+        assert (
+            self.wavelengths[-1] < other.wavelengths[0]
+        ), "Wavelengths must be increasing without overlap."
+        assert (
+            self.spectra_modifications == other.spectra_modifications
+        ), "Spectra modifications must match."
+
+        destination.wavelengths = np.concatenate((self.wavelengths, other.wavelengths))
+        destination.flux = np.concatenate((self.flux, other.flux), axis=-1)
+        destination.noise = None
+        destination.covariance = None
+
+        if self.noise is not None and other.noise is not None:
+            destination.noise = np.concatenate((self.noise, other.noise), axis=-1)
+        if self.covariance is not None and other.covariance is not None:
+            destination.covariance = np.block(
+                [
+                    [
+                        self.covariance,
+                        np.zeros((self.covariance.shape[0], other.covariance.shape[1])),
+                    ],
+                    [
+                        np.zeros((other.covariance.shape[0], self.covariance.shape[1])),
+                        other.covariance,
+                    ],
+                ]
+            )
+
+    def concat(self, other):
+        """Concatenate two spectra together.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        spectra = deepcopy(self)
+
+        self._concat(other, spectra)
+
+        return spectra
+
+    def __and__(self, other):
+        """Concatenate two spectra together.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        return self.concat(other, other)
+
+    def __iand__(self, other):
+        """Concatenate two spectra together in place.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        self._concat(other, self)
+
+        return self
+
 
 class Datacube(Spectra):
     """A class to store in 3D IFU datacubes."""
