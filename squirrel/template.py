@@ -44,18 +44,39 @@ class Template(Spectra):
             noise=noise if noise else np.zeros_like(flux),
         )
 
-    def merge(self, template):
+    def merge(self, other):
         """Merge the template with another template.
 
         :param template: template to merge with
         :type template: squirrel.template.Template
         """
-        assert self.wavelength_unit == template.wavelength_unit
-        assert self.fwhm == template.fwhm
-        np.testing.assert_equal(self.wavelengths, template.wavelengths)
+        assert (
+            self.wavelength_unit == other.wavelength_unit
+        ), "Wavelength units do not match"
+        assert self.fwhm == other.fwhm, "FWHM do not match"
+        np.testing.assert_equal(
+            self.wavelengths, other.wavelengths, err_msg="Wavelengths do not match"
+        )
 
         new_template = deepcopy(self)
-        new_template.flux = np.concatenate((self.flux, template.flux))
-        self.noise = np.concatenate((self.noise, template.noise))
+        new_template.flux = np.concatenate((self.flux, other.flux))
+        self.noise = np.concatenate((self.noise, other.noise))
 
         return new_template
+
+    def __and__(self, other):
+        """Merge the template with another template.
+
+        :param template: template to merge with
+        :type template: squirrel.template.Template
+        """
+        new_template = deepcopy(self)
+        return new_template.merge(other)
+
+    def __iand__(self, other):
+        """Merge the template with another template.
+
+        :param template: template to merge with
+        :type template: squirrel.template.Template
+        """
+        return self.merge(other)
