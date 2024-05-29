@@ -8,9 +8,12 @@ from ppxf import ppxf_util
 from ppxf.ppxf import ppxf
 from ppxf import sps_util
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
+from tqdm import tqdm
 
 from .data import VoronoiBinnedSpectra
 from .template import Template
+from .util import is_positive_definite
+from .util import get_nearest_positive_definite_matrix
 
 
 class Pipeline(object):
@@ -19,31 +22,67 @@ class Pipeline(object):
     _speed_of_light = 299792.458  # speed of light in km/s
 
     @staticmethod
-    def log_rebin(data, velocity_scale=None):
+    def log_rebin(spectra, velocity_scale=None, num_samples_for_covariance=None):
         """Rebin the data to log scale.
 
         :param data: data to rebin
         :type data: `Data` class
         """
-        if "log_rebinned" in data.spectra_modifications:
+        if "log_rebinned" in spectra.spectra_modifications:
             raise ValueError("Data has already been log rebinned.")
 
-        wavelength_range = data.wavelengths[[0, -1]]
-
+        wavelength_range = spectra.wavelengths[[0, -1]]
         rebinned_spectra, log_rebinned_wavelength, velocity_scale = ppxf_util.log_rebin(
-            wavelength_range, data.flux, velscale=velocity_scale
+            wavelength_range, spectra.flux, velscale=velocity_scale
         )
 
-        # this may be problematic, just using this line as a placeholder for now until further checks
-        rebinned_variance, _, _ = ppxf_util.log_rebin(
-            wavelength_range, data.noise**2, velscale=velocity_scale
+        # estimate covariance matrix of rebinned spectra through sampling from noise realizations
+        if num_samples_for_covariance is None:
+            # if number of samples not provided, picking the data size following to this
+            # paper: https://arxiv.org/abs/1004.3484
+            num_samples_for_covariance = spectra.flux.shape[0]
+
+        flux_shape = spectra.flux.shape
+        flux_flattenned = np.atleast_2d(spectra.flux.reshape(flux_shape[0], -1))
+        noise_flattenned = np.atleast_2d(spectra.noise.reshape(flux_shape[0], -1))
+        if flux_flattenned.shape[0] == 1:
+            flux_flattenned = flux_flattenned.T
+            noise_flattenned = noise_flattenned.T
+
+        covariance = np.atleast_3d(
+            np.zeros(
+                (
+                    rebinned_spectra.shape[0],
+                    rebinned_spectra.shape[0],
+                    *flux_flattenned.shape[1:],
+                )
+            )
         )
 
-        data.flux = rebinned_spectra
-        data.noise = np.sqrt(rebinned_variance)
-        data.wavelengths = np.exp(log_rebinned_wavelength)
-        data.velocity_scale = velocity_scale
-        data.spectra_modifications += ["log_rebinned"]
+        for i in tqdm(range(flux_flattenned.shape[1])):
+            flux_realizations = np.random.normal(
+                flux_flattenned[:, i],
+                noise_flattenned[:, i],
+                (num_samples_for_covariance, len(flux_flattenned[:, i])),
+            ).T
+            rebinned_realizations, _, _ = ppxf_util.log_rebin(
+                wavelength_range, flux_realizations, velscale=velocity_scale
+            )
+            covariance[:, :, i] = np.cov(rebinned_realizations)
+
+        # reverse flattened array
+        covariance = covariance.reshape(
+            rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
+        )
+        if not is_positive_definite(covariance):
+            covariance = get_nearest_positive_definite_matrix(covariance)
+
+        spectra.flux = rebinned_spectra
+        spectra.noise = None
+        spectra.covariance = covariance
+        spectra.wavelengths = np.exp(log_rebinned_wavelength)
+        spectra.velocity_scale = velocity_scale
+        spectra.spectra_modifications += ["log_rebinned"]
 
     @staticmethod
     def voronoi_bin(
@@ -106,7 +145,7 @@ class Pipeline(object):
         snr_per_wavelength_unit_masked = snr_per_wavelength_unit[snr_mask]
 
         (
-            bin_numbers,
+            num_bins,
             x_node,
             y_node,
             bin_center_x,
@@ -128,16 +167,35 @@ class Pipeline(object):
             plt.tight_layout()
 
         voronoi_binned_flux = np.zeros(
-            (datacube.flux.shape[0], int(np.max(bin_numbers)) + 1)
+            (datacube.flux.shape[0], int(np.max(num_bins)) + 1)
         )
-        voronoi_binned_noise = np.zeros_like(voronoi_binned_flux)
+        if datacube.noise is not None:
+            voronoi_binned_noise = np.zeros_like(voronoi_binned_flux)
+        else:
+            voronoi_binned_noise = None
+        if datacube.covariance is not None:
+            voronoi_binned_covariance = np.zeros(
+                (
+                    voronoi_binned_flux.shape[0],
+                    voronoi_binned_flux.shape[0],
+                    int(np.max(num_bins)) + 1,
+                )
+            )
+        else:
+            voronoi_binned_covariance = None
 
         # for i in range(voronoi_bins.shape[0]):
-        for x, y, n_bin in zip(xx_pixels_masked, yy_pixels_masked, bin_numbers):
+        for x, y, n_bin in zip(xx_pixels_masked, yy_pixels_masked, num_bins):
             voronoi_binned_flux[:, n_bin] += datacube.flux[:, y, x]
-            voronoi_binned_noise[:, n_bin] += datacube.noise[:, y, x] ** 2
+            if datacube.noise is not None:
+                voronoi_binned_noise[:, n_bin] += datacube.noise[:, y, x] ** 2
+            if datacube.covariance is not None:
+                voronoi_binned_covariance[:, :, n_bin] += datacube.covariance[
+                    :, :, y, x
+                ]
 
-        voronoi_binned_noise = np.sqrt(voronoi_binned_noise)
+        if datacube.noise is not None:
+            voronoi_binned_noise = np.sqrt(voronoi_binned_noise)
 
         voronoi_binned_spectra = VoronoiBinnedSpectra(
             wavelengths=datacube.wavelengths,
@@ -148,11 +206,12 @@ class Pipeline(object):
             z_source=datacube.z_source,
             x_coordinates=datacube.x_coordinates,
             y_coordinates=datacube.y_coordinates,
-            bin_numbers=bin_numbers,
+            num_bins=num_bins,
             x_pixels_of_bins=xx_pixels_masked,
             y_pixels_of_bins=yy_pixels_masked,
             flux_unit=datacube.flux_unit,
             noise=voronoi_binned_noise,
+            covariance=voronoi_binned_covariance,
         )
 
         voronoi_binned_spectra.spectra_modifications = deepcopy(
@@ -295,6 +354,7 @@ class Pipeline(object):
         kinematic_template,
         kinematic_template_2=None,
         emission_line_template=None,
+        double_emission_line_components=False,
     ):
         flux = kinematic_template.flux
         component_indices = [0] * kinematic_template.flux.shape[1]
@@ -304,12 +364,21 @@ class Pipeline(object):
             component_indices += [1] * kinematic_template_2.flux.shape[1]
 
         if emission_line_template is not None:
-            flux = np.column_stack([flux, emission_line_template.flux])
+            if double_emission_line_components:
+                flux = np.column_stack(
+                    [flux, emission_line_template.flux, emission_line_template.flux]
+                )
+            else:
+                flux = np.column_stack([flux, emission_line_template.flux])
             if kinematic_template_2 is not None:
                 component_indices += [2] * emission_line_template.flux.shape[1]
+                if double_emission_line_components:
+                    component_indices += [3] * emission_line_template.flux.shape[1]
                 emission_line_indices = np.array(component_indices) > 1.0
             else:
                 component_indices += [1] * emission_line_template.flux.shape[1]
+                if double_emission_line_components:
+                    component_indices += [2] * emission_line_template.flux.shape[1]
                 emission_line_indices = np.array(component_indices) > 0.0
         else:
             emission_line_indices = np.zeros_like(component_indices, dtype=bool)
@@ -362,15 +431,19 @@ class Pipeline(object):
             spectra.wavelengths[-1] * wavelength_range_extend_factor * wavelength_factor
         )
 
+        wavelength_diff = np.mean(np.diff(wavelengths))
+
         fluxes = fluxes[
-            (wavelengths >= wavelength_min) & (wavelengths <= wavelength_max), :
+            (wavelengths > wavelength_min - wavelength_diff)
+            & (wavelengths < wavelength_max + wavelength_diff),
+            :,
         ]
         wavelengths = wavelengths[
-            (wavelengths >= wavelength_min) & (wavelengths <= wavelength_max)
+            (wavelengths > wavelength_min - wavelength_diff)
+            & (wavelengths < wavelength_max + wavelength_diff)
         ]
 
-        wavelength_range_templates = [wavelengths[0], wavelengths[-1]]
-        wavelength_diff = wavelengths[1] - wavelengths[0]
+        wavelength_range_templates = [wavelength_min, wavelength_max]
 
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
@@ -448,9 +521,11 @@ class Pipeline(object):
             velocity_dispersion_guess,
         ]  # (km/s), starting guess for [V, sigma]
 
-        component_number = np.max(component_indices) + 1
-        if component_number > 1:
-            initial_guess = [initial_guess] * component_number
+        num_components = np.max(component_indices) + 1
+        if num_components > 1:
+            initial_guess = [initial_guess] * num_components
+
+        noise = None
 
         if spectra_indices is not None:
             if isinstance(spectra_indices, int) and data.flux.ndim == 2:
@@ -458,14 +533,22 @@ class Pipeline(object):
                     data.flux.ndim == 2
                 ), f"Spectra indices must be an integer for spectra with {data.spectra.ndim} dimensions."
                 flux = data.flux[:, spectra_indices]
-                noise = data.noise[:, spectra_indices]
+                if data.covariance is not None:
+                    noise = data.covariance[:, :, spectra_indices]
+                elif data.noise is not None:
+                    noise = data.noise[:, spectra_indices]
             elif (
                 isinstance(spectra_indices, list)
                 and len(spectra_indices) == data.flux.ndim - 1
                 and data.flux.ndim == 3
             ):
                 flux = data.flux[:, spectra_indices[0], spectra_indices[1]]
-                noise = data.noise[:, spectra_indices[0], spectra_indices[1]]
+                if data.covariance is not None:
+                    noise = data.covariance[
+                        :, :, spectra_indices[0], spectra_indices[1]
+                    ]
+                elif data.noise is not None:
+                    noise = data.noise[:, spectra_indices[0], spectra_indices[1]]
             else:
                 if data.flux.ndim == 2:
                     raise ValueError(
@@ -477,7 +560,13 @@ class Pipeline(object):
                     )
         else:
             flux = data.flux
-            noise = data.noise
+            if data.covariance is not None:
+                noise = data.covariance
+            elif data.noise is not None:
+                noise = data.noise
+
+        if noise is None:
+            noise = 0.1 * np.ones_like(flux)
 
         ppxf_fit = ppxf(
             templates=template.flux,

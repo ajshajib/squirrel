@@ -397,7 +397,7 @@ class VoronoiBinnedSpectra(Spectra):
         z_source,
         x_coordinates,
         y_coordinates,
-        bin_numbers,
+        num_bins,
         x_pixels_of_bins,
         y_pixels_of_bins,
         flux_unit="arbitrary",
@@ -448,7 +448,7 @@ class VoronoiBinnedSpectra(Spectra):
 
         self._x_coordinates = x_coordinates
         self._y_coordinates = y_coordinates
-        self._bin_numbers = bin_numbers
+        self._bin_numbers = num_bins
         self._x_pixels_of_bins = x_pixels_of_bins
         self._y_pixels_of_bins = y_pixels_of_bins
 
