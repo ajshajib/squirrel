@@ -74,8 +74,6 @@ class Pipeline(object):
         covariance = covariance.reshape(
             rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
         )
-        if not is_positive_definite(covariance):
-            covariance = get_nearest_positive_definite_matrix(covariance)
 
         spectra.flux = rebinned_spectra
         spectra.noise = None
@@ -567,6 +565,9 @@ class Pipeline(object):
 
         if noise is None:
             noise = 0.1 * np.ones_like(flux)
+
+        if len(noise.shape) == 2 and not is_positive_definite(noise):
+            noise = get_nearest_positive_definite_matrix(noise)
 
         ppxf_fit = ppxf(
             templates=template.flux,
