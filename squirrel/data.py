@@ -233,6 +233,54 @@ class Spectra(object):
 
         self._spectra_modifications += ["clipped"]
 
+    def _add(self, other, destination):
+        """Add two spectra together.
+
+        :param destination: destination spectra
+        :type destination: Spectra
+        :param spectra1: spectra to add
+        :type spectra1: Spectra
+        :param spectra2: spectra to add
+        :type spectra2: Spectra
+        """
+        assert np.all(self.wavelengths == other.wavelengths), "Wavelengths must match."
+        assert self.flux.shape == other.flux.shape, "Spectra must have the same shape."
+
+        destination.flux = self.flux + other.flux
+        destination.noise = None
+        destination.covariance = None
+
+        if self.noise is not None and other.noise is not None:
+            destination.noise = np.sqrt(self.noise**2 + other.noise**2)
+        if self.covariance is not None and other.covariance is not None:
+            destination.covariance = self.covariance + other.covariance
+
+    def __add__(self, other):
+        """Add two spectra together.
+
+        :param other: spectra to add
+        :type other: Spectra
+        :return: sum of the two spectra
+        :rtype: Spectra
+        """
+        spectra = deepcopy(self)
+
+        self._add(other, spectra)
+
+        return spectra
+
+    def __iadd__(self, other):
+        """Add two spectra together in place.
+
+        :param other: spectra to add
+        :type other: Spectra
+        :return: sum of the two spectra
+        :rtype: Spectra
+        """
+        self._add(other, self)
+
+        return self
+
 
 class Datacube(Spectra):
     """A class to store in 3D IFU datacubes."""
