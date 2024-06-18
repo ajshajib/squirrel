@@ -16,7 +16,6 @@ class Template(Spectra):
         wavelength_unit,
         fwhm,
         flux_unit="arbitrary",
-        noise=None,
     ):
         """Initialize the template.
 
@@ -33,6 +32,9 @@ class Template(Spectra):
         :param noise: noise of the template
         :type noise: numpy.ndarray
         """
+        if len(flux.shape) == 1:
+            flux = flux[:, np.newaxis]
+
         super(Template, self).__init__(
             wavelengths=wavelengths,
             flux=flux,
@@ -41,7 +43,7 @@ class Template(Spectra):
             z_lens=0.0,
             z_source=0.0,
             flux_unit=flux_unit,
-            noise=noise if noise else np.zeros_like(flux),
+            noise=None,
         )
 
     def merge(self, other):
@@ -80,3 +82,20 @@ class Template(Spectra):
         :type template: squirrel.template.Template
         """
         return self.merge(other)
+
+    def combine_weighted(self, weights):
+        """Combine the templates into one single template.
+
+        :param weights: weights for each template
+        :type weights: numpy.array
+        """
+        new_template = deepcopy(self)
+        flux = new_template.flux @ weights
+        flux /= np.median(flux)
+
+        if len(flux.shape) == 1:
+            flux = flux[:, np.newaxis]
+
+        new_template.flux = flux
+
+        return new_template
