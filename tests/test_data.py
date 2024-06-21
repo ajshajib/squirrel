@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
+from copy import deepcopy
 from squirrel.data import Spectra
 from squirrel.data import Datacube
 from squirrel.data import VoronoiBinnedSpectra
@@ -134,6 +135,37 @@ class TestSpectra:
         assert self.spectra.fwhm == self.fwhm
         assert self.spectra.spectra_modifications == []
         assert self.spectra.wavelengths_frame == "observed"
+
+    def test_add_function(self):
+        spectra = Spectra(np.array([1, 2, 3]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+        sum_spectra = deepcopy(self.spectra)
+        self.spectra._add(spectra, sum_spectra)
+        npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+
+        sum_spectra = self.spectra + spectra
+        npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+
+        spectra += self.spectra
+        npt.assert_equal(spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(spectra.flux, np.array([6, 8, 10]))
+
+    def test_concat_function(self):
+        spectra = Spectra(np.array([5, 6, 7]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+
+        cat_spectra = deepcopy(self.spectra)
+        self.spectra._concat(spectra, cat_spectra)
+        npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+
+        cat_spectra = self.spectra & spectra
+        npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+
+        self.spectra &= spectra
+        npt.assert_equal(self.spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(self.spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
 
 
 class TestDatacube:
