@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
+from copy import deepcopy
 from squirrel.data import Spectra
 from squirrel.data import Datacube
 from squirrel.data import VoronoiBinnedSpectra
@@ -14,6 +15,7 @@ class TestSpectra:
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "nm"
         self.noise = np.array([0.1, 0.2, 0.3])
+        self.covariance = np.diag(self.noise**2)
         self.fwhm = 2.0
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -26,6 +28,7 @@ class TestSpectra:
             self.z_source,
             self.flux_unit,
             self.noise,
+            self.covariance,
         )
 
     def test_flux(self):
@@ -35,18 +38,12 @@ class TestSpectra:
         self.spectra.flux = np.array([7, 8, 9])
         npt.assert_array_equal(self.spectra.flux, np.array([7, 8, 9]))
 
-    def test_original_flux(self):
-        npt.assert_array_equal(self.spectra.original_flux, self.flux)
-
     def test_wavelengths(self):
         npt.assert_array_equal(self.spectra.wavelengths, self.wavelengths)
 
     def test_wavelengths_setter(self):
         self.spectra.wavelengths = np.array([4, 5, 6])
         npt.assert_array_equal(self.spectra.wavelengths, np.array([4, 5, 6]))
-
-    def test_original_wavelengths(self):
-        npt.assert_array_equal(self.spectra.original_wavelengths, self.wavelengths)
 
     def test_wavelength_unit(self):
         assert self.spectra.wavelength_unit == self.wavelength_unit
@@ -64,8 +61,12 @@ class TestSpectra:
         self.spectra.noise = np.array([0.4, 0.5, 0.6])
         npt.assert_array_equal(self.spectra.noise, np.array([0.4, 0.5, 0.6]))
 
-    def test_original_noise(self):
-        npt.assert_array_equal(self.spectra.original_noise, self.noise)
+    def test_covariance(self):
+        npt.assert_array_equal(self.spectra.covariance, self.covariance)
+
+    def test_covariance_setter(self):
+        self.spectra.covariance = np.diag([0.4, 0.5, 0.6])
+        npt.assert_array_equal(self.spectra.covariance, np.diag([0.4, 0.5, 0.6]))
 
     def test_z_lens(self):
         assert self.spectra.z_lens == self.z_lens
@@ -97,16 +98,19 @@ class TestSpectra:
     def test_deredshift(self):
         self.spectra.deredshift(redshift=1.0)
         npt.assert_equal(self.spectra.wavelengths, np.array([0.5, 1.0, 1.5]))
+        assert self.spectra.fwhm == self.fwhm / 2.0
 
         self.spectra.reset()
         self.spectra.deredshift(target_frame="source")
         npt.assert_equal(self.spectra.wavelengths, np.array([0.5, 1.0, 1.5]))
+        assert self.spectra.fwhm == self.fwhm / (1.0 + self.z_source)
 
         self.spectra.reset()
         self.spectra.deredshift(target_frame="lens")
         npt.assert_equal(
             self.spectra.wavelengths, np.array([1, 2, 3]) / (1 + self.z_lens)
         )
+        assert self.spectra.fwhm == self.fwhm / (1.0 + self.z_lens)
 
         with pytest.raises(ValueError):
             self.spectra.deredshift(target_frame="unknown")
@@ -118,6 +122,7 @@ class TestSpectra:
         npt.assert_equal(self.spectra.noise, np.array([0.2]))
 
     def test_reset(self):
+        self.spectra.deredshift(redshift=1.0)
         self.spectra.wavelengths = None
         self.spectra.flux = None
         self.spectra.spectra_modifications = None
@@ -127,8 +132,40 @@ class TestSpectra:
         self.spectra.reset()
         npt.assert_equal(self.spectra.wavelengths, [1, 2, 3])
         npt.assert_equal(self.spectra.flux, [4, 5, 6])
+        assert self.spectra.fwhm == self.fwhm
         assert self.spectra.spectra_modifications == []
         assert self.spectra.wavelengths_frame == "observed"
+
+    def test_add_function(self):
+        spectra = Spectra(np.array([1, 2, 3]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+        sum_spectra = deepcopy(self.spectra)
+        self.spectra._add(spectra, sum_spectra)
+        npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+
+        sum_spectra = self.spectra + spectra
+        npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+
+        spectra += self.spectra
+        npt.assert_equal(spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(spectra.flux, np.array([6, 8, 10]))
+
+    def test_concat_function(self):
+        spectra = Spectra(np.array([5, 6, 7]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+
+        cat_spectra = deepcopy(self.spectra)
+        self.spectra._concat(spectra, cat_spectra)
+        npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+
+        cat_spectra = self.spectra & spectra
+        npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+
+        self.spectra &= spectra
+        npt.assert_equal(self.spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(self.spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
 
 
 class TestDatacube:
@@ -188,9 +225,13 @@ class TestVoronoiBinnedSpectra:
         self.z_lens = 0.5
         self.z_source = 1.0
         self.fwhm = 2.0
-        self.x_coordinates = np.array([0, 1, 2])
-        self.y_coordinates = np.array([0, 1, 2])
-        self.bin_num = np.array([0, 1, 2])
+        x = np.array([0, 1, 2, 3])
+        xx, yy = np.meshgrid(x, x)
+        self.x_coordinates = xx
+        self.y_coordinates = yy
+        self.bin_numbers = np.array([0, 1, 2, 2])
+        self.x_pixels = np.array([0, 1, 2, 3])
+        self.y_pixels = np.array([0, 1, 2, 3])
         self.voronoi_binned_spectra = VoronoiBinnedSpectra(
             self.wavelengths,
             self.flux,
@@ -200,7 +241,9 @@ class TestVoronoiBinnedSpectra:
             self.z_source,
             self.x_coordinates,
             self.y_coordinates,
-            self.bin_num,
+            self.bin_numbers,
+            self.x_pixels,
+            self.y_pixels,
             self.flux_unit,
             self.noise,
         )
@@ -215,8 +258,29 @@ class TestVoronoiBinnedSpectra:
             self.voronoi_binned_spectra.y_coordinates, self.y_coordinates
         )
 
-    def test_bin_num(self):
-        npt.assert_array_equal(self.voronoi_binned_spectra.bin_num, self.bin_num)
+    def test_bin_numbers(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.bin_numbers, self.bin_numbers
+        )
+
+    def test_x_pixels_of_bins(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.x_pixels_of_bins, self.x_pixels
+        )
+
+    def test_y_pixels_of_bins(self):
+        npt.assert_array_equal(
+            self.voronoi_binned_spectra.y_pixels_of_bins, self.y_pixels
+        )
+
+    def test_get_spaxel_map_with_bin_number(self):
+        spaxel_map = self.voronoi_binned_spectra.get_spaxel_map_with_bin_number()
+        test_map = np.zeros_like(self.x_coordinates) - 1
+        test_map[0, 0] = 0
+        test_map[1, 1] = 1
+        test_map[2, 2] = 2
+        test_map[3, 3] = 2
+        npt.assert_array_equal(spaxel_map, test_map)
 
 
 class TestRadiallyBinnedSpectra:
