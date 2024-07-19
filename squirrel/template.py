@@ -61,8 +61,7 @@ class Template(Spectra):
         )
 
         new_template = deepcopy(self)
-        new_template.flux = np.concatenate((self.flux, other.flux))
-        self.noise = np.concatenate((self.noise, other.noise))
+        new_template.flux = np.concatenate((self.flux, other.flux), axis=1)
 
         return new_template
 
