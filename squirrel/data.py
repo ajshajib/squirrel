@@ -299,25 +299,27 @@ class Spectra(object):
         ), "Spectra modifications must match."
 
         destination.wavelengths = np.concatenate((self.wavelengths, other.wavelengths))
-        destination.flux = np.concatenate((self.flux, other.flux), axis=-1)
+        destination.flux = np.concatenate((self.flux, other.flux), axis=0)
         destination.noise = None
         destination.covariance = None
 
         if self.noise is not None and other.noise is not None:
-            destination.noise = np.concatenate((self.noise, other.noise), axis=-1)
+            destination.noise = np.concatenate((self.noise, other.noise), axis=0)
         if self.covariance is not None and other.covariance is not None:
-            destination.covariance = np.block(
-                [
-                    [
-                        self.covariance,
-                        np.zeros((self.covariance.shape[0], other.covariance.shape[1])),
-                    ],
-                    [
-                        np.zeros((other.covariance.shape[0], self.covariance.shape[1])),
-                        other.covariance,
-                    ],
-                ]
+            destination.covariance = np.zeros(
+                (
+                    self.covariance.shape[0] + other.covariance.shape[0],
+                    self.covariance.shape[1] + other.covariance.shape[1],
+                    self.covariance.shape[2],
+                    self.covariance.shape[3],
+                )
             )
+            destination.covariance[
+                : self.covariance.shape[0], : self.covariance.shape[1]
+            ] = self.covariance
+            destination.covariance[
+                self.covariance.shape[0] :, self.covariance.shape[1] :
+            ] = other.covariance
 
     def concat(self, other):
         """Concatenate two spectra together.
@@ -337,7 +339,7 @@ class Spectra(object):
         :param other: spectra to concatenate
         :type other: Spectra
         """
-        return self.concat(other, other)
+        return self.concat(other)
 
     def __iand__(self, other):
         """Concatenate two spectra together in place.
