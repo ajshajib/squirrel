@@ -521,6 +521,9 @@ class VoronoiBinnedSpectra(Spectra):
         flux_unit="arbitrary",
         noise=None,
         covariance=None,
+        bin_center_x=None,
+        bin_center_y=None,
+        area=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -551,6 +554,12 @@ class VoronoiBinnedSpectra(Spectra):
         :type noise: numpy.ndarray
         :param covariance: covariance of the data
         :type covariance: numpy.ndarray
+        :param bin_center_x: x coordinates of the bin centers
+        :type bin_center_x: numpy.ndarray
+        :param bin_center_y: y coordinates of the bin centers
+        :type bin_center_y: numpy.ndarray
+        :param area: area of the bins
+        :type area: numpy.ndarray
         """
         super(VoronoiBinnedSpectra, self).__init__(
             wavelengths=wavelengths,
@@ -569,6 +578,9 @@ class VoronoiBinnedSpectra(Spectra):
         self._bin_numbers = num_bins
         self._x_pixels_of_bins = x_pixels_of_bins
         self._y_pixels_of_bins = y_pixels_of_bins
+        self._bin_center_x = bin_center_x
+        self._bin_center_y = bin_center_y
+        self._area = area
 
     @property
     def x_coordinates(self):
@@ -599,6 +611,24 @@ class VoronoiBinnedSpectra(Spectra):
         """Return the y pixel values corresponding to the bin numbers."""
         if hasattr(self, "_y_pixels_of_bins"):
             return self._y_pixels_of_bins
+
+    @property
+    def bin_center_x(self):
+        """Return the x coordinates of the bin centers."""
+        if hasattr(self, "_bin_center_x"):
+            return self._bin_center_x
+
+    @property
+    def bin_center_y(self):
+        """Return the y coordinates of the bin centers."""
+        if hasattr(self, "_bin_center_y"):
+            return self._bin_center_y
+
+    @property
+    def area(self):
+        """Return the area of the bins."""
+        if hasattr(self, "_area"):
+            return self._area
 
     def get_spaxel_map_with_bin_number(self):
         """Return vornoi bin mapping. -1 is masked pixel. Unmasked pixel start counting

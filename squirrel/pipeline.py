@@ -8,6 +8,8 @@ from ppxf import ppxf_util
 from ppxf.ppxf import ppxf
 from ppxf import sps_util
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
+from vorbin.voronoi_2d_binning import _compute_useful_bin_quantities
+from vorbin.voronoi_2d_binning import _sn_func
 from tqdm import tqdm
 
 from .data import VoronoiBinnedSpectra
@@ -180,6 +182,17 @@ class Pipeline(object):
             quiet=quiet,
         )
 
+        classes, x_bar, y_bar, snr, area = _compute_useful_bin_quantities(
+            xx_coordinates_masked,
+            yy_coordinates_masked,
+            signal_image_per_wavelength_unit_masked,
+            noise_image_masked,
+            x_node,
+            y_node,
+            scale,
+            sn_func=_sn_func,
+        )
+
         if plot:
             plt.tight_layout()
 
@@ -229,6 +242,9 @@ class Pipeline(object):
             flux_unit=datacube.flux_unit,
             noise=voronoi_binned_noise,
             covariance=voronoi_binned_covariance,
+            bin_center_x=bin_center_x,
+            bin_center_y=bin_center_y,
+            area=area,
         )
 
         voronoi_binned_spectra.spectra_modifications = deepcopy(
