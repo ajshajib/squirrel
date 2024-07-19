@@ -22,11 +22,22 @@ class Pipeline(object):
     _speed_of_light = 299792.458  # speed of light in km/s
 
     @staticmethod
-    def log_rebin(spectra, velocity_scale=None, num_samples_for_covariance=None):
+    def log_rebin(
+        spectra,
+        velocity_scale=None,
+        num_samples_for_covariance=None,
+        take_covariance=True,
+    ):
         """Rebin the data to log scale.
 
         :param data: data to rebin
         :type data: `Data` class
+        :param velocity_scale: velocity scale for the rebinning
+        :type velocity_scale: float
+        :param num_samples_for_covariance: number of samples for the covariance estimation
+        :type num_samples_for_covariance: int
+        :param take_covariance: take the covariance into account
+        :type take_covariance: bool
         """
         if "log_rebinned" in spectra.spectra_modifications:
             raise ValueError("Data has already been log rebinned.")
@@ -38,7 +49,7 @@ class Pipeline(object):
 
         # estimate covariance matrix of rebinned spectra through sampling from noise realizations
         if num_samples_for_covariance is None:
-            # if number of samples not provided, picking the data size following to this
+            # if number of samples not provided, picking the data size following this
             # paper: https://arxiv.org/abs/1004.3484
             num_samples_for_covariance = spectra.flux.shape[0]
 
@@ -49,15 +60,22 @@ class Pipeline(object):
             flux_flattenned = flux_flattenned.T
             noise_flattenned = noise_flattenned.T
 
-        covariance = np.atleast_3d(
-            np.zeros(
-                (
-                    rebinned_spectra.shape[0],
-                    rebinned_spectra.shape[0],
-                    *flux_flattenned.shape[1:],
+        if take_covariance:
+            covariance = np.atleast_3d(
+                np.zeros(
+                    (
+                        rebinned_spectra.shape[0],
+                        rebinned_spectra.shape[0],
+                        *flux_flattenned.shape[1:],
+                    )
                 )
             )
-        )
+            noise = None
+        else:
+            covariance = None
+            noise = np.atleast_2d(
+                np.zeros((rebinned_spectra.shape[0], *flux_flattenned.shape[1:]))
+            )
 
         for i in tqdm(range(flux_flattenned.shape[1])):
             flux_realizations = np.random.normal(
@@ -68,15 +86,22 @@ class Pipeline(object):
             rebinned_realizations, _, _ = ppxf_util.log_rebin(
                 wavelength_range, flux_realizations, velscale=velocity_scale
             )
-            covariance[:, :, i] = np.cov(rebinned_realizations)
 
-        # reverse flattened array
-        covariance = covariance.reshape(
-            rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
-        )
+            if take_covariance:
+                covariance[:, :, i] = np.cov(rebinned_realizations)
+            else:
+                noise[:, i] = np.std(rebinned_realizations, axis=1)
+
+        if take_covariance:
+            # reverse flattened array
+            covariance = covariance.reshape(
+                rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
+            )
+        else:
+            noise = noise.reshape(rebinned_spectra.shape[0], *flux_shape[1:])
 
         spectra.flux = rebinned_spectra
-        spectra.noise = None
+        spectra.noise = noise
         spectra.covariance = covariance
         spectra.wavelengths = np.exp(log_rebinned_wavelength)
         spectra.velocity_scale = velocity_scale
@@ -85,9 +110,11 @@ class Pipeline(object):
     @staticmethod
     def voronoi_bin(
         datacube,
+        signal_image_per_wavelength_unit,
+        noise_image,
         target_snr,
-        min_wavelength_for_snr,
-        max_wavelength_for_snr,
+        # min_wavelength_for_snr,
+        # max_wavelength_for_snr,
         max_radius,
         min_snr_per_spaxel=1.0,
         plot=False,
@@ -97,12 +124,10 @@ class Pipeline(object):
 
         :param datacube: datacube to bin
         :type datacube: `DataCube` class
-        :param snr_target_per_angstrom: target S/N per wavelength unit for each bin
-        :type snr_target_per_angstrom: float
-        :param min_wavelength_for_snr: minimum wavelength for S/N calculation, in the unit of `datacube.wavelengths`
-        :type min_wavelength_for_snr: float
-        :param max_wavelength_for_snr: maximum wavelength for S/N calculation
-        :type max_wavelength_for_snr: float
+        :param signal_image_per_wavelength_unit:
+        :type signal_image_per_wavelength_unit: np.ndarray
+        :param target_snr: target S/N per wavelength unit for each bin
+        :type target_snr: float
         :param max_radius: maximum radius for binning, in the unit of in `datacube.x_coordinates`
         :type max_radius: float
         :param min_snr_per_spaxel: minimum S/N per spaxel to include in the binning
@@ -114,19 +139,10 @@ class Pipeline(object):
         :return: Voronoi binned spectra
         :rtype: `VoronoiBinnedSpectra` class
         """
-
-        clipped_datacube = deepcopy(datacube)
-        clipped_datacube.clip(
-            wavelength_min=min_wavelength_for_snr, wavelength_max=max_wavelength_for_snr
-        )
-
-        snr_per_wavelength_unit = np.median(
-            clipped_datacube.flux / clipped_datacube.noise, axis=0
-        ) / (clipped_datacube.wavelengths[1] - clipped_datacube.wavelengths[0])
-
         radius = np.sqrt(datacube.x_coordinates**2 + datacube.y_coordinates**2)
 
-        snr_mask = (snr_per_wavelength_unit > min_snr_per_spaxel) & (
+        snr_image_per_wavelength_unit = signal_image_per_wavelength_unit / noise_image
+        snr_mask = (snr_image_per_wavelength_unit > min_snr_per_spaxel) & (
             radius < max_radius
         )
 
@@ -140,7 +156,10 @@ class Pipeline(object):
         xx_coordinates_masked = datacube.x_coordinates[snr_mask]
         yy_coordinates_masked = datacube.y_coordinates[snr_mask]
 
-        snr_per_wavelength_unit_masked = snr_per_wavelength_unit[snr_mask]
+        signal_image_per_wavelength_unit_masked = signal_image_per_wavelength_unit[
+            snr_mask
+        ]
+        noise_image_masked = noise_image[snr_mask]
 
         (
             num_bins,
@@ -154,8 +173,8 @@ class Pipeline(object):
         ) = voronoi_2d_binning(
             xx_coordinates_masked,
             yy_coordinates_masked,
-            snr_per_wavelength_unit_masked,
-            np.ones_like(snr_per_wavelength_unit_masked),
+            signal_image_per_wavelength_unit_masked,
+            noise_image_masked,
             target_snr,
             plot=plot,
             quiet=quiet,
@@ -352,32 +371,36 @@ class Pipeline(object):
         kinematic_template,
         kinematic_template_2=None,
         emission_line_template=None,
-        double_emission_line_components=False,
+        emission_line_groups=None,
     ):
         flux = kinematic_template.flux
-        component_indices = [0] * kinematic_template.flux.shape[1]
+        component_indices = np.zeros(kinematic_template.flux.shape[1], dtype=int)
 
         if kinematic_template_2 is not None:
-            flux = np.column_stack([flux, kinematic_template_2.flux])
-            component_indices += [1] * kinematic_template_2.flux.shape[1]
+            if len(flux.shape) > len(kinematic_template_2.flux.shape):
+                kinematic_template_2.flux = np.expand_dims(
+                    kinematic_template_2.flux, axis=1
+                )
+            elif len(flux.shape) < len(kinematic_template_2.flux.shape):
+                flux = np.expand_dims(flux, axis=1)
+            flux = np.append(flux, kinematic_template_2.flux, axis=1)
+            component_indices = np.append(
+                component_indices,
+                np.ones(kinematic_template_2.flux.shape[1], dtype=int),
+            )
 
         if emission_line_template is not None:
-            if double_emission_line_components:
-                flux = np.column_stack(
-                    [flux, emission_line_template.flux, emission_line_template.flux]
-                )
-            else:
-                flux = np.column_stack([flux, emission_line_template.flux])
+            flux = np.append(flux, emission_line_template.flux, axis=1)
             if kinematic_template_2 is not None:
-                component_indices += [2] * emission_line_template.flux.shape[1]
-                if double_emission_line_components:
-                    component_indices += [3] * emission_line_template.flux.shape[1]
-                emission_line_indices = np.array(component_indices) > 1.0
+                component_indices = np.append(
+                    component_indices, emission_line_groups + 2
+                )
+                emission_line_indices = component_indices > 1.0
             else:
-                component_indices += [1] * emission_line_template.flux.shape[1]
-                if double_emission_line_components:
-                    component_indices += [2] * emission_line_template.flux.shape[1]
-                emission_line_indices = np.array(component_indices) > 0.0
+                component_indices = np.append(
+                    component_indices, emission_line_groups + 1
+                )
+                emission_line_indices = component_indices > 0.0
         else:
             emission_line_indices = np.zeros_like(component_indices, dtype=bool)
 
@@ -455,7 +478,7 @@ class Pipeline(object):
             velscale=spectra.velocity_scale / velocity_scale_ratio,
         )
 
-        rebinned_fluxes /= np.median(rebinned_fluxes, axis=0)
+        rebinned_fluxes /= np.nanmean(rebinned_fluxes, axis=0)
 
         templates_wavelengths = np.exp(log_wavelengths) / wavelength_factor
 
@@ -472,18 +495,12 @@ class Pipeline(object):
     def run_ppxf(
         data,
         template,
-        velocity_dispersion_guess=250.0,
-        degree=4,
-        mdegree=0,
-        moments=2,
-        velocity_scale_ratio=2,
+        start,
         background_template=None,
         spectra_indices=None,
         quiet=True,
         plot=False,
-        component_indices=0,
-        emission_line_indices=None,
-        **kwargs,
+        **kwargs_ppxf,
     ):
         """Perform the kinematic analysis using pPXF.
 
@@ -491,12 +508,8 @@ class Pipeline(object):
         :type data: `Data` class
         :param template_library: library of templates
         :type template_library: `TemplateLibrary` class
-        :param velocity_dispersion_guess: initial guess for the velocity dispersion
-        :type velocity_dispersion_guess: float
-        :param degree: degree of the additive polynomial
-        :type degree: int
-        :param moment: order of the Gauss-Hermite series
-        :type moment: int
+        :param start: initial guess for the velocity and dispersion for each kinematic component, , check documentation of `ppxf.ppxf()`
+        :type start: list
         :param velocity_scale_ratio: ratio of the velocity scale to the velocity dispersion
         :type velocity_scale_ratio: float
         :param background_template: background spectra to fit
@@ -505,24 +518,11 @@ class Pipeline(object):
         :type spectra_indices: list of int or int
         :param quiet: suppress the output
         :type quiet: bool
-        :param component_indices: indices indicating which template correspond to which kinematic component, if there are multiple kinematic components. Only 0 if there is one single kinematic component. See documentation of `ppxf.ppxf.ppxf()` for more details.
-        :type component_indices: list of int or int
-        :param emission_line_indices: indices of the emission lines. See documentation of `ppxf.ppxf.ppxf()` for more details.
-        :type emission_line_indices: list of int
-        :param kwargs: additional arguments for `ppxf`
-        :type kwargs: dict
+        :param kwargs_ppxf: additional options for `ppxf`, check documentation of `ppxf.ppxf()`
+        :type kwargs_ppxf: dict
         :return: pPXF fit
         :rtype: `ppxf` class
         """
-        initial_guess = [
-            0.0,
-            velocity_dispersion_guess,
-        ]  # (km/s), starting guess for [V, sigma]
-
-        num_components = np.max(component_indices) + 1
-        if num_components > 1:
-            initial_guess = [initial_guess] * num_components
-
         noise = None
 
         if spectra_indices is not None:
@@ -574,19 +574,13 @@ class Pipeline(object):
             galaxy=flux,
             noise=noise,
             velscale=data.velocity_scale,
-            start=initial_guess,
+            start=start,
             plot=plot,
-            moments=moments,
-            degree=degree,
-            mdegree=mdegree,
             lam=data.wavelengths,
             lam_temp=template.wavelengths,
-            velscale_ratio=velocity_scale_ratio,
             sky=background_template.flux if background_template else None,
             quiet=quiet,
-            component=component_indices,
-            gas_component=emission_line_indices,
-            **kwargs,
+            **kwargs_ppxf,
         )
 
         return ppxf_fit
@@ -596,13 +590,9 @@ class Pipeline(object):
         cls,
         binned_spectra,
         template,
-        velocity_dispersion_guess=250.0,
-        degree=2,
-        moments=2,
-        velocity_scale_ratio=2,
+        start,
         background_template=None,
-        spectra_indices=None,
-        **kwargs,
+        **kwargs_ppxf,
     ):
         """Perform the kinematic analysis using pPXF on binned spectra.
 
@@ -636,12 +626,10 @@ class Pipeline(object):
             ppxf_fit = cls.run_ppxf(
                 binned_spectra,
                 template,
-                velocity_dispersion_guess=velocity_dispersion_guess,
-                degree=degree,
-                velocity_scale_ratio=velocity_scale_ratio,
+                start=start,
                 background_template=background_template,
                 spectra_indices=i,
-                **kwargs,
+                **kwargs_ppxf,
             )
 
             velocity_dispersions.append(ppxf_fit.sol[1])
