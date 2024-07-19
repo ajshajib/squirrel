@@ -524,6 +524,7 @@ class VoronoiBinnedSpectra(Spectra):
         bin_center_x=None,
         bin_center_y=None,
         area=None,
+        snr=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -560,6 +561,8 @@ class VoronoiBinnedSpectra(Spectra):
         :type bin_center_y: numpy.ndarray
         :param area: area of the bins
         :type area: numpy.ndarray
+        :param snr: signal-to-noise ratio of the bins
+        :type snr: numpy.ndarray
         """
         super(VoronoiBinnedSpectra, self).__init__(
             wavelengths=wavelengths,
@@ -581,6 +584,7 @@ class VoronoiBinnedSpectra(Spectra):
         self._bin_center_x = bin_center_x
         self._bin_center_y = bin_center_y
         self._area = area
+        self._snr = snr
 
     @property
     def x_coordinates(self):
@@ -629,6 +633,12 @@ class VoronoiBinnedSpectra(Spectra):
         """Return the area of the bins."""
         if hasattr(self, "_area"):
             return self._area
+
+    @property
+    def snr(self):
+        """Return the signal-to-noise ratio of the bins."""
+        if hasattr(self, "_snr"):
+            return self._snr
 
     def get_spaxel_map_with_bin_number(self):
         """Return vornoi bin mapping. -1 is masked pixel. Unmasked pixel start counting

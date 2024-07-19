@@ -245,6 +245,7 @@ class Pipeline(object):
             bin_center_x=bin_center_x,
             bin_center_y=bin_center_y,
             area=area,
+            snr=snr,
         )
 
         voronoi_binned_spectra.spectra_modifications = deepcopy(
