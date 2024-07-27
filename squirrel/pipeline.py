@@ -335,6 +335,7 @@ class Pipeline(object):
             wavelength_unit="AA",
             fwhm=spectra.fwhm,
         )
+        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
 
         return template
 
@@ -427,6 +428,7 @@ class Pipeline(object):
             wavelength_unit=kinematic_template.wavelength_unit,
             fwhm=kinematic_template.fwhm,
         )
+        template.velocity_scale = kinematic_template.velocity_scale
 
         return template, component_indices, emission_line_indices
 
@@ -505,6 +507,7 @@ class Pipeline(object):
             wavelength_unit="AA",
             fwhm=spectra.fwhm,
         )
+        template.velocity_scale = velocity_scale_template
 
         return template
 
@@ -597,6 +600,7 @@ class Pipeline(object):
             lam_temp=template.wavelengths,
             sky=background_template.flux if background_template else None,
             quiet=quiet,
+            velscale_ratio=int(data.velocity_scale / template.velocity_scale),
             **kwargs_ppxf,
         )
 
