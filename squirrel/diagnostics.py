@@ -19,8 +19,10 @@ class Diagnostics(object):
         cls,
         ppxf_fit,
         spectra_data,
-        wavelength_ranges,
-        target_detection_strengths=np.arange(10, 31, 10),
+        snr_upper_percentile=50,
+        snr_lower_percentile=2,
+        spectra_mask_for_snr=None,
+        target_snrs=np.arange(10, 31, 10),
         input_velocity_dispersions=[250],  # np.arange(100, 351, 50)
         num_samples=50,
     ):
@@ -30,13 +32,12 @@ class Diagnostics(object):
         :type ppxf_fit: ppxf.ppxf
         :param spectra_data: data object
         :type spectra_data: squirrel.data.Spectra
-        :param wavelength_ranges: wavelength ranges to compute line detection strength
-            (SNR) from
-        :type wavelength_ranges: numpy.ndarray
         :param snr_upper_percentile: upper percentile of SNR
         :type snr_upper_percentile: float
         :param snr_lower_percentile: lower percentile of SNR
         :type snr_lower_percentile: float
+        :param spectra_mask_for_snr: mask of the spectra to compute SNR from
+        :type spectra_mask_for_snr: numpy.ndarray
         :param target_snrs: target SNRs
         :type target_snrs: numpy.ndarray
         :param input_velocity_dispersions: input velocity dispersions
@@ -56,8 +57,10 @@ class Diagnostics(object):
         return cls.check_bias_vs_snr(
             spectra_data,
             template,
-            wavelength_ranges,
-            target_detection_strengths=target_detection_strengths,
+            snr_lower_percentile=snr_lower_percentile,
+            snr_upper_percentile=snr_upper_percentile,
+            spectra_mask_for_snr=spectra_mask_for_snr,
+            target_snrs=target_snrs,
             input_velocity_dispersions=input_velocity_dispersions,
             template_weight=template_weight,
             polynomial_degree=degree,
@@ -70,8 +73,10 @@ class Diagnostics(object):
         cls,
         spectra_data,
         template,
-        wavelength_ranges,
-        target_detection_strengths=np.arange(3, 54, 10),
+        snr_upper_percentile=50,
+        snr_lower_percentile=2,
+        spectra_mask_for_snr=None,
+        target_snrs=np.arange(10, 51, 10),
         input_velocity_dispersions=[250],
         template_weight=1.0,
         polynomial_degree=0,
@@ -84,9 +89,14 @@ class Diagnostics(object):
         :type data_object: squirrel.data.Spectra
         :param template_object: template object
         :type template_object: squirrel.template.Template
-        :param wavelength_ranges: wavelength ranges to compute line detection strength
-            (SNR) from
-        :type wavelength_ranges: numpy.ndarray
+        :param snr_upper_percentile: upper percentile of SNR
+        :type snr_upper_percentile: float
+        :param snr_lower_percentile: lower percentile of SNR
+        :type snr_lower_percentile: float
+        :param spectra_mask_for_snr: mask of the spectra to compute SNR from
+        :type spectra_mask_for_snr: numpy.ndarray
+        :param target_snrs: target SNRs
+        :type target_snrs: numpy.ndarray
         :param input_velocity_dispersions: input velocity dispersions
         :type input_velocity_dispersions: numpy.ndarray
         :param template_weight: weight of the template
@@ -100,33 +110,31 @@ class Diagnostics(object):
         :return: recovered values
         :rtype: tuple
         """
-        recovered_detection_strengths = np.zeros(
-            (len(input_velocity_dispersions), len(target_detection_strengths))
-        )
+        if spectra_mask_for_snr is None:
+            spectra_mask_for_snr = np.ones_like(spectra_data.wavelengths)
 
         recovered_velocities = np.zeros(
-            (len(input_velocity_dispersions), len(target_detection_strengths))
+            (len(input_velocity_dispersions), len(target_snrs))
         )
         recovered_velocity_uncertainties = np.zeros(
-            (len(input_velocity_dispersions), len(target_detection_strengths))
+            (len(input_velocity_dispersions), len(target_snrs))
         )
-
+        recovered_velocity_scatters = np.zeros(
+            (len(input_velocity_dispersions), len(target_snrs))
+        )
         recovered_dispersions = np.zeros(
-            (len(input_velocity_dispersions), len(target_detection_strengths))
+            (len(input_velocity_dispersions), len(target_snrs))
         )
         recovered_dispersion_uncertainties = np.zeros(
-            (len(input_velocity_dispersions), len(target_detection_strengths))
+            (len(input_velocity_dispersions), len(target_snrs))
+        )
+        recovered_dispersion_scatters = np.zeros(
+            (len(input_velocity_dispersions), len(target_snrs))
         )
 
-        # spectra_mask_for_snr = np.zeros_like(data.wavelengths, dtype=bool)
-        # for wavelength_range in wavelength_ranges:
-        #     spectra_mask_for_snr[
-        #         (data.wavelengths >= wavelength_range[0])
-        #         & (data.wavelengths <= wavelength_range[1])
-        #     ] = True
+        data = deepcopy(spectra_data)
 
         for i, input_dispersion in enumerate(input_velocity_dispersions):
-            data = deepcopy(spectra_data)
             mock_flux = cls.make_convolved_spectra(
                 template.flux[:, 0],
                 template.wavelengths,
@@ -138,53 +146,42 @@ class Diagnostics(object):
                 polynomial_degree,
                 polynomial_weights,
             )
-            data.flux = deepcopy(mock_flux)
 
-            original_absorption_line_flux, original_absorption_line_flux_uncertainty = (
-                cls.get_absorption_line_flux(data, wavelength_ranges)
-            )
-            original_detection_strength = (
-                original_absorption_line_flux
-                / original_absorption_line_flux_uncertainty
-            )
+            for j, target_snr in enumerate(target_snrs):
+                dispersion_samples = []
+                velocity_samples = []
 
-            for j, target_detection_strength in enumerate(target_detection_strengths):
-                dispersion_samples = np.zeros(num_sample)
-                dispersion_error_samples = np.zeros(num_sample)
-                velocity_samples = np.zeros(num_sample)
-                velocity_error_samples = np.zeros(num_sample)
-                detection_strength_samples = np.zeros(num_sample)
-
-                noise_multiplier = (
-                    original_detection_strength / target_detection_strength
-                )
-
-                if spectra_data.covariance is not None:
-                    data.covariance = (
-                        np.copy(spectra_data.covariance) * noise_multiplier**2
-                    )
-                elif spectra_data.noise is not None:
-                    data.noise = np.copy(spectra_data.noise) * noise_multiplier
-                else:
-                    raise ValueError("Either covariance or noise must be provided.")
-
-                for k in range(num_sample):
+                for _ in range(num_sample):
                     data.flux = deepcopy(mock_flux)
 
-                    if spectra_data.covariance is not None:
+                    signal = np.percentile(
+                        data.flux[spectra_mask_for_snr], snr_upper_percentile
+                    ) - np.percentile(
+                        data.flux[spectra_mask_for_snr], snr_lower_percentile
+                    )
+
+                    if data.covariance is not None:
                         noise = np.random.multivariate_normal(
-                            data.flux * 0, data.covariance, size=1
+                            mock_flux * 0, data.covariance, size=1
                         )[0]
-                    elif spectra_data.noise is not None:
-                        noise = np.random.normal(
-                            0, spectra_data.noise, size=len(spectra_data.flux)
+                        masked_covariance = data.covariance[spectra_mask_for_snr][
+                            :, spectra_mask_for_snr
+                        ]
+                        mean_noise = np.linalg.det(masked_covariance) ** (
+                            0.5 / len(masked_covariance)
                         )
+                    elif data.noise is not None:
+                        noise = np.random.normal(0, data.noise, size=len(data.flux))
+                        mean_noise = np.prod(data.noise[spectra_mask_for_snr] ** 2) ** (
+                            0.5 / np.sum(spectra_mask_for_snr)
+                        )
+                    else:
+                        raise ValueError("No noise or covariance provided.")
+
+                    initial_snr = signal / mean_noise
+                    noise *= initial_snr / target_snr
 
                     data.flux += noise
-
-                    absorption_line_flux, absorption_line_flux_uncertainty = (
-                        cls.get_absorption_line_flux(data, wavelength_ranges)
-                    )
 
                     mock_ppxf_fit = Pipeline.run_ppxf(
                         data,
@@ -203,54 +200,44 @@ class Diagnostics(object):
                     # mock_ppxf_fit.plot()
                     # plt.show()
 
-                    dispersion_samples[k] = mock_ppxf_fit.sol[1]
-                    dispersion_error_samples[k] = mock_ppxf_fit.error[1]
-                    velocity_samples[k] = mock_ppxf_fit.sol[0]
-                    velocity_error_samples[k] = mock_ppxf_fit.error[0]
+                    dispersion_samples.append(mock_ppxf_fit.sol[1])
+                    velocity_samples.append(mock_ppxf_fit.sol[0])
 
-                    detection_strength_samples[k] = (
-                        absorption_line_flux / absorption_line_flux_uncertainty
-                    )
-
-                recovered_detection_strengths[i, j] = np.mean(
-                    detection_strength_samples
-                )
-
-                recovered_velocities[i, j] = np.sum(
-                    velocity_samples / velocity_error_samples**2
-                ) / np.sum(1 / velocity_error_samples**2)
-                recovered_velocity_uncertainties[i, j] = (
-                    np.sum(1 / velocity_error_samples**2) ** -0.5
-                )
-
-                recovered_dispersions[i, j] = np.sum(
-                    dispersion_samples / dispersion_error_samples**2
-                ) / np.sum(1 / dispersion_error_samples**2)
-
-                recovered_dispersion_uncertainties[i, j] = (
-                    np.sum(1 / dispersion_error_samples**2) ** -0.5
-                )
+                recovered_velocities[i, j] = np.mean(velocity_samples)
+                recovered_velocity_scatters[i, j] = np.std(velocity_samples)
+                recovered_velocity_uncertainties[i, j] = np.std(
+                    velocity_samples
+                ) / np.sqrt(num_sample)
+                recovered_dispersions[i, j] = np.mean(dispersion_samples)
+                recovered_dispersion_scatters[i, j] = np.std(dispersion_samples)
+                recovered_dispersion_uncertainties[i, j] = np.std(
+                    dispersion_samples
+                ) / np.sqrt(num_sample)
 
         return (
-            recovered_detection_strengths,
             recovered_dispersions,
             recovered_dispersion_uncertainties,
+            recovered_dispersion_scatters,
             recovered_velocities,
             recovered_velocity_uncertainties,
+            recovered_velocity_scatters,
         )
 
     @staticmethod
     def plot_bias_vs_snr(
         recovered_values,
+        target_snrs,
         input_velocity_dispersions,
         fig_width=10,
         bias_threshold=0.02,
-        **kwargs,
+        **kwargs
     ):
         """Plot the bias in the velocity dispersion measurement as a function of SNR.
 
         :param recovered_values: recovered values from check_bias_vs_snr
         :type recovered_values: tuple
+        :param target_snrs: target SNRs
+        :type target_snrs: numpy.ndarray
         :param input_velocity_dispersions: input velocity dispersions
         :type input_velocity_dispersions: numpy.ndarray
         :param fig_width: width of the figure
@@ -263,11 +250,12 @@ class Diagnostics(object):
         :rtype: tuple
         """
         (
-            recovered_detection_strengths,
             recovered_dispersions,
             recovered_dispersion_uncertainties,
+            recovered_dispersion_scatters,
             recovered_velocities,
             recovered_velocity_uncertainties,
+            recovered_velocity_scatters,
         ) = recovered_values
 
         fig, axes = plt.subplots(
@@ -284,20 +272,20 @@ class Diagnostics(object):
             kwargs["ls"] = ":"
 
         for i, input_dispersion in enumerate(input_velocity_dispersions):
-            # axes[i, 0].errorbar(
-            #     target_snrs,
-            #     recovered_dispersions[i],
-            #     yerr=recovered_velocity_scatters[i],
-            #     markersize=5,
-            #     ecolor="grey",
-            #     capsize=5,
-            #     **kwargs,
-            # )
             axes[i, 0].errorbar(
-                recovered_detection_strengths[i],
+                target_snrs,
                 recovered_dispersions[i],
-                yerr=recovered_dispersion_uncertainties[i],
+                yerr=recovered_velocity_scatters[i],
+                markersize=5,
+                ecolor="grey",
                 capsize=5,
+                **kwargs,
+            )
+            axes[i, 0].errorbar(
+                target_snrs,
+                recovered_dispersions[i],
+                yerr=recovered_velocity_uncertainties[i],
+                capsize=8,
                 **kwargs,
             )
 
@@ -311,20 +299,20 @@ class Diagnostics(object):
             )
             axes[i, 0].set_ylabel(r"$\sigma$ (km s$^{-1}$)")
 
-            # axes[i, 1].errorbar(
-            #     target_snrs,
-            #     recovered_velocities[i],
-            #     yerr=recovered_velocity_scatters[i],
-            #     markersize=5,
-            #     ecolor="grey",
-            #     capsize=5,
-            #     **kwargs,
-            # )
             axes[i, 1].errorbar(
-                recovered_detection_strengths[i],
+                target_snrs,
+                recovered_velocities[i],
+                yerr=recovered_velocity_scatters[i],
+                markersize=5,
+                ecolor="grey",
+                capsize=5,
+                **kwargs,
+            )
+            axes[i, 1].errorbar(
+                target_snrs,
                 recovered_velocities[i],
                 yerr=recovered_velocity_uncertainties[i],
-                capsize=5,
+                capsize=8,
                 **kwargs,
             )
             axes[i, 1].axhline(0, color="k", linestyle="--")
@@ -415,85 +403,3 @@ class Diagnostics(object):
         vand = legendre.legvander(x, polynomial_degree)
 
         return data_weight * galaxy_model + np.dot(vand, polynomial_weights)
-
-    @staticmethod
-    def get_absorption_line_flux(spectra, wavelength_ranges, plot=False):
-        """Get the equivalent width of absorption lines.
-
-        :param spectra: spectra object
-        :type spectra: squirrel.data.Spectra
-        :param wavelength_slices: wavelength slices
-        :type wavelength_slices: list
-        :param plot: plot the absorption line
-        :type plot: bool
-        :return: absorption line flux and variance
-        :rtype: tuple
-        """
-        absorption_line_flux = 0.0
-        absorption_line_flux_variance = 0.0
-        for wavelength_range in wavelength_ranges:
-            assert len(wavelength_range) == 2
-
-            start_index = np.argmin(np.abs(spectra.wavelengths - wavelength_range[0]))
-            end_index = np.argmin(np.abs(spectra.wavelengths - wavelength_range[1]))
-
-            flux_slice = spectra.flux[start_index:end_index]
-            if spectra.covariance is not None:
-                covariance_slice = np.copy(
-                    spectra.covariance[start_index:end_index, start_index:end_index]
-                )
-            elif spectra.noise is not None:
-                covariance_slice = np.diag(
-                    np.copy(spectra.noise[start_index:end_index] ** 2)
-                )
-            else:
-                raise ValueError("Either covariance or noise must be provided.")
-
-            wavelength_slice = np.copy(spectra.wavelengths[start_index:end_index])
-
-            a = np.sum(
-                (wavelength_slice[-1] - wavelength_slice[1:-1]) * wavelength_slice[1:-1]
-            ) / (wavelength_slice[-1] - wavelength_slice[0])
-
-            b = np.sum(
-                (wavelength_slice[1:-1] - wavelength_slice[0]) * wavelength_slice[1:-1]
-            ) / (wavelength_slice[-1] - wavelength_slice[0])
-
-            delta_log_lambda = np.log(wavelength_slice[1] / wavelength_slice[0])
-
-            covariance_slice[0, :] *= a * delta_log_lambda
-            covariance_slice[:, 0] *= a * delta_log_lambda
-            covariance_slice[-1, :] *= b * delta_log_lambda
-            covariance_slice[:, -1] *= b * delta_log_lambda
-
-            for i in range(1, len(wavelength_slice) - 1):
-                covariance_slice[i, :] *= -wavelength_slice[i] * delta_log_lambda
-                covariance_slice[:, i] *= -wavelength_slice[i] * delta_log_lambda
-
-            absorption_line_flux += delta_log_lambda * (
-                a * flux_slice[0]
-                + b * flux_slice[-1]
-                - np.sum(wavelength_slice[1:-1] * flux_slice[1:-1])
-            )
-            absorption_line_flux_variance += np.abs(np.sum(covariance_slice))
-
-            if plot:
-                plt.plot(spectra.wavelengths, spectra.flux)
-
-                plt.axvline(wavelength_range[0], color="grey", linestyle="--")
-                plt.axvline(wavelength_range[1], color="grey", linestyle="--")
-
-                line = flux_slice[0] + (flux_slice[-1] - flux_slice[0]) / (
-                    wavelength_slice[-1] - wavelength_slice[0]
-                ) * (wavelength_slice - wavelength_slice[0])
-
-                plt.plot(wavelength_slice, line, color="red", ls="--")
-                plt.fill_between(
-                    wavelength_slice,
-                    line,
-                    flux_slice,
-                    color="red",
-                    alpha=0.5,
-                )
-
-        return absorption_line_flux, np.sqrt(absorption_line_flux_variance)
