@@ -1,6 +1,7 @@
 """This module contains class and functions for diagnostics."""
 
 import numpy as np
+import scipy as sp
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from numpy.polynomial import legendre
@@ -19,8 +20,6 @@ class Diagnostics(object):
         cls,
         ppxf_fit,
         spectra_data,
-        snr_upper_percentile=50,
-        snr_lower_percentile=2,
         spectra_mask_for_snr=None,
         target_snrs=np.arange(10, 31, 10),
         input_velocity_dispersions=[250],  # np.arange(100, 351, 50)
@@ -32,10 +31,6 @@ class Diagnostics(object):
         :type ppxf_fit: ppxf.ppxf
         :param spectra_data: data object
         :type spectra_data: squirrel.data.Spectra
-        :param snr_upper_percentile: upper percentile of SNR
-        :type snr_upper_percentile: float
-        :param snr_lower_percentile: lower percentile of SNR
-        :type snr_lower_percentile: float
         :param spectra_mask_for_snr: mask of the spectra to compute SNR from
         :type spectra_mask_for_snr: numpy.ndarray
         :param target_snrs: target SNRs
@@ -57,8 +52,6 @@ class Diagnostics(object):
         return cls.check_bias_vs_snr(
             spectra_data,
             template,
-            snr_lower_percentile=snr_lower_percentile,
-            snr_upper_percentile=snr_upper_percentile,
             spectra_mask_for_snr=spectra_mask_for_snr,
             target_snrs=target_snrs,
             input_velocity_dispersions=input_velocity_dispersions,
@@ -68,13 +61,41 @@ class Diagnostics(object):
             num_sample=num_samples,
         )
 
+    @staticmethod
+    def get_mean_snr(spectra, mask):
+        """Get the mean SNR of the spectra.
+
+        :param spectra: spectra object
+        :type spectra: squirrel.data.Spectra
+        :param mask: mask
+        :type mask: numpy.ndarray
+        :return: mean SNR per wavelength unit
+        :rtype: float
+        """
+        if "log_rebinned" in spectra.spectra_modifications:
+            signal_slice = spectra.flux[mask] / spectra.wavelengths[mask]
+            delta_lambda = np.log(spectra.wavelengths[1] / spectra.wavelengths[0])
+        else:
+            signal_slice = spectra.flux[mask]
+            delta_lambda = np.mean(np.diff(spectra.wavelengths))
+
+        if spectra.covariance is not None:
+            covariance_slice = spectra.covariance[mask][:, mask]
+
+            mean_snr = np.mean(
+                np.dot(sp.linalg.sqrtm(np.linalg.inv(covariance_slice)), signal_slice),
+            )
+        elif spectra.noise is not None:
+            noise_slice = spectra.noise[mask]
+            mean_snr = np.mean(signal_slice / noise_slice)  # ** (1 / np.sum(mask))
+
+        return mean_snr / delta_lambda
+
     @classmethod
     def check_bias_vs_snr(
         cls,
         spectra_data,
         template,
-        snr_upper_percentile=50,
-        snr_lower_percentile=2,
         spectra_mask_for_snr=None,
         target_snrs=np.arange(10, 51, 10),
         input_velocity_dispersions=[250],
@@ -89,10 +110,6 @@ class Diagnostics(object):
         :type data_object: squirrel.data.Spectra
         :param template_object: template object
         :type template_object: squirrel.template.Template
-        :param snr_upper_percentile: upper percentile of SNR
-        :type snr_upper_percentile: float
-        :param snr_lower_percentile: lower percentile of SNR
-        :type snr_lower_percentile: float
         :param spectra_mask_for_snr: mask of the spectra to compute SNR from
         :type spectra_mask_for_snr: numpy.ndarray
         :param target_snrs: target SNRs
@@ -119,18 +136,15 @@ class Diagnostics(object):
         recovered_velocity_uncertainties = np.zeros(
             (len(input_velocity_dispersions), len(target_snrs))
         )
-        recovered_velocity_scatters = np.zeros(
-            (len(input_velocity_dispersions), len(target_snrs))
-        )
+
         recovered_dispersions = np.zeros(
             (len(input_velocity_dispersions), len(target_snrs))
         )
         recovered_dispersion_uncertainties = np.zeros(
             (len(input_velocity_dispersions), len(target_snrs))
         )
-        recovered_dispersion_scatters = np.zeros(
-            (len(input_velocity_dispersions), len(target_snrs))
-        )
+
+        recovered_snrs = np.zeros((len(input_velocity_dispersions), len(target_snrs)))
 
         data = deepcopy(spectra_data)
 
@@ -148,38 +162,32 @@ class Diagnostics(object):
             )
 
             for j, target_snr in enumerate(target_snrs):
-                dispersion_samples = []
-                velocity_samples = []
+                dispersion_samples = np.zeros(num_sample)
+                dispersion_uncertainty_samples = np.zeros(num_sample)
+                velocity_samples = np.zeros(num_sample)
+                velocity_uncertainty_samples = np.zeros(num_sample)
+                snr_samples = np.zeros(num_sample)
 
-                for _ in range(num_sample):
+                for k in range(num_sample):
+                    data = deepcopy(spectra_data)
                     data.flux = deepcopy(mock_flux)
 
-                    signal = np.percentile(
-                        data.flux[spectra_mask_for_snr], snr_upper_percentile
-                    ) - np.percentile(
-                        data.flux[spectra_mask_for_snr], snr_lower_percentile
-                    )
+                    initial_mean_snr = cls.get_mean_snr(data, spectra_mask_for_snr)
+
+                    noise_multiplier = initial_mean_snr / target_snr
 
                     if data.covariance is not None:
+                        data.covariance *= noise_multiplier**2
                         noise = np.random.multivariate_normal(
-                            mock_flux * 0, data.covariance, size=1
-                        )[0]
-                        masked_covariance = data.covariance[spectra_mask_for_snr][
-                            :, spectra_mask_for_snr
-                        ]
-                        mean_noise = np.linalg.det(masked_covariance) ** (
-                            0.5 / len(masked_covariance)
+                            data.flux * 0, data.covariance
                         )
                     elif data.noise is not None:
-                        noise = np.random.normal(0, data.noise, size=len(data.flux))
-                        mean_noise = np.prod(data.noise[spectra_mask_for_snr] ** 2) ** (
-                            0.5 / np.sum(spectra_mask_for_snr)
+                        data.noise *= noise_multiplier
+                        noise = np.random.normal(
+                            data.flux * 0, data.noise, size=len(data.flux)
                         )
                     else:
                         raise ValueError("No noise or covariance provided.")
-
-                    initial_snr = signal / mean_noise
-                    noise *= initial_snr / target_snr
 
                     data.flux += noise
 
@@ -200,33 +208,41 @@ class Diagnostics(object):
                     # mock_ppxf_fit.plot()
                     # plt.show()
 
-                    dispersion_samples.append(mock_ppxf_fit.sol[1])
-                    velocity_samples.append(mock_ppxf_fit.sol[0])
+                    # dispersion_samples.append(mock_ppxf_fit.sol[1])
+                    # velocity_samples.append(mock_ppxf_fit.sol[0])
+                    # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
+                    dispersion_samples[k] = mock_ppxf_fit.sol[1]
+                    dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
+                    velocity_samples[k] = mock_ppxf_fit.sol[0]
+                    velocity_uncertainty_samples[k] = mock_ppxf_fit.error[0]
+                    snr_samples[k] = cls.get_mean_snr(data, spectra_mask_for_snr)
 
-                recovered_velocities[i, j] = np.mean(velocity_samples)
-                recovered_velocity_scatters[i, j] = np.std(velocity_samples)
-                recovered_velocity_uncertainties[i, j] = np.std(
-                    velocity_samples
-                ) / np.sqrt(num_sample)
-                recovered_dispersions[i, j] = np.mean(dispersion_samples)
-                recovered_dispersion_scatters[i, j] = np.std(dispersion_samples)
-                recovered_dispersion_uncertainties[i, j] = np.std(
-                    dispersion_samples
-                ) / np.sqrt(num_sample)
+                recovered_velocities[i, j] = np.sum(
+                    velocity_samples / velocity_uncertainty_samples**2
+                ) / np.sum(1 / velocity_uncertainty_samples**2)
+                recovered_velocity_uncertainties[i, j] = (
+                    np.sum(1 / velocity_uncertainty_samples**2) ** -0.5
+                )
+
+                recovered_dispersions[i, j] = np.sum(
+                    dispersion_samples / dispersion_uncertainty_samples**2
+                ) / np.sum(1 / dispersion_uncertainty_samples**2)
+                recovered_dispersion_uncertainties[i, j] = (
+                    np.sum(1 / dispersion_uncertainty_samples**2) ** -0.5
+                )
+                recovered_snrs[i, j] = np.mean(snr_samples)
 
         return (
+            recovered_snrs,
             recovered_dispersions,
             recovered_dispersion_uncertainties,
-            recovered_dispersion_scatters,
             recovered_velocities,
             recovered_velocity_uncertainties,
-            recovered_velocity_scatters,
         )
 
     @staticmethod
     def plot_bias_vs_snr(
         recovered_values,
-        target_snrs,
         input_velocity_dispersions,
         fig_width=10,
         bias_threshold=0.02,
@@ -250,12 +266,11 @@ class Diagnostics(object):
         :rtype: tuple
         """
         (
+            recovered_snrs,
             recovered_dispersions,
             recovered_dispersion_uncertainties,
-            recovered_dispersion_scatters,
             recovered_velocities,
             recovered_velocity_uncertainties,
-            recovered_velocity_scatters,
         ) = recovered_values
 
         fig, axes = plt.subplots(
@@ -272,17 +287,17 @@ class Diagnostics(object):
             kwargs["ls"] = ":"
 
         for i, input_dispersion in enumerate(input_velocity_dispersions):
+            # axes[i, 0].errorbar(
+            #     target_snrs,
+            #     recovered_dispersions[i],
+            #     yerr=recovered_velocity_scatters[i],
+            #     markersize=5,
+            #     ecolor="grey",
+            #     capsize=5,
+            #     **kwargs,
+            # )
             axes[i, 0].errorbar(
-                target_snrs,
-                recovered_dispersions[i],
-                yerr=recovered_velocity_scatters[i],
-                markersize=5,
-                ecolor="grey",
-                capsize=5,
-                **kwargs,
-            )
-            axes[i, 0].errorbar(
-                target_snrs,
+                recovered_snrs[i],
                 recovered_dispersions[i],
                 yerr=recovered_velocity_uncertainties[i],
                 capsize=8,
@@ -299,17 +314,17 @@ class Diagnostics(object):
             )
             axes[i, 0].set_ylabel(r"$\sigma$ (km s$^{-1}$)")
 
+            # axes[i, 1].errorbar(
+            #     target_snrs,
+            #     recovered_velocities[i],
+            #     yerr=recovered_velocity_scatters[i],
+            #     markersize=5,
+            #     ecolor="grey",
+            #     capsize=5,
+            #     **kwargs,
+            # )
             axes[i, 1].errorbar(
-                target_snrs,
-                recovered_velocities[i],
-                yerr=recovered_velocity_scatters[i],
-                markersize=5,
-                ecolor="grey",
-                capsize=5,
-                **kwargs,
-            )
-            axes[i, 1].errorbar(
-                target_snrs,
+                recovered_snrs[i],
                 recovered_velocities[i],
                 yerr=recovered_velocity_uncertainties[i],
                 capsize=8,
@@ -383,7 +398,6 @@ class Diagnostics(object):
 
         nmin = max(template_npix, data_num_pix)
         npad = 2 ** int(np.ceil(np.log2(nmin)))
-
         # npad = 2 ** int(np.ceil(np.log2(npix)))
         template_rfft = np.fft.rfft(template_flux, npad)
         lvd_rfft = losvd_rfft(
