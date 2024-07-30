@@ -18,6 +18,7 @@ class Spectra(object):
         z_source=0.0,
         flux_unit="arbitrary",
         noise=None,
+        covariance=None,
     ):
         """
         :param wavelengths: wavelengths of the spectra in observer frame
@@ -28,16 +29,16 @@ class Spectra(object):
         :type wavelength_unit: str
         :param fwhm: full width at half maximum of the data. Needs to be in the same unit as the wavelengths
         :type fwhm: float
-        :param flux_unit: unit of the flux
-        :type flux_unit: str
-        :param mask: mask of the data
-        :type mask: numpy.ndarray
-        :param noise: noise of the data
-        :type noise: numpy.ndarray
         :param z_lens: lens redshift
         :type z_lens: float
         :param z_source: source redshift
         :type z_source: float
+        :param flux_unit: unit of the flux
+        :type flux_unit: str
+        :param noise: noise of the data
+        :type noise: numpy.ndarray
+        :param covariance: covariance of the data
+        :type covariance: numpy.ndarray
         """
         self._wavelengths = deepcopy(wavelengths)
         self._original_wavelengths = wavelengths
@@ -51,11 +52,13 @@ class Spectra(object):
         self._z_lens = z_lens
         self._z_source = z_source
 
-        self.fwhm = fwhm
-        self.restframe_fwhm = self.fwhm / (1 + self.z_lens)
+        self._fwhm = deepcopy(fwhm)
+        self._original_fwhm = fwhm
 
         self._noise = deepcopy(noise)
         self._original_noise = noise
+        self._covariance = deepcopy(covariance)
+        self._original_covariance = covariance
 
         self._velocity_scale = None
 
@@ -69,18 +72,6 @@ class Spectra(object):
     def flux(self, flux):
         """Set the flux of the data."""
         self._flux = flux
-
-    @property
-    def original_flux(self):
-        """Return the original flux of the data."""
-        if hasattr(self, "_original_flux"):
-            return self._original_flux
-
-    @property
-    def original_wavelengths(self):
-        """Return the original wavelengths of the data."""
-        if hasattr(self, "_original_wavelengths"):
-            return self._original_wavelengths
 
     @property
     def wavelengths(self):
@@ -106,6 +97,12 @@ class Spectra(object):
     def wavelengths_frame(self, frame):
         """Set the frame of the wavelengths."""
         self._wavelengths_frame = frame
+
+    @property
+    def fwhm(self):
+        """Return the full width at half maximum of the data."""
+        if hasattr(self, "_fwhm"):
+            return self._fwhm
 
     @property
     def flux_unit(self):
@@ -145,10 +142,15 @@ class Spectra(object):
         self._noise = noise
 
     @property
-    def original_noise(self):
-        """Return the original noise of the data."""
-        if hasattr(self, "_original_noise"):
-            return self._original_noise
+    def covariance(self):
+        """Return the covariance of the data."""
+        if hasattr(self, "_covariance"):
+            return self._covariance
+
+    @covariance.setter
+    def covariance(self, covariance):
+        """Set the covariance of the data."""
+        self._covariance = covariance
 
     @property
     def z_lens(self):
@@ -198,14 +200,18 @@ class Spectra(object):
             self._wavelengths_frame = f"z={redshift:.3f}"
 
         self._wavelengths = self._wavelengths / (1.0 + redshift)
+        self._fwhm = self._fwhm / (1.0 + redshift)
 
     def reset(self):
         """Reset the data to the original state."""
         self._wavelengths = deepcopy(self._original_wavelengths)
         self._flux = deepcopy(self._original_flux)
         self._noise = deepcopy(self._original_noise)
+        self._covariance = deepcopy(self._original_covariance)
+        self._fwhm = deepcopy(self._original_fwhm)
         self._spectra_modifications = []
         self._wavelengths_frame = "observed"
+        self._velocity_scale = None
 
     def clip(self, wavelength_min, wavelength_max):
         """Clip the data to the given wavelength range.
@@ -218,16 +224,132 @@ class Spectra(object):
         )
 
         self._wavelengths = self._wavelengths[mask]
-        if len(self.flux.shape) == 1:
-            self._flux = self._flux[mask]
-            if self._noise is not None:
-                self._noise = self._noise[mask]
-        else:
-            self._flux = self._flux[mask, ...]
-            if self._noise is not None:
-                self._noise = self._noise[mask, ...]
+
+        self._flux = self._flux[mask, ...]
+        if self._noise is not None:
+            self._noise = self._noise[mask, ...]
+        if self._covariance is not None:
+            self._covariance = self._covariance[mask, mask, ...]
 
         self._spectra_modifications += ["clipped"]
+
+    def _add(self, other, destination):
+        """Add two spectra together.
+
+        :param destination: destination spectra
+        :type destination: Spectra
+        :param spectra1: spectra to add
+        :type spectra1: Spectra
+        :param spectra2: spectra to add
+        :type spectra2: Spectra
+        """
+        assert np.all(self.wavelengths == other.wavelengths), "Wavelengths must match."
+        assert self.flux.shape == other.flux.shape, "Spectra must have the same shape."
+
+        destination.flux = self.flux + other.flux
+        destination.noise = None
+        destination.covariance = None
+
+        if self.noise is not None and other.noise is not None:
+            destination.noise = np.sqrt(self.noise**2 + other.noise**2)
+        if self.covariance is not None and other.covariance is not None:
+            destination.covariance = self.covariance + other.covariance
+
+    def __add__(self, other):
+        """Add two spectra together.
+
+        :param other: spectra to add
+        :type other: Spectra
+        :return: sum of the two spectra
+        :rtype: Spectra
+        """
+        spectra = deepcopy(self)
+
+        self._add(other, spectra)
+
+        return spectra
+
+    def __iadd__(self, other):
+        """Add two spectra together in place.
+
+        :param other: spectra to add
+        :type other: Spectra
+        :return: sum of the two spectra
+        :rtype: Spectra
+        """
+        self._add(other, self)
+
+        return self
+
+    def _concat(self, other, destination):
+        """Concatenate two spectra together.
+
+        :param other: spectra to add
+        :type other: Spectra
+        """
+        assert (
+            self.wavelength_unit == other.wavelength_unit
+        ), "Wavelength units must match."
+        assert self.fwhm == other.fwhm, "FWHM must match."
+        assert (
+            self.wavelengths[-1] < other.wavelengths[0]
+        ), "Wavelengths must be increasing without overlap."
+        assert (
+            self.spectra_modifications == other.spectra_modifications
+        ), "Spectra modifications must match."
+
+        destination.wavelengths = np.concatenate((self.wavelengths, other.wavelengths))
+        destination.flux = np.concatenate((self.flux, other.flux), axis=0)
+        destination.noise = None
+        destination.covariance = None
+
+        if self.noise is not None and other.noise is not None:
+            destination.noise = np.concatenate((self.noise, other.noise), axis=0)
+        if self.covariance is not None and other.covariance is not None:
+            destination.covariance = np.zeros(
+                (
+                    self.covariance.shape[0] + other.covariance.shape[0],
+                    self.covariance.shape[1] + other.covariance.shape[1],
+                    self.covariance.shape[2],
+                    self.covariance.shape[3],
+                )
+            )
+            destination.covariance[
+                : self.covariance.shape[0], : self.covariance.shape[1]
+            ] = self.covariance
+            destination.covariance[
+                self.covariance.shape[0] :, self.covariance.shape[1] :
+            ] = other.covariance
+
+    def concat(self, other):
+        """Concatenate two spectra together.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        spectra = deepcopy(self)
+
+        self._concat(other, spectra)
+
+        return spectra
+
+    def __and__(self, other):
+        """Concatenate two spectra together.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        return self.concat(other)
+
+    def __iand__(self, other):
+        """Concatenate two spectra together in place.
+
+        :param other: spectra to concatenate
+        :type other: Spectra
+        """
+        self._concat(other, self)
+
+        return self
 
 
 class Datacube(Spectra):
@@ -246,6 +368,7 @@ class Datacube(Spectra):
         coordinate_transform_matrix,
         flux_unit="arbitrary",
         noise=None,
+        covariance=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -276,6 +399,7 @@ class Datacube(Spectra):
             z_source=z_source,
             flux_unit=flux_unit,
             noise=noise,
+            covariance=covariance,
         )
 
         self._center_pixel_x = center_pixel_x
@@ -317,6 +441,66 @@ class Datacube(Spectra):
         if hasattr(self, "_y_coordinates"):
             return self._y_coordinates
 
+    def get_1d_spectra(self, x=None, y=None, mask=None):
+        """Return the spectra at a given pixel, or summed within given a mask. If
+        nothing is provided, the entire datacube will be summed over.
+
+        :param x: x coordinate of the pixel
+        :type x: int
+        :param y: y coordinate of the pixel
+        :type y: int
+        :param slice: slice to sum the spectra
+        :type slice: slice
+        :param mask: mask to sum the spectra
+        :type mask: numpy.ndarray
+        :return: spectrum at the given pixel
+        :rtype: numpy.ndarray
+        """
+        noise = None
+        covariance = None
+
+        if mask is not None:
+            flux = np.nansum(self.flux * mask[None, :, :], axis=(1, 2))
+            if self.noise is not None:
+                noise = np.sqrt(
+                    np.nansum(self.noise**2 * mask[None, :, :], axis=(1, 2))
+                )
+            if self.covariance is not None:
+                covariance = np.nansum(
+                    self.covariance * mask[None, None, :, :], axis=(2, 3)
+                )
+        elif x is not None and y is not None:
+            flux = self.flux[:, y, x]
+            if self.noise is not None:
+                noise = self.noise[:, y, x]
+            if self.covariance is not None:
+                covariance = self.covariance[:, :, y, x]
+        elif (x is None and y is not None) or (x is not None and y is None):
+            raise ValueError("Both x and y must be provided if one of them is.")
+        else:
+            flux = np.nansum(self.flux, axis=(1, 2))
+            if self.noise is not None:
+                noise = np.sqrt(np.nansum(self.noise**2, axis=(1, 2)))
+            if self.covariance is not None:
+                covariance = np.nansum(self.covariance, axis=(2, 3))
+
+        spectra = Spectra(
+            wavelengths=self.wavelengths,
+            flux=flux,
+            wavelength_unit=self.wavelength_unit,
+            fwhm=self.fwhm,
+            z_lens=self.z_lens,
+            z_source=self.z_source,
+            flux_unit=self.flux_unit,
+            noise=noise,
+            covariance=covariance,
+        )
+
+        spectra.spectra_modifications = deepcopy(self.spectra_modifications)
+        spectra.velocity_scale = deepcopy(self.velocity_scale)
+
+        return spectra
+
 
 class VoronoiBinnedSpectra(Spectra):
     """A class to store binned spectra."""
@@ -331,9 +515,12 @@ class VoronoiBinnedSpectra(Spectra):
         z_source,
         x_coordinates,
         y_coordinates,
-        bin_num,
+        num_bins,
+        x_pixels_of_bins,
+        y_pixels_of_bins,
         flux_unit="arbitrary",
         noise=None,
+        covariance=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -348,16 +535,22 @@ class VoronoiBinnedSpectra(Spectra):
         :type z_lens: float
         :param z_source: source redshift
         :type z_source: float
-        :param x_coordinates: x coordinates of the data
+        :param x_coordinates: x coordinates of the original datacube's spatial pixels (2D)
         :type x_coordinates: numpy.ndarray
-        :param y_coordinates: y coordinates of the data
+        :param y_coordinates: y coordinates of the original datacube's spatial pixels (2D)
         :type y_coordinates: numpy.ndarray
-        :param bin_num: bin number of the data
-        :type bin_num: numpy.ndarray
+        :param bin_numbers: bin number of the data
+        :type bin_numbers: numpy.ndarray
+        :param x_pixels_of_bins: pixel_x values corresponding to `bin_numbers`
+        :type x_pixels_of_bins: numpy.ndarray
+        :param y_pixels_of_bins: pixel_y values corresponding to `bin_numbers`
+        :type y_pixels_of_bins: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
         :param noise: noise of the data
         :type noise: numpy.ndarray
+        :param covariance: covariance of the data
+        :type covariance: numpy.ndarray
         """
         super(VoronoiBinnedSpectra, self).__init__(
             wavelengths=wavelengths,
@@ -368,11 +561,14 @@ class VoronoiBinnedSpectra(Spectra):
             z_source=z_source,
             flux_unit=flux_unit,
             noise=noise,
+            covariance=covariance,
         )
 
         self._x_coordinates = x_coordinates
         self._y_coordinates = y_coordinates
-        self._bin_num = bin_num
+        self._bin_numbers = num_bins
+        self._x_pixels_of_bins = x_pixels_of_bins
+        self._y_pixels_of_bins = y_pixels_of_bins
 
     @property
     def x_coordinates(self):
@@ -387,10 +583,41 @@ class VoronoiBinnedSpectra(Spectra):
             return self._y_coordinates
 
     @property
-    def bin_num(self):
+    def bin_numbers(self):
         """Return the bin number of the data."""
-        if hasattr(self, "_bin_num"):
-            return self._bin_num
+        if hasattr(self, "_bin_numbers"):
+            return self._bin_numbers
+
+    @property
+    def x_pixels_of_bins(self):
+        """Return the x pixel values corresponding to the bin numbers."""
+        if hasattr(self, "_x_pixels_of_bins"):
+            return self._x_pixels_of_bins
+
+    @property
+    def y_pixels_of_bins(self):
+        """Return the y pixel values corresponding to the bin numbers."""
+        if hasattr(self, "_y_pixels_of_bins"):
+            return self._y_pixels_of_bins
+
+    def get_spaxel_map_with_bin_number(self):
+        """Return vornoi bin mapping. -1 is masked pixel. Unmasked pixel start counting
+        from 0.
+
+        :return: 2D array with bin mapping
+        :rtype: numpy.ndarray
+        """
+        bin_numbers = self.bin_numbers
+
+        mapping = np.zeros(self.x_coordinates.shape, dtype=int) - 1
+
+        x_pixels = self.x_pixels_of_bins
+        y_pixels = self.y_pixels_of_bins
+
+        for v, x, y in zip(bin_numbers, x_pixels, y_pixels):
+            mapping[int(y)][int(x)] = v
+
+        return mapping
 
 
 class RadiallyBinnedSpectra(Spectra):
@@ -407,6 +634,7 @@ class RadiallyBinnedSpectra(Spectra):
         bin_radii,
         flux_unit="arbitrary",
         noise=None,
+        covariance=None,
     ):
         """
         :param wavelengths: wavelengths of the data
@@ -427,6 +655,8 @@ class RadiallyBinnedSpectra(Spectra):
         :type flux_unit: str
         :param noise: noise of the data
         :type noise: numpy.ndarray
+        :param covariance: covariance of the data
+        :type covariance: numpy.ndarray
         """
         assert (
             len(bin_radii) - 1 == flux.shape[1]
@@ -441,6 +671,7 @@ class RadiallyBinnedSpectra(Spectra):
             z_source=z_source,
             flux_unit=flux_unit,
             noise=noise,
+            covariance=covariance,
         )
 
         self._bin_radii = bin_radii
