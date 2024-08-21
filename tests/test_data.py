@@ -204,7 +204,10 @@ class TestDatacube:
                 self.flux_unit,
                 self.noise,
             )
-        datacube = _get_datacube(np.array([[-0.1, 0], [0, 0.1]]))  # x-axis decreasing towards right
+
+        datacube = _get_datacube(
+            np.array([[-0.1, 0], [0, 0.1]])
+        )  # x-axis decreasing towards right
         npt.assert_array_almost_equal(
             datacube.spatial_extent(pyplot=False),
             [0.1, -0.1, -0.1, 0.1],
@@ -215,7 +218,9 @@ class TestDatacube:
             [0.15, -0.15, -0.15, 0.15],
             decimal=8,
         )
-        datacube = _get_datacube(np.array([[0.1, 0], [0, -0.1]]))  # y-axis decreasing towards up
+        datacube = _get_datacube(
+            np.array([[0.1, 0], [0, -0.1]])
+        )  # y-axis decreasing towards up
         npt.assert_array_almost_equal(
             datacube.spatial_extent(pyplot=False),
             [-0.1, 0.1, 0.1, -0.1],

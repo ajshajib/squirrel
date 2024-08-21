@@ -316,10 +316,9 @@ class Datacube(Spectra):
         """Return the y coordinates of the data."""
         if hasattr(self, "_y_coordinates"):
             return self._y_coordinates
-        
+
     def spatial_extent(self, pyplot=False):
-        """
-        Return the extent of the datacube along x and y directions, as a list
+        """Return the extent of the datacube along x and y directions, as a list
         [x_left, x_right, y_bottom, y_top].
 
         Parameters
@@ -337,21 +336,24 @@ class Datacube(Spectra):
             y_increasing = y_step > 0
             y_step = abs(y_step)
             extent = [
-                x_coord[0, 0], x_coord[0, -1], y_coord[0, 0], y_coord[-1, 0],
+                x_coord[0, 0],
+                x_coord[0, -1],
+                y_coord[0, 0],
+                y_coord[-1, 0],
             ]
             if pyplot is True:
                 if x_increasing:
-                    extent[0] -= x_step / 2.
-                    extent[1] += x_step / 2.
+                    extent[0] -= x_step / 2.0
+                    extent[1] += x_step / 2.0
                 else:
-                    extent[0] += x_step / 2.
-                    extent[1] -= x_step / 2.
+                    extent[0] += x_step / 2.0
+                    extent[1] -= x_step / 2.0
                 if y_increasing:
-                    extent[2] -= y_step / 2.
-                    extent[3] += y_step / 2.
+                    extent[2] -= y_step / 2.0
+                    extent[3] += y_step / 2.0
                 else:
-                    extent[2] += y_step / 2.
-                    extent[3] -= y_step / 2.
+                    extent[2] += y_step / 2.0
+                    extent[3] -= y_step / 2.0
             return extent
 
 
