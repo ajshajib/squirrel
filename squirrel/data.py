@@ -317,6 +317,46 @@ class Datacube(Spectra):
         if hasattr(self, "_y_coordinates"):
             return self._y_coordinates
 
+    def spatial_extent(self, pyplot=False):
+        """Return the extent of the datacube along x and y directions, as a list
+        [x_left, x_right, y_bottom, y_top].
+
+        ----------
+        :param pyplot: optional, by default `False`. If `True`, returns the extent as required by, e.g., `plt.imshow()`.
+        :type pyplot: bool
+        :return: [x_left, x_right, y_bottom, y_top]
+        :rtype: list
+        """
+        x_coord = self.x_coordinates
+        y_coord = self.y_coordinates
+        if x_coord is not None:
+            x_step = x_coord[0, 1] - x_coord[0, 0]
+            x_increasing = x_step > 0
+            x_step = abs(x_step)
+            y_step = y_coord[1, 0] - y_coord[0, 0]
+            y_increasing = y_step > 0
+            y_step = abs(y_step)
+            extent = [
+                x_coord[0, 0],
+                x_coord[0, -1],
+                y_coord[0, 0],
+                y_coord[-1, 0],
+            ]
+            if pyplot is True:
+                if x_increasing:
+                    extent[0] -= x_step / 2.0
+                    extent[1] += x_step / 2.0
+                else:
+                    extent[0] += x_step / 2.0
+                    extent[1] -= x_step / 2.0
+                if y_increasing:
+                    extent[2] -= y_step / 2.0
+                    extent[3] += y_step / 2.0
+                else:
+                    extent[2] += y_step / 2.0
+                    extent[3] -= y_step / 2.0
+            return extent
+
 
 class VoronoiBinnedSpectra(Spectra):
     """A class to store binned spectra."""
