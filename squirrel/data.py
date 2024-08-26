@@ -321,10 +321,11 @@ class Datacube(Spectra):
         """Return the extent of the datacube along x and y directions, as a list
         [x_left, x_right, y_bottom, y_top].
 
-        Parameters
         ----------
-        pyplot : bool, optional
-            If True, returns the extent as required by e.g. plt.imshow(), by default False
+        :param pyplot: optional, If True, returns the extent as required by e.g. plt.imshow(), by default False
+        :type pyplot: bool
+        :return: [x_left, x_right, y_bottom, y_top]
+        :rtype: list
         """
         x_coord = self.x_coordinates
         y_coord = self.y_coordinates
