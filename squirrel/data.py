@@ -322,7 +322,7 @@ class Datacube(Spectra):
         [x_left, x_right, y_bottom, y_top].
 
         ----------
-        :param pyplot: optional, If True, returns the extent as required by e.g. plt.imshow(), by default False
+        :param pyplot: optional, by default `False`. If `True`, returns the extent as required by, e.g., `plt.imshow()`.
         :type pyplot: bool
         :return: [x_left, x_right, y_bottom, y_top]
         :rtype: list
