@@ -14,8 +14,6 @@ from tqdm import tqdm
 
 from .data import VoronoiBinnedSpectra
 from .template import Template
-from .util import is_positive_definite
-from .util import get_nearest_positive_definite_matrix
 
 
 class Pipeline(object):
@@ -91,6 +89,13 @@ class Pipeline(object):
 
             if take_covariance:
                 covariance[:, :, i] = np.cov(rebinned_realizations)
+
+                # set non-adjacent covariance to zero to avoid numerical issues from noise
+                for j in range(covariance.shape[0]):
+                    for k in range(j - 1, j + 2):
+                        if k < 0 or k >= covariance.shape[1]:
+                            continue
+                        covariance[j, k, i] = 0
             else:
                 noise[:, i] = np.std(rebinned_realizations, axis=1)
 
@@ -110,24 +115,24 @@ class Pipeline(object):
         spectra.spectra_modifications += ["log_rebinned"]
 
     @staticmethod
-    def voronoi_bin(
+    def get_voronoi_binning_map(
         datacube,
         signal_image_per_wavelength_unit,
         noise_image,
         target_snr,
-        # min_wavelength_for_snr,
-        # max_wavelength_for_snr,
         max_radius,
         min_snr_per_spaxel=1.0,
         plot=False,
         quiet=True,
     ):
-        """Perform the Voronoi binning.
+        """Get the Voronoi binning map.
 
         :param datacube: datacube to bin
         :type datacube: `DataCube` class
-        :param signal_image_per_wavelength_unit:
+        :param signal_image_per_wavelength_unit: signal image per wavelength unit
         :type signal_image_per_wavelength_unit: np.ndarray
+        :param noise_image: noise image
+        :type noise_image: np.ndarray
         :param target_snr: target S/N per wavelength unit for each bin
         :type target_snr: float
         :param max_radius: maximum radius for binning, in the unit of in `datacube.x_coordinates`
@@ -137,10 +142,8 @@ class Pipeline(object):
         :param plot: plot the results
         :type plot: bool
         :param quiet: suppress the output
-        :type quiet: bool
-        :return: Voronoi binned spectra
-        :rtype: `VoronoiBinnedSpectra` class
         """
+
         radius = np.sqrt(datacube.x_coordinates**2 + datacube.y_coordinates**2)
 
         snr_image_per_wavelength_unit = signal_image_per_wavelength_unit / noise_image
@@ -195,6 +198,37 @@ class Pipeline(object):
 
         if plot:
             plt.tight_layout()
+
+        return (
+            num_bins,
+            xx_pixels_masked,
+            yy_pixels_masked,
+            bin_center_x,
+            bin_center_y,
+            snr,
+            area,
+        )
+
+    @staticmethod
+    def get_voronoi_binned_spectra(datacube, bin_mapping_output):
+        """Perform the Voronoi binning.
+
+        :param datacube: datacube to bin
+        :type datacube: `DataCube` class
+        :param bin_mapping_output: outputs from `get_voronoi_binning_map()`
+        :type bin_mapping_output: tuple
+        :return: Voronoi binned spectra
+        :rtype: `VoronoiBinnedSpectra` class
+        """
+        (
+            num_bins,
+            xx_pixels_masked,
+            yy_pixels_masked,
+            bin_center_x,
+            bin_center_y,
+            snr,
+            area,
+        ) = bin_mapping_output
 
         voronoi_binned_flux = np.zeros(
             (datacube.flux.shape[0], int(np.max(num_bins)) + 1)
@@ -368,6 +402,7 @@ class Pipeline(object):
             * wavelength_range_extend_factor
             * wavelength_factor,
         )
+
         gas_templates, line_names, line_wavelengths = ppxf_util.emission_lines(
             np.log(template_wavelengths * wavelength_factor),
             wavelength_range_templates,
@@ -586,13 +621,16 @@ class Pipeline(object):
         if noise is None:
             noise = 0.1 * np.ones_like(flux)
 
-        if len(noise.shape) == 2 and not is_positive_definite(noise):
-            noise = get_nearest_positive_definite_matrix(noise)
+        # if len(noise.shape) == 2 and not is_positive_definite(noise):
+        #     noise = get_nearest_positive_definite_matrix(noise)
 
+        original_noise = deepcopy(noise)
         ppxf_fit = ppxf(
             templates=template.flux,
             galaxy=flux,
-            noise=noise,
+            noise=deepcopy(
+                noise
+            ),  # sending deepcopy just in case, as pPXF may manipulate the noise array/matrix
             velscale=data.velocity_scale,
             start=start,
             plot=plot,
@@ -604,6 +642,7 @@ class Pipeline(object):
             **kwargs_ppxf,
         )
 
+        ppxf_fit.original_noise = original_noise
         return ppxf_fit
 
     @classmethod
