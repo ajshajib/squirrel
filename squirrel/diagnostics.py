@@ -7,9 +7,13 @@ from numpy.polynomial import legendre
 from ppxf.ppxf import losvd_rfft
 from ppxf.ppxf import rebin
 from tqdm.notebook import tqdm
+from scipy import optimize
+import scipy.linalg as splinalg
 
 from .pipeline import Pipeline
 from .template import Template
+from .util import is_positive_definite
+from .util import get_nearest_positive_definite_matrix
 
 
 class Diagnostics(object):
@@ -28,6 +32,8 @@ class Diagnostics(object):
         add_component=0.0,
         num_samples=50,
         z_factor=1.0,
+        fit_with_scipy=False,
+        plot=True,
     ):
         """Check the bias in the velocity dispersion measurement as a function of SNR.
 
@@ -48,6 +54,12 @@ class Diagnostics(object):
         :param z_factor: multiplicative factor for wavelength (e.g., 1 + z), if the SNR
             is computed at a different frame
         :type z_factor: float
+        :param plot: plot one example simulation for each input velocity dispersion and
+            SNR
+        :type plot: bool
+        :param fit_with_scipy: fit with scipy instead of ppxf, to check for numerical
+            inaccuracy in ppxf
+        :type fit_with_scipy: bool
         :return: recovered values
         :rtype: tuple
         """
@@ -74,6 +86,8 @@ class Diagnostics(object):
             multiplicative_polynomial=ppxf_fit.mpoly if ppxf_fit.mdegree > 0 else 1.0,
             num_sample=num_samples,
             z_factor=z_factor,
+            fit_with_scipy=fit_with_scipy,
+            plot=plot,
         )
 
     @staticmethod
@@ -140,6 +154,8 @@ class Diagnostics(object):
         multiplicative_polynomial=1.0,
         num_sample=50,
         z_factor=1.0,
+        fit_with_scipy=False,
+        plot=True,
     ):
         """Check the bias in the velocity dispersion measurement as a function of SNR.
 
@@ -168,6 +184,12 @@ class Diagnostics(object):
         :param z_factor: multiplicative factor for wavelength (e.g., 1 + z), if the SNR
             is computed at a different frame
         :type z_factor: float
+        :param plot: plot one example simulation for each input velocity dispersion and
+            SNR
+        :type plot: bool
+        :param fit_with_scipy: fit with scipy instead of ppxf, to check for numerical
+            inaccuracy in ppxf
+        :type fit_with_scipy: bool
         :return: recovered values
         :rtype: tuple
         """
@@ -196,10 +218,6 @@ class Diagnostics(object):
 
         recovered_snrs = np.zeros((len(input_velocity_dispersions), len(target_snrs)))
 
-        data = deepcopy(spectra_data)
-        data.noise = np.diag(data.covariance) ** 0.5
-        data.covariance = None
-
         # for i, input_dispersion in enumerate(input_velocity_dispersions):
         for i in tqdm(range(len(input_velocity_dispersions)), desc="Input dispersion"):
             input_dispersion = input_velocity_dispersions[i]
@@ -209,11 +227,11 @@ class Diagnostics(object):
                 input_dispersion,
                 spectra_data.velocity_scale,
                 int(spectra_data.velocity_scale / template.velocity_scale),
-                spectra_data.wavelengths,
-                template_weight,
-                polynomial_degree,
-                polynomial_weights,
-                multiplicative_polynomial,
+                data_wavelength=spectra_data.wavelengths,
+                data_weight=template_weight,
+                polynomial_degree=polynomial_degree,
+                polynomial_weights=polynomial_weights,
+                multiplicative_polynomial=multiplicative_polynomial,
             )
 
             # mock_flux *= multiplicative_polynomial
@@ -240,6 +258,10 @@ class Diagnostics(object):
 
                     if data.covariance is not None:
                         data.covariance *= noise_multiplier**2
+                        if not is_positive_definite(data.covariance):
+                            data.covariance = get_nearest_positive_definite_matrix(
+                                data.covariance
+                            )
                         noise = np.random.multivariate_normal(
                             data.flux * 0, data.covariance
                         )
@@ -253,68 +275,126 @@ class Diagnostics(object):
 
                     data.flux += noise
 
-                    mock_ppxf_fit = Pipeline.run_ppxf(
-                        data,
-                        template,
-                        moments=2,
-                        degree=polynomial_degree,
-                        mdegree=multiplicative_polynomial_degree,
-                        start=[0, input_dispersion],
-                        bounds=[
-                            [-cls.VEL_LIM, cls.VEL_LIM],
-                            [input_dispersion - 100, input_dispersion + 100],
-                        ],
-                        fixed=[1, 0],
-                        quiet=True,
-                        global_search={
-                            "popsize": 20,
-                            "mutation": (0.5, 1.0),
-                            "disp": False,
-                        },
-                    )
-                    if k == 0:
-                        # plt.plot(data.flux)
-                        # plt.plot(mock_flux)
-                        # plt.plot(spectra_data.flux)
-                        # plt.show()
-                        mock_ppxf_fit.plot()
-                        plt.title(f"input: {input_dispersion}, snr: {target_snr}")
-                        plt.show()
+                    if fit_with_scipy:
 
-                    # dispersion_samples.append(mock_ppxf_fit.sol[1])
-                    # velocity_samples.append(mock_ppxf_fit.sol[0])
-                    # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
-                    dispersion_samples[k] = mock_ppxf_fit.sol[1]
-                    dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
-                    velocity_samples[k] = mock_ppxf_fit.sol[0]
-                    velocity_uncertainty_samples[k] = mock_ppxf_fit.error[0]
-                    snr_samples[k] = cls.get_specific_snr(
-                        data, spectra_mask_for_snr, z_factor=z_factor
-                    )
+                        def func(params):
+                            v, sigma = params
+                            model_flux = cls.make_convolved_spectra(
+                                template.flux[:, 0],
+                                template.wavelengths,
+                                sigma,
+                                spectra_data.velocity_scale,
+                                int(
+                                    spectra_data.velocity_scale
+                                    / template.velocity_scale
+                                ),
+                                data_wavelength=spectra_data.wavelengths,
+                                velocity=v,
+                                data_weight=template_weight,
+                                polynomial_degree=polynomial_degree,
+                                polynomial_weights=polynomial_weights,
+                                multiplicative_polynomial=multiplicative_polynomial,
+                            )
 
-                # recovered_velocities[i, j] = np.sum(
-                #     velocity_samples / velocity_uncertainty_samples**2
-                # ) / np.sum(1 / velocity_uncertainty_samples**2)
-                recovered_velocities[i, j] = np.median(velocity_samples)
-                recovered_velocity_uncertainties[i, j] = (
-                    np.sum(1 / velocity_uncertainty_samples**2) ** -0.5
-                )
-                # recovered_velocity_scatters[i, j] = np.std(velocity_samples)
-                recovered_velocity_scatters[i, j] = 1.4826 * np.median(
-                    np.abs(velocity_samples - recovered_velocities[i, j])
-                )
+                            delta = model_flux - data.flux
 
-                # recovered_dispersions[i, j] = np.sum(
-                #     dispersion_samples / dispersion_uncertainty_samples**2
-                # ) / np.sum(1 / dispersion_uncertainty_samples**2)
-                recovered_dispersions[i, j] = np.median(dispersion_samples)
-                recovered_dispersion_uncertainties[i, j] = (
-                    np.sum(1 / dispersion_uncertainty_samples**2) ** -0.5
+                            if data.covariance is not None:
+                                l_cholesky = splinalg.cholesky(
+                                    data.covariance, lower=True
+                                )
+                                l_cholesky_inv = splinalg.solve_triangular(
+                                    l_cholesky, np.eye(l_cholesky.shape[0]), lower=True
+                                )
+                                delta = l_cholesky_inv @ delta
+                                chi2 = delta @ delta
+                            else:
+                                chi2 = np.sum(delta**2 / data.noise**2)
+
+                            return chi2
+
+                        result = optimize.differential_evolution(
+                            func,
+                            x0=[0, input_dispersion],
+                            bounds=[
+                                (-20, 20),
+                                (input_dispersion - 30, input_dispersion + 30),
+                            ],
+                            popsize=50,
+                            mutation=(0.5, 1.0),
+                            disp=False,
+                        )
+
+                        velocity_samples[k] = result.x[0]
+                        dispersion_samples[k] = result.x[1]
+                        velocity_uncertainty_samples[k] = 0
+                        dispersion_uncertainty_samples[k] = 0
+                        snr_samples[k] = cls.get_specific_snr(
+                            data, spectra_mask_for_snr, z_factor=z_factor
+                        )
+                    else:
+                        mock_ppxf_fit = Pipeline.run_ppxf(
+                            data,
+                            template,
+                            moments=2,
+                            degree=polynomial_degree,
+                            mdegree=multiplicative_polynomial_degree,
+                            # start=[result.x[0], result.x[1]],
+                            start=[0, input_dispersion],
+                            bounds=[
+                                [-cls.VEL_LIM, cls.VEL_LIM],
+                                [input_dispersion - 100, input_dispersion + 100],
+                            ],
+                            # fixed=[0, 0],
+                            quiet=True,
+                            global_search={
+                                "popsize": 50,
+                                "mutation": (0.5, 1.0),
+                                "disp": False,
+                            },
+                        )
+                        if plot and k == 0:
+                            # plt.plot(data.flux)
+                            # plt.plot(mock_flux)
+                            # plt.plot(spectra_data.flux)
+                            # plt.show()
+                            mock_ppxf_fit.plot()
+                            plt.title(
+                                f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
+                            )
+                            plt.show()
+
+                        # dispersion_samples.append(mock_ppxf_fit.sol[1])
+                        # velocity_samples.append(mock_ppxf_fit.sol[0])
+                        # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
+                        dispersion_samples[k] = mock_ppxf_fit.sol[1]
+                        dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
+                        velocity_samples[k] = mock_ppxf_fit.sol[0]
+                        velocity_uncertainty_samples[k] = mock_ppxf_fit.error[0]
+                        snr_samples[k] = cls.get_specific_snr(
+                            data, spectra_mask_for_snr, z_factor=z_factor
+                        )
+
+                mean, uncertainty_mean, scatter = cls.get_stats(
+                    velocity_samples, velocity_uncertainty_samples
                 )
-                # recovered_dispersion_scatters[i, j] = np.std(dispersion_samples)
-                recovered_dispersion_scatters[i, j] = 1.4826 * np.median(
-                    np.abs(dispersion_samples - recovered_dispersions[i, j])
+                recovered_velocities[i, j] = mean
+                recovered_velocity_uncertainties[i, j] = uncertainty_mean
+                # recovered_velocities[i, j] = np.median(velocity_samples)
+                # recovered_velocity_scatters[i, j] = 1.4826 * np.median(
+                #     np.abs(velocity_samples - recovered_velocities[i, j])
+                # )
+                recovered_velocity_scatters[i, j] = scatter
+
+                mean, uncertainty_mean, scatter = cls.get_stats(
+                    dispersion_samples, dispersion_uncertainty_samples
                 )
+                recovered_dispersions[i, j] = mean
+                recovered_dispersion_uncertainties[i, j] = uncertainty_mean
+                # recovered_dispersions[i, j] = np.median(dispersion_samples)
+                # recovered_dispersion_scatters[i, j] = 1.4826 * np.median(
+                #     np.abs(dispersion_samples - recovered_dispersions[i, j])
+                # )
+                recovered_dispersion_scatters[i, j] = scatter
                 recovered_snrs[i, j] = np.mean(snr_samples)
 
         return (
@@ -326,6 +406,39 @@ class Diagnostics(object):
             recovered_velocity_uncertainties,
             recovered_velocity_scatters,
         )
+
+    @staticmethod
+    def get_stats(values, uncertainties, sigma=3):
+        """Compute the mean and standard deviation of the array after sigma-clipping.
+
+        :param values: values
+        :type arr: numpy.ndarray
+        :param uncertainties: uncertainties
+        :type uncertainties: numpy.ndarray
+        :param sigma: sigma for clipping
+        :type sigma: float
+        :return: mean, uncertainty of the mean, and scatter
+        :rtype: tuple
+        """
+        # low_percentile = 100 * 0.5 * (1 - erf(sigma / np.sqrt(2)))
+        # high_percentile = 100 - low_percentile
+
+        # low, high = np.percentile(values, [low_percentile, high_percentile])
+
+        # sigma_clipped = sigma_clip(values, sigma=sigma)
+        # low, high = np.min(sigma_clipped), np.max(sigma_clipped)
+
+        # mask = (values >= low) & (values <= high)
+        # mean = np.sum(values[mask] / uncertainties[mask] ** 2) / np.sum(
+        #     1.0 / uncertainties[mask] ** 2
+        # )
+        # uncertainty_mean = np.sum(1.0 / uncertainties[mask] ** 2) ** -0.5
+        samples = np.random.normal(values, uncertainties, size=(1000, len(values)))
+        mean = np.median(values)
+        uncertainty_mean = np.std(np.median(samples, axis=1))
+        scatter = np.std(values)
+
+        return mean, uncertainty_mean, scatter
 
     @classmethod
     def plot_bias_vs_snr(
@@ -503,6 +616,7 @@ class Diagnostics(object):
         velocity_scale,
         velocity_scale_ratio,
         data_wavelength,
+        velocity=0,
         data_weight=1,
         polynomial_degree=0,
         polynomial_weights=[1.0],
@@ -514,9 +628,9 @@ class Diagnostics(object):
         :type template_flux: numpy.ndarray
         :param template_wavelength: template wavelength
         :type template_wavelength: numpy.ndarray
-        :param velocity_dispersion: velocity dispersion
+        :param velocity_dispersion: velocity dispersion, in km/s
         :type velocity_dispersion: float
-        :param velocity_scale: velocity scale
+        :param velocity_scale: velocity scale, in km/s
         :type velocity_scale: float
         :param velocity_scale_ratio: velocity scale ratio
         :type velocity_scale_ratio: int
@@ -524,6 +638,8 @@ class Diagnostics(object):
         :type data_npix: int
         :param data_wavelength: data wavelength
         :type data_wavelength: numpy.ndarray
+        :param velocity: velocity, km/s
+        :type velocity: float
         :param data_weight: multiplicative factor for the template flux, effective when
             polynomial_degree > 0 to set the relative amplitude of data and polynomial
         :type data_weight: float
@@ -550,7 +666,9 @@ class Diagnostics(object):
 
         v_systemic = c * np.log(lam_temp_min / data_wavelength[0]) / velocity_scale
         template_npix = template_flux.shape[0]
-        start = np.array([0, velocity_dispersion / velocity_scale])
+        start = np.array(
+            [velocity / velocity_scale, velocity_dispersion / velocity_scale]
+        )
         """
         nmin = max(self.templates.shape[0], self.npix)
         self.npad = 2 ** int(np.ceil(np.log2(nmin)))
