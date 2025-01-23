@@ -92,8 +92,8 @@ class Pipeline(object):
 
                 # set non-adjacent covariance to zero to avoid numerical issues from noise
                 for j in range(covariance.shape[0]):
-                    for k in range(j - 1, j + 2):
-                        if k < 0 or k >= covariance.shape[1]:
+                    for k in range(covariance.shape[1]):
+                        if j - 2 < k < j + 2:
                             continue
                         covariance[j, k, i] = 0
             else:
