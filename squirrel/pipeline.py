@@ -711,7 +711,7 @@ class Pipeline(object):
         Get the k, n, and log_L terms that is needed to compute the BIC.
 
         :param ppxf_fit: ppxf fit object
-        :type ppxf_fit: ppxf.PPxR
+        :type ppxf_fit: ppxf.ppxf
         :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
         :type num_fixed_parameters: int
         :return: k, n, log_L
@@ -745,14 +745,36 @@ class Pipeline(object):
         return k, n, log_likelihood
 
     @classmethod
-    def get_bic(cls, ppxf_fit, num_fixed_parameters=0, verbose=True):
+    def get_bic(cls, ppxf_fit, num_fixed_parameters=0):
         """
         :param ppxf_fit: ppxf fit object
-        :type ppxf_fit: ppxf.PPxR
+        :type ppxf_fit: ppxf.ppxf
         :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
         :type num_fixed_parameters: int
         """
         k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters)
         bic = k * np.log(n) - 2 * log_likelihood
+
+        return bic
+    
+    @classmethod
+    def get_bic_from_sample(cls, ppxf_fits, num_fixed_parameters=0):
+        """
+        :param ppxf_fits: ppxf fit objects
+        :type ppxf_fits: list of ppxf.ppxf
+        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :type num_fixed_parameters: int
+        """
+        k_total = 0
+        n_total = 0
+        log_likelihood_total = 0
+
+        for ppxf_fit in ppxf_fits:
+            k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters)
+            k_total += k
+            n_total += n
+            log_likelihood_total += log_likelihood
+    
+        bic = k_total * np.log(n_total) - 2 * log_likelihood_total
 
         return bic
