@@ -704,3 +704,55 @@ class Pipeline(object):
             np.array(mean_velocities),
             np.array(mean_velocity_uncertainties),
         )
+
+    @staticmethod
+    def get_terms_in_bic(ppxf_fit, num_fixed_parameters=0):
+        """
+        Get the k, n, and log_L terms that is needed to compute the BIC.
+
+        :param ppxf_fit: ppxf fit object
+        :type ppxf_fit: ppxf.PPxR
+        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :type num_fixed_parameters: int
+        :return: k, n, log_L
+        :rtype: tuple of int, int, float
+        """
+        n = len(ppxf_fit.goodpixels)
+        k_linear = ppxf_fit.x0.shape[0]
+
+        k_non_linear = np.sum([len(a) for a in ppxf_fit.sol]) + ppxf_fit.mdegree
+
+        k = k_linear + k_non_linear - num_fixed_parameters
+
+        # likelihood computation based on ppxf numbers
+        # dof = ppxf_fit.dof
+        # chi2 = ppxf_fit.chi2
+        # log_likelihood = -0.5 * ppxf_fit.chi2 * ppxf_fit.dof
+
+        # likelihood computation based on residuals
+        # dof = len(ppxf_fit.galaxy)  # - len(ppxf_fit.weights)
+        residuals = ppxf_fit.galaxy - ppxf_fit.bestfit
+
+        mask = np.zeros_like(residuals)
+        mask[ppxf_fit.goodpixels] = 1
+        residuals = residuals[mask == 1]
+        covariance = np.copy(ppxf_fit.original_noise)
+        covariance = covariance[mask == 1][:, mask == 1]
+
+        chi2 = np.dot(residuals, np.dot(np.linalg.inv(covariance), residuals))
+        log_likelihood = -0.5 * chi2
+
+        return k, n, log_likelihood
+
+    @classmethod
+    def get_bic(cls, ppxf_fit, num_fixed_parameters=0, verbose=True):
+        """
+        :param ppxf_fit: ppxf fit object
+        :type ppxf_fit: ppxf.PPxR
+        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :type num_fixed_parameters: int
+        """
+        k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters)
+        bic = k * np.log(n) - 2 * log_likelihood
+
+        return bic
