@@ -93,9 +93,8 @@ class Pipeline(object):
                 # set non-adjacent covariance to zero to avoid numerical issues from noise
                 for j in range(covariance.shape[0]):
                     for k in range(covariance.shape[1]):
-                        if j - 2 < k < j + 2:
-                            continue
-                        covariance[j, k, i] = 0
+                        if np.abs(j - k) > 1:
+                            covariance[j, k, i] = 0
             else:
                 noise[:, i] = np.std(rebinned_realizations, axis=1)
 
@@ -319,6 +318,7 @@ class Pipeline(object):
         velocity_scale_ratio,
         wavelength_factor=1.0,
         wavelength_range_extend_factor=1.05,
+        **kwargs,
     ):
         """Get the template object created for a stellar template library. The `library_path` should point to a `numpy.savez()` file containing the following arrays for a given SPS models library, like FSPS, Miles, GALEXEV, BPASS. This file will be sent to `ppxf.sps_util.sps_lib()`. See the documentation of that function for the format of the file.
         The EMILES, FSPS, GALEXEV libraries are available at https://github.com/micappe/ppxf_data.
@@ -333,6 +333,8 @@ class Pipeline(object):
         :type wavelength_factor: float
         :param wavelength_range_extend_factor: factor to extend the wavelength range
         :type wavelength_range_extend_factor: float
+        :param kwargs: additional arguments for `ppxf.sps_util.sps_lib()` function   
+        :type kwargs: dict
         :return: template
         :rtype: `Template` class
         """
@@ -353,11 +355,12 @@ class Pipeline(object):
             library_path,
             spectra.velocity_scale / velocity_scale_ratio,
             spectra.fwhm,
-            wave_range=wavelength_range_templates,
+            lam_range=wavelength_range_templates,
             norm_range=[
                 spectra.wavelengths[0] * wavelength_factor,
                 spectra.wavelengths[-1] * wavelength_factor,
             ],
+            **kwargs,
         )
 
         template_fluxes = sps.templates.reshape(sps.templates.shape[0], -1)
@@ -518,8 +521,6 @@ class Pipeline(object):
             & (wavelengths < wavelength_max + wavelength_diff)
         ]
 
-        wavelength_range_templates = [wavelength_min, wavelength_max]
-
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
                 np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 / wavelength_diff
@@ -527,7 +528,7 @@ class Pipeline(object):
             convolved_fluxes = ndimage.gaussian_filter1d(fluxes, sigma_diff, axis=0)
 
         rebinned_fluxes, log_wavelengths, velocity_scale_template = ppxf_util.log_rebin(
-            wavelength_range_templates,
+            wavelengths,
             convolved_fluxes,
             velscale=spectra.velocity_scale / velocity_scale_ratio,
         )
