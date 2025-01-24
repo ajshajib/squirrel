@@ -14,6 +14,8 @@ from tqdm import tqdm
 
 from .data import VoronoiBinnedSpectra
 from .template import Template
+from .util import is_positive_definite
+from .util import get_nearest_positive_definite_matrix
 
 
 class Pipeline(object):
@@ -103,6 +105,8 @@ class Pipeline(object):
             covariance = covariance.reshape(
                 rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
             )
+
+                
         else:
             noise = noise.reshape(rebinned_spectra.shape[0], *flux_shape[1:])
 
@@ -622,8 +626,8 @@ class Pipeline(object):
         if noise is None:
             noise = 0.1 * np.ones_like(flux)
 
-        # if len(noise.shape) == 2 and not is_positive_definite(noise):
-        #     noise = get_nearest_positive_definite_matrix(noise)
+        if len(noise.shape) == 2 and not is_positive_definite(noise):
+            noise = get_nearest_positive_definite_matrix(noise)
 
         original_noise = deepcopy(noise)
         ppxf_fit = ppxf(
