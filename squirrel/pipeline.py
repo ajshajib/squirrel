@@ -802,8 +802,6 @@ class Pipeline(object):
         bic = k_total * np.log(n_total) - 2 * log_likelihood_total
     
         return bic
-    
-    from scipy.special import ndtr
 
     @classmethod
     def get_relative_bic_weights_for_sample(
