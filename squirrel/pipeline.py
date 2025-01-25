@@ -4,6 +4,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from scipy import ndimage
+from scipy.special import ndtr
 from ppxf import ppxf_util
 from ppxf.ppxf import ppxf
 from ppxf import sps_util
@@ -710,7 +711,7 @@ class Pipeline(object):
         )
 
     @staticmethod
-    def get_terms_in_bic(ppxf_fit, num_fixed_parameters=0):
+    def get_terms_in_bic(ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
         """
         Get the k, n, and log_L terms that is needed to compute the BIC.
 
@@ -722,9 +723,20 @@ class Pipeline(object):
         :rtype: tuple of int, int, float
         """
         n = len(ppxf_fit.goodpixels)
-        k_linear = ppxf_fit.x0.shape[0]
+        if weight_threshold is not None:
+            num_templates = np.sum(ppxf_fit.weights > weight_threshold*ppxf_fit.weights.sum())
+        else:
+            num_templates = len(ppxf_fit.weights)
+        k_linear = num_templates + ppxf_fit.degree + 1
+        if ppxf_fit.sky is not None:
+            print(ppxf_fit.sky.shape)
+            k_linear += ppxf_fit.sky.shape[1]
 
-        k_non_linear = np.sum([len(a) for a in ppxf_fit.sol]) + ppxf_fit.mdegree
+        # check if  ppxf_fit.sol[0] is float
+        if isinstance(ppxf_fit.sol[0], float):
+            k_non_linear = len(ppxf_fit.sol) + ppxf_fit.mdegree
+        else:
+            k_non_linear = np.sum([len(a) for a in ppxf_fit.sol]) + ppxf_fit.mdegree
 
         k = k_linear + k_non_linear - num_fixed_parameters
 
@@ -749,36 +761,213 @@ class Pipeline(object):
         return k, n, log_likelihood
 
     @classmethod
-    def get_bic(cls, ppxf_fit, num_fixed_parameters=0):
+    def get_bic(cls, ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
         """
         :param ppxf_fit: ppxf fit object
         :type ppxf_fit: ppxf.ppxf
         :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
         :type num_fixed_parameters: int
+        :param weight_threshold: threshold for the weights. Default is 1% (0.01).
+        :type weight_threshold: float
+        :return: BIC
+        :rtype: float
         """
-        k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters)
+        k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters, weight_threshold=weight_threshold)
         bic = k * np.log(n) - 2 * log_likelihood
 
         return bic
     
     @classmethod
-    def get_bic_from_sample(cls, ppxf_fits, num_fixed_parameters=0):
+    def get_bic_from_sample(cls, ppxf_fits, num_fixed_parameters=0, weight_threshold=0.01):
         """
         :param ppxf_fits: ppxf fit objects
         :type ppxf_fits: list of ppxf.ppxf
         :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
         :type num_fixed_parameters: int
+        :param weight_threshold: threshold for the weights. Default is 1% (0.01).
+        :type weight_threshold: float
+        :return: BIC
+        :rtype: float
         """
         k_total = 0
         n_total = 0
         log_likelihood_total = 0
 
         for ppxf_fit in ppxf_fits:
-            k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters)
+            k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters, weight_threshold=weight_threshold)
             k_total += k
             n_total += n
             log_likelihood_total += log_likelihood
     
         bic = k_total * np.log(n_total) - 2 * log_likelihood_total
-
+    
         return bic
+    
+    from scipy.special import ndtr
+
+    @classmethod
+    def get_relative_bic_weights_for_sample(
+        cls,
+        ppxf_fits_list,
+        num_fixed_parameters=0,
+        n_bootstrap_samples=1000,
+        weight_threshold=0.01,
+    ):
+        """
+        Calculate the relative BIC weights for a given sample of pPXF fits.
+
+        :param ppxf_fits_list: The sample of pPXF fits.
+        :type ppxf_fits_list: np.ndarray
+        :param num_fixed_parameters: The number of fixed parameters in the model.
+        :type num_fixed_parameters: int
+        :param n_bootstrap_samples: The number of bootstrap samples to use.
+        :type n_bootstrap_samples: int
+        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
+        :type weight_threshold: float
+
+        """
+        bics = np.zeros(len(ppxf_fits_list))
+        weights = np.zeros_like(bics)
+
+        for i, ppxf_fits in enumerate(ppxf_fits_list):
+            bics[i] = cls.get_bic_from_sample(
+                ppxf_fits,
+                num_fixed_parameters=num_fixed_parameters,
+                weight_threshold=weight_threshold,
+            )
+
+        delta_bics = bics - np.min(bics)
+
+        # do bootstrap sampling
+        bics_samples = np.zeros((n_bootstrap_samples, len(ppxf_fits_list)))
+        for i in range(n_bootstrap_samples):
+            indices = np.random.randint(0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0]))
+            ppxf_fits_list_bootstrapped = ppxf_fits_list[:, indices]
+
+            for j, ppxf_fits in enumerate(ppxf_fits_list):
+                bics_samples[i, j] = Pipeline.get_bic_from_sample(
+                    ppxf_fits_list_bootstrapped[j],
+                    num_fixed_parameters=num_fixed_parameters,
+                    weight_threshold=weight_threshold,
+                )
+
+        bics_uncertainty = np.std(bics_samples, axis=0)
+
+        for i in range(len(bics)):
+            weights[i] = cls.calculate_weights(delta_bics[i], bics_uncertainty[i])
+
+        return weights
+
+    @classmethod    
+    def combine_measurements_from_templates(
+        cls,
+        values,
+        uncertanties,
+        ppxf_fits_list,
+        apply_bic_weighting=True,
+        num_fixed_parameters=0,
+        n_bootstrap_samples=1000,
+        weight_threshold=0.01,
+        verbose=False,
+    ):
+        """
+        Combine measurements using the relative BIC weights.
+
+        :param values: The values to combine, can be a sample average values for different templates, or array of values (in which case should match the ppxf_fits_list shape).
+        :type values: np.ndarray
+        :param uncertanties: The uncertainties in the values.
+        :type uncertanties: np.ndarray
+        :param ppxf_fits_list: The list of pPXF fits.
+        :type ppxf_fits_list: np.ndarray
+        :param apply_bic_weighting: Whether to apply BIC weighting.
+        :type apply_bic_weighting: bool
+        :param num_fixed_parameters: The number of fixed parameters in the model.
+        :type num_fixed_parameters: int
+        :param n_bootstrap_samples: The number of bootstrap samples to use.
+        :type n_bootstrap_samples: int
+        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
+        :type weight_threshold: float
+        :param verbose: Whether to print the results.
+        :type verbose: bool
+        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
+        :rtype: tuple of np.ndarray
+        """
+        if apply_bic_weighting:
+            weights = cls.get_relative_bic_weights_for_sample(
+                ppxf_fits_list,
+                num_fixed_parameters=num_fixed_parameters,
+                n_bootstrap_samples=n_bootstrap_samples,
+                weight_threshold=weight_threshold,
+            )
+        else:
+            weights = np.ones(len(ppxf_fits_list))
+
+        if verbose:
+            print(f"BIC weighting {'' if apply_bic_weighting else 'not '}applied")
+            print("Weights:", weights)
+
+        sum_w2 = np.sum(weights**2)
+        sum_w = np.sum(weights)
+        w = weights[:, np.newaxis]
+
+        if values.ndim == 1:
+            values = values[:, np.newaxis]
+            uncertanties = uncertanties[:, np.newaxis]
+
+        combined_values = np.sum(w * values, axis=0) / sum_w
+
+        combined_systematic_uncertainty = np.sqrt(
+            np.sum(w * (combined_values - values) ** 2, axis=0) / (sum_w - sum_w2 / sum_w)
+        )
+
+        combined_statistical_uncertainty = (
+            np.sqrt(np.sum(w**2 * uncertanties**2, axis=0)) / sum_w2
+        )
+
+        if values.shape[1] > 1:
+            covariance = np.zeros((len(combined_values), len(combined_values)))
+
+            for i in range(covariance.shape[0]):
+                for j in range(covariance.shape[0]):
+                    covariance[i, j] = np.sum(
+                        w[:, 0]
+                        * (values[:, i] - combined_values[i])
+                        * (values[:, j] - combined_values[j])
+                    ) / (sum_w - sum_w2 / sum_w)
+
+                    if i == j:
+                        covariance[i, j] += combined_systematic_uncertainty[i] ** 2
+        else:
+            covariance = None
+
+        return (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        )
+
+    @staticmethod
+    def calculate_weights(delta_bic, sigma_delta_bic):
+        """
+        Calculate the relative BIC weights after accounting for the uncetainty.
+
+        :param delta_bic: The difference in BIC values between the model and the best model.
+        :type delta_bic: float
+        :param sigma_delta_bic: The uncertainty in the delta_BIC value.
+        :type sigma_delta_bic: float
+        :return: The relative weight of the model.
+        :rtype: float
+        """
+        integral_1 = ndtr(-delta_bic / sigma_delta_bic)
+        integral_2 = ndtr(delta_bic / sigma_delta_bic - sigma_delta_bic / 2)
+        exp_factor = (sigma_delta_bic**2 / 8) - (delta_bic / 2)
+
+        if integral_2 == 0.0:
+            integral2_multiplied = 0.0
+        else:
+            integral2_multiplied = np.exp(exp_factor + np.log(integral_2))
+
+        weight = integral_1 + integral2_multiplied
+
+        return weight
