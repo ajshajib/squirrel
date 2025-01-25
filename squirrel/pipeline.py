@@ -810,7 +810,7 @@ class Pipeline(object):
         cls,
         ppxf_fits_list,
         num_fixed_parameters=0,
-        n_bootstrap_samples=1000,
+        num_bootstrap_samples=1000,
         weight_threshold=0.01,
     ):
         """
@@ -820,8 +820,8 @@ class Pipeline(object):
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
-        :param n_bootstrap_samples: The number of bootstrap samples to use.
-        :type n_bootstrap_samples: int
+        :param num_bootstrap_samples: The number of bootstrap samples to use.
+        :type num_bootstrap_samples: int
         :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
         :type weight_threshold: float
 
@@ -839,8 +839,8 @@ class Pipeline(object):
         delta_bics = bics - np.min(bics)
 
         # do bootstrap sampling
-        bics_samples = np.zeros((n_bootstrap_samples, len(ppxf_fits_list)))
-        for i in range(n_bootstrap_samples):
+        bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
+        for i in range(num_bootstrap_samples):
             indices = np.random.randint(0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0]))
             ppxf_fits_list_bootstrapped = ppxf_fits_list[:, indices]
 
@@ -866,7 +866,7 @@ class Pipeline(object):
         ppxf_fits_list,
         apply_bic_weighting=True,
         num_fixed_parameters=0,
-        n_bootstrap_samples=1000,
+        num_bootstrap_samples=1000,
         weight_threshold=0.01,
         verbose=False,
     ):
@@ -883,8 +883,8 @@ class Pipeline(object):
         :type apply_bic_weighting: bool
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
-        :param n_bootstrap_samples: The number of bootstrap samples to use.
-        :type n_bootstrap_samples: int
+        :param num_bootstrap_samples: The number of bootstrap samples to use.
+        :type num_bootstrap_samples: int
         :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
         :type weight_threshold: float
         :param verbose: Whether to print the results.
@@ -896,7 +896,7 @@ class Pipeline(object):
             weights = cls.get_relative_bic_weights_for_sample(
                 ppxf_fits_list,
                 num_fixed_parameters=num_fixed_parameters,
-                n_bootstrap_samples=n_bootstrap_samples,
+                num_bootstrap_samples=num_bootstrap_samples,
                 weight_threshold=weight_threshold,
             )
         else:
@@ -904,7 +904,7 @@ class Pipeline(object):
 
         if verbose:
             print(f"BIC weighting {'' if apply_bic_weighting else 'not '}applied")
-            print("Weights:", weights)
+            print("Weights:", weights/np.sum(weights))
 
         sum_w2 = np.sum(weights**2)
         sum_w = np.sum(weights)
@@ -917,26 +917,24 @@ class Pipeline(object):
         combined_values = np.sum(w * values, axis=0) / sum_w
 
         combined_systematic_uncertainty = np.sqrt(
-            np.sum(w * (combined_values - values) ** 2, axis=0) / (sum_w - sum_w2 / sum_w)
+            np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0) / (sum_w - sum_w2 / sum_w)
         )
 
-        combined_statistical_uncertainty = (
-            np.sqrt(np.sum(w**2 * uncertanties**2, axis=0)) / sum_w2
-        )
-
+        combined_statistical_uncertainty = np.sqrt(np.sum(w**2 * uncertanties**2, axis=0)) / sum_w
+        
         if values.shape[1] > 1:
             covariance = np.zeros((len(combined_values), len(combined_values)))
 
             for i in range(covariance.shape[0]):
                 for j in range(covariance.shape[0]):
                     covariance[i, j] = np.sum(
-                        w[:, 0]
+                        weights
                         * (values[:, i] - combined_values[i])
                         * (values[:, j] - combined_values[j])
                     ) / (sum_w - sum_w2 / sum_w)
 
                     if i == j:
-                        covariance[i, j] += combined_systematic_uncertainty[i] ** 2
+                        covariance[i, j] += combined_statistical_uncertainty[i] ** 2
         else:
             covariance = None
 
