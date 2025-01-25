@@ -901,7 +901,7 @@ class Pipeline(object):
             weights = np.ones(len(ppxf_fits_list))
 
         if verbose:
-            print(f"BIC weighting {'' if apply_bic_weighting else 'not '}applied")
+            print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
             print("Weights:", weights/np.sum(weights))
 
         sum_w2 = np.sum(weights**2)
