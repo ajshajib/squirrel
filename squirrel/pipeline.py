@@ -852,7 +852,7 @@ class Pipeline(object):
         bics_uncertainty = np.std(bics_samples, axis=0)
 
         for i in range(len(bics)):
-            weights[i] = cls.calculate_weights(delta_bics[i], bics_uncertainty[i])
+            weights[i] = cls._calculate_weight(delta_bics[i], bics_uncertainty[i])
 
         return weights
 
@@ -944,9 +944,9 @@ class Pipeline(object):
         )
 
     @staticmethod
-    def calculate_weights(delta_bic, sigma_delta_bic):
+    def _calculate_weight(delta_bic, sigma_delta_bic):
         """
-        Calculate the relative BIC weights after accounting for the uncetainty.
+        Calculate the relative BIC weight after accounting for the uncetainty.
 
         :param delta_bic: The difference in BIC values between the model and the best model.
         :type delta_bic: float
