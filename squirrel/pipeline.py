@@ -918,7 +918,7 @@ class Pipeline(object):
             np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0) / (sum_w - sum_w2 / sum_w)
         )
 
-        combined_statistical_uncertainty = np.sqrt(np.sum(w**2 * uncertanties**2, axis=0)) / sum_w
+        combined_statistical_uncertainty = np.sqrt(np.sum(w * uncertanties**2, axis=0) / sum_w)
         
         if values.shape[1] > 1:
             covariance = np.zeros((len(combined_values), len(combined_values)))
