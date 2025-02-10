@@ -1,6 +1,6 @@
 """This module contains class and functions for general use."""
 
-from numpy import linalg as la
+from scipy import linalg as la
 import numpy as np
 
 

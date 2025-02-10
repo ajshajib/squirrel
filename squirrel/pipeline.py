@@ -106,8 +106,6 @@ class Pipeline(object):
             covariance = covariance.reshape(
                 rebinned_spectra.shape[0], rebinned_spectra.shape[0], *flux_shape[1:]
             )
-
-                
         else:
             noise = noise.reshape(rebinned_spectra.shape[0], *flux_shape[1:])
 
@@ -338,7 +336,7 @@ class Pipeline(object):
         :type wavelength_factor: float
         :param wavelength_range_extend_factor: factor to extend the wavelength range
         :type wavelength_range_extend_factor: float
-        :param kwargs: additional arguments for `ppxf.sps_util.sps_lib()` function   
+        :param kwargs: additional arguments for `ppxf.sps_util.sps_lib()` function
         :type kwargs: dict
         :return: template
         :rtype: `Template` class
@@ -724,7 +722,9 @@ class Pipeline(object):
         """
         n = len(ppxf_fit.goodpixels)
         if weight_threshold is not None:
-            num_templates = np.sum(ppxf_fit.weights > weight_threshold*ppxf_fit.weights.sum())
+            num_templates = np.sum(
+                ppxf_fit.weights > weight_threshold * ppxf_fit.weights.sum()
+            )
         else:
             num_templates = len(ppxf_fit.weights)
         k_linear = num_templates + ppxf_fit.degree + 1
@@ -772,13 +772,19 @@ class Pipeline(object):
         :return: BIC
         :rtype: float
         """
-        k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters, weight_threshold=weight_threshold)
+        k, n, log_likelihood = cls.get_terms_in_bic(
+            ppxf_fit,
+            num_fixed_parameters=num_fixed_parameters,
+            weight_threshold=weight_threshold,
+        )
         bic = k * np.log(n) - 2 * log_likelihood
 
         return bic
-    
+
     @classmethod
-    def get_bic_from_sample(cls, ppxf_fits, num_fixed_parameters=0, weight_threshold=0.01):
+    def get_bic_from_sample(
+        cls, ppxf_fits, num_fixed_parameters=0, weight_threshold=0.01
+    ):
         """
         :param ppxf_fits: ppxf fit objects
         :type ppxf_fits: list of ppxf.ppxf
@@ -794,13 +800,17 @@ class Pipeline(object):
         log_likelihood_total = 0
 
         for ppxf_fit in ppxf_fits:
-            k, n, log_likelihood = cls.get_terms_in_bic(ppxf_fit, num_fixed_parameters=num_fixed_parameters, weight_threshold=weight_threshold)
+            k, n, log_likelihood = cls.get_terms_in_bic(
+                ppxf_fit,
+                num_fixed_parameters=num_fixed_parameters,
+                weight_threshold=weight_threshold,
+            )
             k_total += k
             n_total += n
             log_likelihood_total += log_likelihood
-    
+
         bic = k_total * np.log(n_total) - 2 * log_likelihood_total
-    
+
         return bic
 
     @classmethod
@@ -839,7 +849,9 @@ class Pipeline(object):
         # do bootstrap sampling
         bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
         for i in range(num_bootstrap_samples):
-            indices = np.random.randint(0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0]))
+            indices = np.random.randint(
+                0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0])
+            )
             ppxf_fits_list_bootstrapped = ppxf_fits_list[:, indices]
 
             for j, ppxf_fits in enumerate(ppxf_fits_list):
@@ -856,7 +868,7 @@ class Pipeline(object):
 
         return weights
 
-    @classmethod    
+    @classmethod
     def combine_measurements_from_templates(
         cls,
         values,
@@ -902,7 +914,7 @@ class Pipeline(object):
 
         if verbose:
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
-            print("Weights:", weights/np.sum(weights))
+            print("Weights:", weights / np.sum(weights))
 
         sum_w2 = np.sum(weights**2)
         sum_w = np.sum(weights)
@@ -915,11 +927,14 @@ class Pipeline(object):
         combined_values = np.sum(w * values, axis=0) / sum_w
 
         combined_systematic_uncertainty = np.sqrt(
-            np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0) / (sum_w - sum_w2 / sum_w)
+            np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0)
+            / (sum_w - sum_w2 / sum_w)
         )
 
-        combined_statistical_uncertainty = np.sqrt(np.sum(w * uncertanties**2, axis=0) / sum_w)
-        
+        combined_statistical_uncertainty = np.sqrt(
+            np.sum(w * uncertanties**2, axis=0) / sum_w
+        )
+
         if values.shape[1] > 1:
             covariance = np.zeros((len(combined_values), len(combined_values)))
 
