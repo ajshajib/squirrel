@@ -982,3 +982,30 @@ class Pipeline(object):
         weight = integral_1 + integral2_multiplied
 
         return weight
+
+    @staticmethod
+    def boost_noise(spectra, boost_factor, boosting_mask=None):
+        """
+        Boost the noise in the spectra.
+
+        :param  spectra: The spectra to boost the noise in.
+        :type spectra: `Spectra` or a child class
+        :param boost_factor: The factor to boost the noise by.
+        :type boost_factor: float
+        :param boosting_mask: The mask to apply the boosting to.
+        :type boosting_mask: np.ndarray
+        :return spectra: The spectra with the boosted noise.
+        :rtype: `Spectra` or a child class
+        """
+        noise_boosted_spectra = deepcopy(spectra)
+        if boosting_mask is None:
+            boosting_mask = np.ones_like(spectra.wavelengths, dtype=bool)
+
+        if noise_boosted_spectra.noise is not None:
+            noise_boosted_spectra.noise[boosting_mask] *= boost_factor
+
+        if noise_boosted_spectra.covariance is not None:
+            noise_boosted_spectra.covariance[boosting_mask] *= boost_factor
+            noise_boosted_spectra.covariance[:, boosting_mask] *= boost_factor
+
+        return noise_boosted_spectra
