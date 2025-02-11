@@ -721,15 +721,16 @@ class Pipeline(object):
         :rtype: tuple of int, int, float
         """
         n = len(ppxf_fit.goodpixels)
+
         if weight_threshold is not None:
             num_templates = np.sum(
                 ppxf_fit.weights > weight_threshold * ppxf_fit.weights.sum()
             )
         else:
             num_templates = len(ppxf_fit.weights)
+
         k_linear = num_templates + ppxf_fit.degree + 1
         if ppxf_fit.sky is not None:
-            print(ppxf_fit.sky.shape)
             k_linear += ppxf_fit.sky.shape[1]
 
         # check if  ppxf_fit.sol[0] is float
@@ -864,7 +865,9 @@ class Pipeline(object):
         bics_uncertainty = np.std(bics_samples, axis=0)
 
         for i in range(len(bics)):
-            weights[i] = cls._calculate_weight(delta_bics[i], bics_uncertainty[i])
+            weights[i] = cls.calculate_weights_from_bic(
+                delta_bics[i], bics_uncertainty[i]
+            )
 
         return weights
 
@@ -916,6 +919,33 @@ class Pipeline(object):
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
             print("Weights:", weights / np.sum(weights))
 
+        (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        ) = cls.combine_weighted(values, uncertanties, weights)
+
+        return (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        )
+
+    @classmethod
+    def combine_weighted(cls, values, uncertanties, weights):
+        """
+        Combine the values using the weights.
+
+        :param values: The values to combine.
+        :type values: np.ndarray
+        :param uncertanties: The uncertainties in the values.
+        :type uncertanties: np.ndarray
+        :param weights: The weights to use for the combination.
+        :type weights: np.ndarray
+        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
+        """
         sum_w2 = np.sum(weights**2)
         sum_w = np.sum(weights)
         w = weights[:, np.newaxis]
@@ -950,7 +980,6 @@ class Pipeline(object):
                         covariance[i, j] += combined_statistical_uncertainty[i] ** 2
         else:
             covariance = None
-
         return (
             combined_values,
             combined_systematic_uncertainty,
@@ -959,7 +988,7 @@ class Pipeline(object):
         )
 
     @staticmethod
-    def _calculate_weight(delta_bic, sigma_delta_bic):
+    def calculate_weights_from_bic(delta_bic, sigma_delta_bic):
         """
         Calculate the relative BIC weight after accounting for the uncetainty.
 
