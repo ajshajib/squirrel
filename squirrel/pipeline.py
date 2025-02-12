@@ -881,6 +881,7 @@ class Pipeline(object):
         num_fixed_parameters=0,
         num_bootstrap_samples=1000,
         weight_threshold=0.01,
+        do_bessel_correction=True,
         verbose=False,
     ):
         """
@@ -900,6 +901,8 @@ class Pipeline(object):
         :type num_bootstrap_samples: int
         :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
         :type weight_threshold: float
+        :param do_bessel_correction: Whether to apply Bessel correction.
+        :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
         :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
@@ -924,7 +927,9 @@ class Pipeline(object):
             combined_systematic_uncertainty,
             combined_statistical_uncertainty,
             covariance,
-        ) = cls.combine_weighted(values, uncertanties, weights)
+        ) = cls.combine_weighted(
+            values, uncertanties, weights, do_bessel_correction=do_bessel_correction
+        )
 
         return (
             combined_values,
@@ -934,7 +939,7 @@ class Pipeline(object):
         )
 
     @classmethod
-    def combine_weighted(cls, values, uncertanties, weights):
+    def combine_weighted(cls, values, uncertanties, weights, do_bessel_correction=True):
         """
         Combine the values using the weights.
 
@@ -944,7 +949,10 @@ class Pipeline(object):
         :type uncertanties: np.ndarray
         :param weights: The weights to use for the combination.
         :type weights: np.ndarray
+        :param do_bessel_correction: Whether to apply Bessel correction.
+        :type do_bessel_correction: bool
         :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
+        :rtype: tuple of np.ndarray
         """
         sum_w2 = np.sum(weights**2)
         sum_w = np.sum(weights)
@@ -956,9 +964,14 @@ class Pipeline(object):
 
         combined_values = np.sum(w * values, axis=0) / sum_w
 
+        if do_bessel_correction:
+            denominator = sum_w - sum_w2 / sum_w
+        else:
+            denominator = sum_w
+
         combined_systematic_uncertainty = np.sqrt(
             np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0)
-            / (sum_w - sum_w2 / sum_w)
+            / denominator
         )
 
         combined_statistical_uncertainty = np.sqrt(
@@ -970,11 +983,14 @@ class Pipeline(object):
 
             for i in range(covariance.shape[0]):
                 for j in range(covariance.shape[0]):
-                    covariance[i, j] = np.sum(
-                        weights
-                        * (values[:, i] - combined_values[i])
-                        * (values[:, j] - combined_values[j])
-                    ) / (sum_w - sum_w2 / sum_w)
+                    covariance[i, j] = (
+                        np.sum(
+                            weights
+                            * (values[:, i] - combined_values[i])
+                            * (values[:, j] - combined_values[j])
+                        )
+                        / denominator
+                    )
 
                     if i == j:
                         covariance[i, j] += combined_statistical_uncertainty[i] ** 2
