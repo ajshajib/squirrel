@@ -659,6 +659,40 @@ class VoronoiBinnedSpectra(Spectra):
 
         return mapping
 
+    def get_single_spectra(self, bin_index):
+        """Return the spectra of a single bin.
+
+        :param bin_index: bin number
+        :type bin_index: int
+        :return: spectra of the bin
+        :rtype: numpy.ndarray
+        """
+        if self.noise is not None:
+            noise = self.noise[:, bin_index]
+        else:
+            noise = None
+
+        if self.covariance is not None:
+            covariance = self.covariance[:, :, bin_index]
+        else:
+            covariance = None
+
+        spectra = Spectra(
+            wavelengths=self.wavelengths,
+            flux=self.flux[:, bin_index],
+            wavelength_unit=self.wavelength_unit,
+            fwhm=self.fwhm,
+            z_lens=self.z_lens,
+            z_source=self.z_source,
+            flux_unit=self.flux_unit,
+            noise=noise,
+            covariance=covariance,
+        )
+
+        spectra.velocity_scale = deepcopy(self.velocity_scale)
+
+        return spectra
+
 
 class RadiallyBinnedSpectra(Spectra):
     """A class to store radially binned spectra."""
