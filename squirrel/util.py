@@ -64,7 +64,7 @@ def is_positive_definite(matrix):
     :rtype: bool
     """
     try:
-        _ = la.cholesky(matrix)
+        _ = la.cholesky(matrix, lower=True)
         return True
     except la.LinAlgError:
         return False
