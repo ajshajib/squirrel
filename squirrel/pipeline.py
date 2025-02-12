@@ -629,6 +629,7 @@ class Pipeline(object):
             noise = get_nearest_positive_definite_matrix(noise)
 
         original_noise = deepcopy(noise)
+
         ppxf_fit = ppxf(
             templates=template.flux,
             galaxy=flux,
