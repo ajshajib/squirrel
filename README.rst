@@ -1,5 +1,5 @@
 ==========================================
-squirrel
+🐿️ squirrel
 ==========================================
 
 |Read the Docs| |GitHub| |Codecov| |Black| |docformatter| |docstyle|

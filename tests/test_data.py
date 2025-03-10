@@ -214,6 +214,61 @@ class TestDatacube:
             [[-0.1, -0.1, -0.1], [0, 0, 0], [0.1, 0.1, 0.1]],
         )
 
+    def test_spatial_extent(self):
+        npt.assert_array_almost_equal(
+            self.datacube.spatial_extent(pyplot=False),
+            [-0.1, 0.1, -0.1, 0.1],
+            decimal=8,
+        )
+        npt.assert_array_almost_equal(
+            self.datacube.spatial_extent(pyplot=True),
+            [-0.15, 0.15, -0.15, 0.15],
+            decimal=8,
+        )
+
+        # below we test the other possible orientations of the coordinates grid
+        def _get_datacube(coordinate_transform_matrix):
+            return Datacube(
+                self.wavelengths,
+                self.flux,
+                self.wavelength_unit,
+                self.fwhm,
+                self.z_lens,
+                self.z_source,
+                self.center_pixel_x,
+                self.center_pixel_y,
+                coordinate_transform_matrix,
+                self.flux_unit,
+                self.noise,
+            )
+
+        datacube = _get_datacube(
+            np.array([[-0.1, 0], [0, 0.1]])
+        )  # x-axis decreasing towards right
+        npt.assert_array_almost_equal(
+            datacube.spatial_extent(pyplot=False),
+            [0.1, -0.1, -0.1, 0.1],
+            decimal=8,
+        )
+        npt.assert_array_almost_equal(
+            datacube.spatial_extent(pyplot=True),
+            [0.15, -0.15, -0.15, 0.15],
+            decimal=8,
+        )
+        datacube = _get_datacube(
+            np.array([[0.1, 0], [0, -0.1]])
+        )  # y-axis decreasing towards up
+        npt.assert_array_almost_equal(
+            datacube.spatial_extent(pyplot=False),
+            [-0.1, 0.1, 0.1, -0.1],
+            decimal=8,
+        )
+        npt.assert_array_almost_equal(
+            datacube.spatial_extent(pyplot=True),
+            [-0.15, 0.15, 0.15, -0.15],
+            decimal=8,
+        )
+
 
 class TestVoronoiBinnedSpectra:
     def setup_method(self):
