@@ -711,8 +711,7 @@ class Pipeline(object):
 
     @staticmethod
     def get_terms_in_bic(ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
-        """
-        Get the k, n, and log_L terms that is needed to compute the BIC.
+        """Get the k, n, and log_L terms that is needed to compute the BIC.
 
         :param ppxf_fit: ppxf fit object
         :type ppxf_fit: ppxf.ppxf
@@ -823,8 +822,7 @@ class Pipeline(object):
         num_bootstrap_samples=1000,
         weight_threshold=0.01,
     ):
-        """
-        Calculate the relative BIC weights for a given sample of pPXF fits.
+        """Calculate the relative BIC weights for a given sample of pPXF fits.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
@@ -832,9 +830,9 @@ class Pipeline(object):
         :type num_fixed_parameters: int
         :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is
+            1% (0.01).
         :type weight_threshold: float
-
         """
         bics = np.zeros(len(ppxf_fits_list))
         weights = np.zeros_like(bics)
@@ -885,10 +883,11 @@ class Pipeline(object):
         do_bessel_correction=True,
         verbose=False,
     ):
-        """
-        Combine measurements using the relative BIC weights.
+        """Combine measurements using the relative BIC weights.
 
-        :param values: The values to combine, can be a sample average values for different templates, or array of values (in which case should match the ppxf_fits_list shape).
+        :param values: The values to combine, can be a sample average values for
+            different templates, or array of values (in which case should match the
+            ppxf_fits_list shape).
         :type values: np.ndarray
         :param uncertanties: The uncertainties in the values.
         :type uncertanties: np.ndarray
@@ -900,13 +899,15 @@ class Pipeline(object):
         :type num_fixed_parameters: int
         :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is
+            1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined
+            statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         if apply_bic_weighting:
@@ -941,8 +942,7 @@ class Pipeline(object):
 
     @classmethod
     def combine_weighted(cls, values, uncertanties, weights, do_bessel_correction=True):
-        """
-        Combine the values using the weights.
+        """Combine the values using the weights.
 
         :param values: The values to combine.
         :type values: np.ndarray
@@ -952,7 +952,8 @@ class Pipeline(object):
         :type weights: np.ndarray
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
-        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined
+            statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         sum_w2 = np.sum(weights**2)
@@ -1006,10 +1007,10 @@ class Pipeline(object):
 
     @staticmethod
     def calculate_weights_from_bic(delta_bic, sigma_delta_bic):
-        """
-        Calculate the relative BIC weight after accounting for the uncetainty.
+        """Calculate the relative BIC weight after accounting for the uncetainty.
 
-        :param delta_bic: The difference in BIC values between the model and the best model.
+        :param delta_bic: The difference in BIC values between the model and the best
+            model.
         :type delta_bic: float
         :param sigma_delta_bic: The uncertainty in the delta_BIC value.
         :type sigma_delta_bic: float
@@ -1031,8 +1032,7 @@ class Pipeline(object):
 
     @staticmethod
     def boost_noise(spectra, boost_factor, boosting_mask=None):
-        """
-        Boost the noise in the spectra.
+        """Boost the noise in the spectra.
 
         :param  spectra: The spectra to boost the noise in.
         :type spectra: `Spectra` or a child class
