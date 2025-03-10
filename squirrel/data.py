@@ -501,6 +501,7 @@ class Datacube(Spectra):
 
         return spectra
 
+
 class VoronoiBinnedSpectra(Spectra):
     """A class to store binned spectra."""
 
