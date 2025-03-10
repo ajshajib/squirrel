@@ -4,15 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from numpy.polynomial import legendre
-from ppxf.ppxf import losvd_rfft
-from ppxf.ppxf import rebin
+from ppxf.ppxf import ppxf
 from ppxf.ppxf_util import convolve_gauss_hermite
 from tqdm.notebook import tqdm
 from scipy import optimize
 import scipy.linalg as splinalg
 
-from .pipeline import Pipeline
-from .template import Template
 from .util import is_positive_definite
 from .util import get_nearest_positive_definite_matrix
 
@@ -24,7 +21,7 @@ class Diagnostics(object):
 
     @staticmethod
     def get_specific_signal_and_noise(spectra, mask, z_factor=1.0):
-        """Get the mean SNR of the spectra.
+        """Get the mean signal per (wavelength unit)^(1/2) and noise of the spectra.
 
         :param spectra: spectra object
         :type spectra: squirrel.data.Spectra
@@ -80,10 +77,10 @@ class Diagnostics(object):
         input_velocity_dispersions=[250],
         template_weight=1.0,
         polynomial_degree=0,
-        polynomial_weights=[1.0],
         multiplicative_polynomial_degree=0,
+        polynomial_weights=[1.0],
+        multiplicative_component=1.0,
         add_component=0.0,
-        multiplicative_polynomial=1.0,
         num_sample=50,
         z_factor=1.0,
         v_systematic=0.0,
@@ -106,25 +103,30 @@ class Diagnostics(object):
         :type template_weight: float
         :param polynomial_degree: degree of the polynomial
         :type polynomial_degree: int
-        :param polynomial_weights: weights of the polynomial
+        :param multiplicative_polynomial_degree: degree of the multiplicative polynomial for fitting
+        :type multiplicative_polynomial_degree: int
+        :param polynomial_weights: weights for the additive polynomial to be added to the
+            mock spectra
         :type polynomial_weights: numpy.ndarray
-        :param add_component: additional component to add to the spectra
-        :type add_component: numpy.ndarray
-        :param multiply_component: multiplicative component for the spectra
-        :type multiply_component: float
-        :param num_samples: number of Monte Carlo noise realizations
-        :type num_samples: int
+        :param multiplicative_component: multiplicative component to be multiplied to the mock spectra
+        :type multiplicative_component: np.ndarray or float
+        :param add_component: additive component to be added to the mock spectra
+        :type add_component: float
+        :param num_sample: number of Monte Carlo noise realizations
+        :type num_sample: int
         :param z_factor: multiplicative factor for wavelength (e.g., 1 + z), if the SNR
             is computed at a different frame
         :type z_factor: float
+        :param v_systematic: systematic velocity, km/s, the `vsyst` parameter in pPXF
+        :type v_systematic: float
+        :param fit_with_scipy: fit with scipy instead of ppxf, for example, to check for numerical
+            inaccuracy solely in pPXF
+        :type fit_with_scipy: bool
         :param plot: plot one example simulation for each input velocity dispersion and
             SNR
-        :type v_systematic: float
-        :param v_systematic: systematic velocity, km/s, the `vsyst` parameter in pPXF
         :type plot: bool
-        :param fit_with_scipy: fit with scipy instead of ppxf, to check for numerical
-            inaccuracy in ppxf
-        :type fit_with_scipy: bool
+        :param global_search: perform a global search for the best fit
+        :type global_search: bool
         :return: recovered values
         :rtype: tuple
         """
@@ -153,6 +155,9 @@ class Diagnostics(object):
 
         recovered_snrs = np.zeros((len(input_velocity_dispersions), len(target_snrs)))
 
+        if template is None:
+            template = template
+
         # for i, input_dispersion in enumerate(input_velocity_dispersions):
         for i in tqdm(range(len(input_velocity_dispersions)), desc="Input dispersion"):
             input_dispersion = input_velocity_dispersions[i]
@@ -166,7 +171,7 @@ class Diagnostics(object):
                 data_weight=template_weight,
                 polynomial_degree=polynomial_degree,
                 polynomial_weights=polynomial_weights,
-                multiplicative_polynomial=multiplicative_polynomial,
+                multiplicative_polynomial=multiplicative_component,
                 v_systematic=v_systematic,
             )
 
@@ -229,7 +234,7 @@ class Diagnostics(object):
                                 data_weight=template_weight,
                                 polynomial_degree=polynomial_degree,
                                 polynomial_weights=polynomial_weights,
-                                multiplicative_polynomial=multiplicative_polynomial,
+                                multiplicative_polynomial=multiplicative_component,
                                 v_systematic=v_systematic,
                             )
 
@@ -269,32 +274,30 @@ class Diagnostics(object):
                             data, spectra_mask_for_snr, z_factor=z_factor
                         )
                     else:
-                        mock_ppxf_fit = Pipeline.run_ppxf(
-                            data,
-                            template,
-                            moments=2,
-                            degree=polynomial_degree,
-                            mdegree=multiplicative_polynomial_degree,
-                            # start=[result.x[0], result.x[1]],
+                        mock_ppxf_fit = ppxf(
+                            templates=template.flux,
+                            galaxy=data.flux,
+                            noise=deepcopy(
+                                data.covariance
+                                if data.covariance is not None
+                                else data.noise
+                            ),  # sending deepcopy just in case, as pPXF may manipulate the noise array/matrix
+                            velscale=data.velocity_scale,
                             start=[0, input_dispersion],
-                            bounds=[
-                                # [-cls.VEL_LIM, cls.VEL_LIM],
-                                [-200, 200],
-                                [input_dispersion - 100, input_dispersion + 100],
-                            ],
-                            # fixed=[0, 0],
+                            plot=False,
+                            lam=data.wavelengths,
+                            # lam_temp=template.wavelengths,
+                            vsyst=v_systematic,
                             quiet=True,
-                            global_search={
-                                "popsize": 50,
-                                "mutation": (0.5, 1.0),
-                                "disp": False,
-                            },
+                            velscale_ratio=int(
+                                data.velocity_scale / template.velocity_scale
+                            ),
                         )
                         if plot and k == 0:
-                            plt.plot(data.flux)
-                            plt.plot(mock_flux)
-                            plt.plot(spectra_data.flux)
-                            plt.show()
+                            # plt.plot(data.flux)
+                            # plt.plot(mock_flux)
+                            # plt.plot(spectra_data.flux)
+                            # plt.show()
                             mock_ppxf_fit.plot()
                             plt.title(
                                 f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
@@ -387,6 +390,8 @@ class Diagnostics(object):
         bias_threshold=0.02,
         show_scatter=True,
         show_mean_uncertainty=False,
+        errorbar_kwargs_scatter={},
+        errorbar_kwargs_mean={},
         **kwargs,
     ):
         """Plot the bias in the velocity dispersion measurement as a function of SNR.
@@ -403,8 +408,12 @@ class Diagnostics(object):
         :type bias_threshold: float
         :param show_scatter: show scatter of the points
         :type show_scatter: bool
-        :param plot_kwargs: keyword arguments for plotting
-        :type plot_kwargs: dict
+        :param show_mean_uncertainty: show mean uncertainty of the points
+        :type show_mean_uncertainty: bool
+        :param errorbar_kwargs_scatter: keyword arguments for errorbar for scatter
+        :type errorbar_kwargs_scatter: dict
+        :param errorbar_kwargs_mean: keyword arguments for errorbar for mean uncertainty
+        :type errorbar_kwargs_mean: dict
         :return: figure and axes
         :rtype: tuple
         """
@@ -436,6 +445,9 @@ class Diagnostics(object):
             bias_threshold=bias_threshold,
             x_label=r"SNR (${\AA}^{-1/2}$)",
             y_label=r"$\sigma$ (km s$^{-1}$)",
+            errorbar_kwargs_mean=errorbar_kwargs_mean,
+            errorbar_kwargs_scatter=errorbar_kwargs_scatter,
+            **kwargs,
         )
 
         cls.plot_bias_vs_snr_single(
@@ -450,6 +462,9 @@ class Diagnostics(object):
             bias_threshold=0.0,
             x_label=r"SNR (${\AA}^{-1/2}$)",
             y_label=r"$\Delta v$ (km s$^{-1}$)",
+            errorbar_kwargs_mean=errorbar_kwargs_mean,
+            errorbar_kwargs_scatter=errorbar_kwargs_scatter,
+            **kwargs,
         )
 
         # remove gap between subplots
@@ -470,6 +485,8 @@ class Diagnostics(object):
         bias_threshold=0.02,
         x_label="",
         y_label="",
+        errorbar_kwargs_mean={},
+        errorbar_kwargs_scatter={},
         **kwargs,
     ):
         """Plot the bias in the velocity dispersion measurement as a function of SNR.
@@ -496,17 +513,21 @@ class Diagnostics(object):
         :type x_label: str
         :param y_label: y label
         :type y_label: str
-        :param kwargs: keyword arguments for plotting
-        :type kwargs: dict
+        :param errorbar_kwargs_mean: keyword arguments for errorbar for mean uncertainty
+        :type errorbar_kwargs_mean: dict
+        :param errorbar_kwargs_scatter: keyword arguments for errorbar for scatter
+        :type errorbar_kwargs_scatter: dict
+        :return: None
+        :rtype: None
         """
 
         if len(input_values) == 1:
             axes = axes[np.newaxis, :]
 
-        if "marker" not in kwargs:
-            kwargs["marker"] = "o"
-        if "ls" not in kwargs:
-            kwargs["ls"] = ":"
+        # if "marker" not in errorbar_kwargs_mean:
+        #     errorbar_kwargs_mean["marker"] = "o"
+        # if "ls" not in errorbar_kwargs_mean:
+        #     errorbar_kwargs_mean["ls"] = ":"
 
         for i, input_value in enumerate(input_values):
             if show_scatter:
@@ -514,22 +535,29 @@ class Diagnostics(object):
                     recovered_snrs[i],
                     recovered_values[i],
                     yerr=recovered_value_scatters[i],
-                    markersize=5,
-                    ecolor="grey",
-                    capsize=3,
-                    **kwargs,
+                    **errorbar_kwargs_mean,
                 )
             if show_mean_uncertainty:
                 axes[i].errorbar(
                     recovered_snrs[i],
                     recovered_values[i],
                     yerr=recovered_value_uncertainties[i],
-                    capsize=8,
-                    **kwargs,
+                    **errorbar_kwargs_scatter,
                 )
 
+            if "marker" not in kwargs:
+                kwargs["marker"] = "o"
+            if "ls" not in kwargs:
+                kwargs["ls"] = "--"
+            if "markersize" not in kwargs:
+                kwargs["markersize"] = 2
+
             axes[i].plot(
-                recovered_snrs[i], recovered_values[i], mec="k", zorder=20, **kwargs
+                recovered_snrs[i],
+                recovered_values[i],
+                mec="k",
+                zorder=20,
+                **kwargs,
             )
             axes[i].axhline(input_value, color="grey", linestyle="--", alpha=0.6)
 
@@ -549,7 +577,6 @@ class Diagnostics(object):
     def make_convolved_spectra(
         cls,
         template_flux,
-        template_wavelength,
         velocity_dispersion,
         velocity_scale,
         velocity_scale_ratio,
