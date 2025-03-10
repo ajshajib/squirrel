@@ -136,7 +136,7 @@ class TestPipeline:
         noise = np.ones_like(flux) * 0.1
         fwhm = 0.0
         spectra = Spectra(wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=noise)
-        
+
         template_sigma = 1
         template_fwhm = 2.355 * template_sigma
         templates_wavelengths = np.arange(
@@ -153,7 +153,7 @@ class TestPipeline:
         template = Template(
             templates_wavelengths, template_fluxes.T, "AA", template_fwhm
         )
-        
+
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
