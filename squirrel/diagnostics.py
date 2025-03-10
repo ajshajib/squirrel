@@ -6,6 +6,7 @@ from copy import deepcopy
 from numpy.polynomial import legendre
 from ppxf.ppxf import losvd_rfft
 from ppxf.ppxf import rebin
+from ppxf.ppxf_util import convolve_gauss_hermite
 from tqdm.notebook import tqdm
 from scipy import optimize
 import scipy.linalg as splinalg
@@ -35,7 +36,7 @@ class Diagnostics(object):
         fit_with_scipy=False,
         plot=True,
     ):
-        """Check the bias in the velocity dispersion measurement as a function of SNR.
+        """Check the bias in the velocity dispersion measurement as a function of SNR given a ppxf object.
 
         :param ppxf_fit: ppxf fit object
         :type ppxf_fit: ppxf.ppxf
@@ -154,15 +155,16 @@ class Diagnostics(object):
         multiplicative_polynomial=1.0,
         num_sample=50,
         z_factor=1.0,
+        v_systematic=0.0,
         fit_with_scipy=False,
         plot=True,
     ):
         """Check the bias in the velocity dispersion measurement as a function of SNR.
 
-        :param data_object: data object
-        :type data_object: squirrel.data.Spectra
-        :param template_object: template object
-        :type template_object: squirrel.template.Template
+        :param spectra_data: data object
+        :type spectra_data: squirrel.data.Spectra
+        :param template: template object
+        :type template: squirrel.template.Template
         :param spectra_mask_for_snr: mask of the spectra to compute SNR from
         :type spectra_mask_for_snr: numpy.ndarray
         :param target_snrs: target SNRs
@@ -186,6 +188,8 @@ class Diagnostics(object):
         :type z_factor: float
         :param plot: plot one example simulation for each input velocity dispersion and
             SNR
+        :type v_systematic: float
+        :param v_systematic: systematic velocity, km/s, the `vsyst` parameter in pPXF
         :type plot: bool
         :param fit_with_scipy: fit with scipy instead of ppxf, to check for numerical
             inaccuracy in ppxf
@@ -232,6 +236,7 @@ class Diagnostics(object):
                 polynomial_degree=polynomial_degree,
                 polynomial_weights=polynomial_weights,
                 multiplicative_polynomial=multiplicative_polynomial,
+                v_systematic=v_systematic,
             )
 
             # mock_flux *= multiplicative_polynomial
@@ -294,6 +299,7 @@ class Diagnostics(object):
                                 polynomial_degree=polynomial_degree,
                                 polynomial_weights=polynomial_weights,
                                 multiplicative_polynomial=multiplicative_polynomial,
+                                v_systematic=v_systematic,
                             )
 
                             delta = model_flux - data.flux
@@ -341,7 +347,8 @@ class Diagnostics(object):
                             # start=[result.x[0], result.x[1]],
                             start=[0, input_dispersion],
                             bounds=[
-                                [-cls.VEL_LIM, cls.VEL_LIM],
+                                # [-cls.VEL_LIM, cls.VEL_LIM],
+                                [-200, 200],
                                 [input_dispersion - 100, input_dispersion + 100],
                             ],
                             # fixed=[0, 0],
@@ -353,10 +360,10 @@ class Diagnostics(object):
                             },
                         )
                         if plot and k == 0:
-                            # plt.plot(data.flux)
-                            # plt.plot(mock_flux)
-                            # plt.plot(spectra_data.flux)
-                            # plt.show()
+                            plt.plot(data.flux)
+                            plt.plot(mock_flux)
+                            plt.plot(spectra_data.flux)
+                            plt.show()
                             mock_ppxf_fit.plot()
                             plt.title(
                                 f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
@@ -616,11 +623,12 @@ class Diagnostics(object):
         velocity_scale,
         velocity_scale_ratio,
         data_wavelength,
-        velocity=0,
+        velocity=0.0,
         data_weight=1,
         polynomial_degree=0,
         polynomial_weights=[1.0],
         multiplicative_polynomial=1.0,
+        v_systematic=0.0,
     ):
         """Make a convolved spectra.
 
@@ -647,62 +655,20 @@ class Diagnostics(object):
         :type polynomial_degree: int
         :param polynomial_weights: weights of the polynomial
         :type polynomial_weights: numpy.ndarray
+        :param v_systematic: systematic velocity, km/s, the `vsyst` parameter in pPXF
+        :type v_systematic: float
         :return: convolved spectra
         :rtype: numpy.ndarray
         """
         data_num_pix = len(data_wavelength)
 
-        c = 299792.458  # speed of light in km/s
-        lam_range = data_wavelength[[0, -1]] / np.exp(
-            np.array([cls.VEL_LIM + 900, -cls.VEL_LIM - 900]) / c
-        )  # Use eq.(5c) of Cappellari (2023)
-        ok = (template_wavelength >= lam_range[0]) & (
-            template_wavelength <= lam_range[1]
-        )
-        template_flux = template_flux[ok]
-        template_wavelength = template_wavelength[ok]
-
-        lam_temp_min = np.mean(template_wavelength[:velocity_scale_ratio])
-
-        v_systemic = c * np.log(lam_temp_min / data_wavelength[0]) / velocity_scale
-        template_npix = template_flux.shape[0]
-        start = np.array(
-            [velocity / velocity_scale, velocity_dispersion / velocity_scale]
-        )
-        """
-        nmin = max(self.templates.shape[0], self.npix)
-        self.npad = 2 ** int(np.ceil(np.log2(nmin)))
-        if templates_rfft is None:
-            # Pre-compute FFT of real input of all templates
-            self.templates_rfft = np.fft.rfft(self.templates, self.npad, axis=0)
-        else:
-            self.templates_rfft = templates_rfft
-        """
-
-        nmin = max(template_npix, data_num_pix)
-        npad = 2 ** int(np.ceil(np.log2(nmin)))
-        # npad = 2 ** int(np.ceil(np.log2(npix)))
-        template_rfft = np.fft.rfft(template_flux, npad)
-
-        lvd_rfft = losvd_rfft(
-            start, 1, [2], template_rfft.shape[0], 1, v_systemic, 2, 0
-        )
-
-        template_convolved = np.fft.irfft(template_rfft * lvd_rfft[:, 0, 0], npad)[
-            : data_num_pix * velocity_scale_ratio
-        ]
-        """Tmp = np.empty((nspec, self.npix)) for j, template_rfft in enumerate(
-
-        self.templates_rfft.T ):  # loop over column templates     for k in
-        range(nspec):         tt = np.fft.irfft(             template_rfft * lvd_rfft[:,
-        self.component[j], k], self.npad         )         tmp[k, :] = rebin( tt[:
-        self.npix * self.velscale_ratio], self.velscale_ratio         ) c[:nrows_spec,
-        npoly + j] = tmp.ravel()
-        """
-
-        galaxy_model = rebin(
-            template_convolved,
-            velocity_scale_ratio,
+        galaxy_model = convolve_gauss_hermite(
+            template_flux,
+            velocity_scale,
+            np.array([velocity, velocity_dispersion]),
+            data_num_pix,
+            velscale_ratio=velocity_scale_ratio,
+            vsyst=v_systematic,
         )
 
         x = np.linspace(-1, 1, data_num_pix)
