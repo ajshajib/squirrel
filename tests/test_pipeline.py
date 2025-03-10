@@ -41,7 +41,7 @@ class TestPipeline:
         with pytest.raises(ValueError):
             Pipeline.log_rebin(self.spectra)
 
-    def test_voronoi_bin(self):
+    def test_get_voronoi_binned_spectra(self):
         x = np.arange(11)
         y = np.arange(11)
         xx, yy = np.meshgrid(x, y)
@@ -69,7 +69,7 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        voronoi_binned_spectra = Pipeline.voronoi_bin(
+        voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
             datacube, central_snr, 950, 990, 1.0, plot=True
         )
         npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
@@ -136,7 +136,7 @@ class TestPipeline:
         noise = np.ones_like(flux) * 0.1
         fwhm = 0.0
         spectra = Spectra(wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=noise)
-
+        
         template_sigma = 1
         template_fwhm = 2.355 * template_sigma
         templates_wavelengths = np.arange(
@@ -153,7 +153,7 @@ class TestPipeline:
         template = Template(
             templates_wavelengths, template_fluxes.T, "AA", template_fwhm
         )
-
+        
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
