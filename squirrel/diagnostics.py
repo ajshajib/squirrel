@@ -17,8 +17,6 @@ from .util import get_nearest_positive_definite_matrix
 class Diagnostics(object):
     """This class contains functions to diagnose the performance of the pipeline."""
 
-    VEL_LIM = 100  # km/s, limit for velocity bound
-
     @staticmethod
     def get_specific_signal_and_noise(spectra, mask, z_factor=1.0):
         """Get the mean signal per (wavelength unit)^(1/2) and noise of the spectra.
