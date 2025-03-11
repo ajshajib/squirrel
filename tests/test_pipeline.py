@@ -69,9 +69,9 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        signal_image = np.ones_like(flux.shape[1:]) * central_snr
+        signal_image = np.ones(flux.shape[1:]) * central_snr
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
-            datacube, signal_image, 950, 990, 1.0, plot=True
+            datacube, signal_image, 950, 990, 1.0, max_radius=100, plot=True
         )
 
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
@@ -249,7 +249,9 @@ class TestPipeline:
             velocity_dispersion_uncertainty,
             mean_velocities,
             mean_velocity_uncertainties,
-        ) = Pipeline.run_ppxf_on_binned_spectra(spectra, template, degree=4)
+        ) = Pipeline.run_ppxf_on_binned_spectra(
+            spectra, template, start=[0, 200], degree=4
+        )
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
 

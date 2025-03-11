@@ -122,7 +122,7 @@ class Pipeline(object):
         signal_image_per_wavelength_unit,
         noise_image,
         target_snr,
-        max_radius,
+        max_radius=None,
         min_snr_per_spaxel=1.0,
         plot=False,
         quiet=True,
@@ -149,9 +149,10 @@ class Pipeline(object):
         radius = np.sqrt(datacube.x_coordinates**2 + datacube.y_coordinates**2)
 
         snr_image_per_wavelength_unit = signal_image_per_wavelength_unit / noise_image
-        snr_mask = (snr_image_per_wavelength_unit > min_snr_per_spaxel) & (
-            radius < max_radius
-        )
+        snr_mask = snr_image_per_wavelength_unit > min_snr_per_spaxel
+
+        if max_radius is not None:
+            snr_mask = snr_mask & (radius < max_radius)
 
         x_pixels = np.arange(datacube.flux.shape[2])
         y_pixels = np.arange(datacube.flux.shape[1])
