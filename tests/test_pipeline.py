@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import os
 import numpy.testing as npt
+from ppxf import ppxf_util
 from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
 from squirrel.data import Datacube
@@ -161,13 +162,15 @@ class TestPipeline:
         )
 
         Pipeline.log_rebin(spectra)
+
         velocity_scale_ratio = 2
-        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
-        # Pipeline.log_rebin(
-        #     template,
-        #     velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
-        #     take_covariance=False,
-        # )
+        _fluxes, _wavelength, _ = ppxf_util.log_rebin(
+            template.wavelengths,
+            template.flux,
+            velscale=spectra.velocity_scale / velocity_scale_ratio,
+        )
+        template.flux = _fluxes
+        template.wavelengths = _wavelength
 
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 200], degree=4)
 
@@ -235,16 +238,22 @@ class TestPipeline:
         )
 
         template = Template(
-            templates_wavelengths, template_fluxes.T, "AA", template_fwhm
+            templates_wavelengths,
+            template_fluxes.T,
+            "AA",
+            template_fwhm,
         )
 
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
-        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
-        # Pipeline.log_rebin(
-        #     template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
-        # )
+        _fluxes, _wavelength, _ = ppxf_util.log_rebin(
+            template.wavelengths,
+            template.flux,
+            velscale=spectra.velocity_scale / velocity_scale_ratio,
+        )
+        template.flux = _fluxes
+        template.wavelengths = _wavelength
 
         (
             velocity_dispersion,
