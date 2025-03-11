@@ -426,8 +426,8 @@ class Diagnostics(object):
     ):
         """Plot the bias in the velocity dispersion measurement as a function of SNR.
 
-        :param axes: axes to plot
-        :type axes: numpy.ndarray
+        :param axes: array of ax objects to plot, must match in length with `input_values`
+        :type axes: numpy.ndarray or list
         :param input_values: input values
         :type input_values: numpy.ndarray
         :param recovered_snrs: recovered SNRs
@@ -456,8 +456,8 @@ class Diagnostics(object):
         :rtype: None
         """
 
-        if len(input_values) == 1:
-            axes = axes[np.newaxis, :]
+        # assert axes has the same length as input_values
+        assert len(axes) == len(input_values)
 
         # if "marker" not in errorbar_kwargs_mean:
         #     errorbar_kwargs_mean["marker"] = "o"
