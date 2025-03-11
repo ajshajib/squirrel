@@ -162,7 +162,7 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
-        Pipeline.log_rebin(spectra)
+        Pipeline.log_rebin(spectra, take_covariance=False)
 
         velocity_scale_ratio = 2
         Pipeline.log_rebin(
@@ -177,6 +177,7 @@ class TestPipeline:
 
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
+        spectra.covariance = None
         ppxf_fit = Pipeline.run_ppxf(
             spectra, template, start=[0, 600], degree=4, spectra_indices=0
         )
@@ -245,7 +246,7 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
-        Pipeline.log_rebin(spectra)
+        Pipeline.log_rebin(spectra, take_covariance=False)
 
         velocity_scale_ratio = 2
         Pipeline.log_rebin(
