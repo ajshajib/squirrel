@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import os
 import numpy.testing as npt
-from ppxf import ppxf_util
 from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
 from squirrel.data import Datacube
