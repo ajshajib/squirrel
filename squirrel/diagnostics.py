@@ -82,7 +82,6 @@ class Diagnostics(object):
         num_sample=50,
         z_factor=1.0,
         v_systematic=0.0,
-        fit_with_scipy=False,
         plot=True,
     ):
         """Check the bias in the velocity dispersion measurement as a function of SNR.
@@ -117,9 +116,6 @@ class Diagnostics(object):
         :type z_factor: float
         :param v_systematic: systematic velocity, km/s, the `vsyst` parameter in pPXF
         :type v_systematic: float
-        :param fit_with_scipy: fit with scipy instead of ppxf, for example, to check for numerical
-            inaccuracy solely in pPXF
-        :type fit_with_scipy: bool
         :param plot: plot one example simulation for each input velocity dispersion and
             SNR
         :type plot: bool
@@ -213,106 +209,48 @@ class Diagnostics(object):
 
                     data.flux += noise
 
-                    if fit_with_scipy:
-
-                        def func(params):
-                            v, sigma = params
-                            model_flux = cls.make_convolved_spectra(
-                                template.flux[:, 0],
-                                template.wavelengths,
-                                sigma,
-                                spectra_data.velocity_scale,
-                                int(
-                                    spectra_data.velocity_scale
-                                    / template.velocity_scale
-                                ),
-                                data_wavelength=spectra_data.wavelengths,
-                                velocity=v,
-                                data_weight=template_weight,
-                                polynomial_degree=polynomial_degree,
-                                polynomial_weights=polynomial_weights,
-                                multiplicative_polynomial=multiplicative_component,
-                                v_systematic=v_systematic,
-                            )
-
-                            delta = model_flux - data.flux
-
-                            if data.covariance is not None:
-                                l_cholesky = splinalg.cholesky(
-                                    data.covariance, lower=True
-                                )
-                                l_cholesky_inv = splinalg.solve_triangular(
-                                    l_cholesky, np.eye(l_cholesky.shape[0]), lower=True
-                                )
-                                delta = l_cholesky_inv @ delta
-                                chi2 = delta @ delta
-                            else:
-                                chi2 = np.sum(delta**2 / data.noise**2)
-
-                            return chi2
-
-                        result = optimize.differential_evolution(
-                            func,
-                            x0=[0, input_dispersion],
-                            bounds=[
-                                (-20, 20),
-                                (input_dispersion - 30, input_dispersion + 30),
-                            ],
-                            popsize=50,
-                            mutation=(0.5, 1.0),
-                            disp=False,
+                    mock_ppxf_fit = ppxf(
+                        templates=template.flux,
+                        galaxy=data.flux,
+                        noise=deepcopy(
+                            data.covariance
+                            if data.covariance is not None
+                            else data.noise
+                        ),  # sending deepcopy just in case, as pPXF may manipulate the noise array/matrix
+                        velscale=data.velocity_scale,
+                        start=[0, input_dispersion],
+                        plot=False,
+                        lam=data.wavelengths,
+                        # lam_temp=template.wavelengths,
+                        degree=polynomial_degree,
+                        mdegree=multiplicative_polynomial_degree,
+                        vsyst=v_systematic,
+                        quiet=True,
+                        velscale_ratio=int(
+                            data.velocity_scale / template.velocity_scale
+                        ),
+                    )
+                    if plot and k == 0:
+                        # plt.plot(data.flux)
+                        # plt.plot(mock_flux)
+                        # plt.plot(spectra_data.flux)
+                        # plt.show()
+                        mock_ppxf_fit.plot()
+                        plt.title(
+                            f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
                         )
+                        plt.show()
 
-                        velocity_samples[k] = result.x[0]
-                        dispersion_samples[k] = result.x[1]
-                        velocity_uncertainty_samples[k] = 0
-                        dispersion_uncertainty_samples[k] = 0
-                        snr_samples[k] = cls.get_specific_snr(
-                            data, spectra_mask_for_snr, z_factor=z_factor
-                        )
-                    else:
-                        mock_ppxf_fit = ppxf(
-                            templates=template.flux,
-                            galaxy=data.flux,
-                            noise=deepcopy(
-                                data.covariance
-                                if data.covariance is not None
-                                else data.noise
-                            ),  # sending deepcopy just in case, as pPXF may manipulate the noise array/matrix
-                            velscale=data.velocity_scale,
-                            start=[0, input_dispersion],
-                            plot=False,
-                            lam=data.wavelengths,
-                            # lam_temp=template.wavelengths,
-                            degree=polynomial_degree,
-                            mdegree=multiplicative_polynomial_degree,
-                            vsyst=v_systematic,
-                            quiet=True,
-                            velscale_ratio=int(
-                                data.velocity_scale / template.velocity_scale
-                            ),
-                        )
-                        if plot and k == 0:
-                            # plt.plot(data.flux)
-                            # plt.plot(mock_flux)
-                            # plt.plot(spectra_data.flux)
-                            # plt.show()
-                            mock_ppxf_fit.plot()
-                            plt.title(
-                                f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
-                            )
-                            plt.show()
-
-                        # dispersion_samples.append(mock_ppxf_fit.sol[1])
-                        # velocity_samples.append(mock_ppxf_fit.sol[0])
-                        # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
-                        dispersion_samples[k] = mock_ppxf_fit.sol[1]
-                        dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
-                        velocity_samples[k] = mock_ppxf_fit.sol[0]
-                        velocity_uncertainty_samples[k] = mock_ppxf_fit.error[0]
-                        snr_samples[k] = cls.get_specific_snr(
-                            data, spectra_mask_for_snr, z_factor=z_factor
-                        )
+                    # dispersion_samples.append(mock_ppxf_fit.sol[1])
+                    # velocity_samples.append(mock_ppxf_fit.sol[0])
+                    # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
+                    dispersion_samples[k] = mock_ppxf_fit.sol[1]
+                    dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
+                    velocity_samples[k] = mock_ppxf_fit.sol[0]
+                    velocity_uncertainty_samples[k] = mock_ppxf_fit.error[0]
+                    snr_samples[k] = cls.get_specific_snr(
+                        data, spectra_mask_for_snr, z_factor=z_factor
+                    )
 
                 mean, uncertainty_mean, scatter = cls.get_stats(
                     velocity_samples, velocity_uncertainty_samples
