@@ -400,8 +400,8 @@ class Pipeline(object):
         :type wavelength_range_extend_factor: float
         :param kwargs: additional arguments for `ppxf_util.emission_lines`
         :type kwargs: dict
-        :return: emission line template
-        :rtype: `Template` class
+        :return: emission line template, line names, line wavelengths
+        :rtype: `Template` class, list of str, np.ndarray
         """
         wavelength_range_templates = (
             spectra.wavelengths[0] / wavelength_range_extend_factor * wavelength_factor,

@@ -35,11 +35,11 @@ class TestPipeline:
         )
 
     def test_log_rebin(self):
-        Pipeline.log_rebin(self.spectra)
+        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
         with pytest.raises(ValueError):
-            Pipeline.log_rebin(self.spectra)
+            Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
 
     def test_voronoi_binning(self):
         x = np.arange(11)
@@ -120,7 +120,7 @@ class TestPipeline:
                 2,
             )
 
-        Pipeline.log_rebin(self.spectra)
+        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         template = Pipeline.get_template_from_library(
             library_path,
             self.spectra,
@@ -162,13 +162,16 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
-        Pipeline.log_rebin(spectra, take_covariance=False)
+        Pipeline.log_rebin(
+            spectra, take_covariance=False, num_samples_for_covariance=10
+        )
 
         velocity_scale_ratio = 2
         Pipeline.log_rebin(
             template,
             velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
             take_covariance=False,
+            num_samples_for_covariance=10,
         )
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
 
@@ -246,13 +249,16 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
-        Pipeline.log_rebin(spectra, take_covariance=False)
+        Pipeline.log_rebin(
+            spectra, take_covariance=False, num_samples_for_covariance=10
+        )
 
         velocity_scale_ratio = 2
         Pipeline.log_rebin(
             template,
             velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
             take_covariance=False,
+            num_samples_for_covariance=10,
         )
 
         (
@@ -309,7 +315,7 @@ class TestPipeline:
         assert template.wavelength_unit == "AA"
         assert template.fwhm == spectra.fwhm
         assert template.flux.shape[0] == len(wavelengths)
-        assert isinstance(line_names, list)
+        assert isinstance(line_names, np.ndarray)
         assert isinstance(line_wavelengths, np.ndarray)
         assert len(line_names) == len(line_wavelengths)
 
@@ -350,7 +356,7 @@ class TestPipeline:
         )
         assert np.all(
             component_indices[flux1.shape[1] + flux2.shape[1] :]
-            == emission_line_groups + 2
+            == np.array(emission_line_groups) + 2
         )
         assert np.all(emission_line_indices[flux1.shape[1] + flux2.shape[1] :] == True)
 
@@ -364,7 +370,9 @@ class TestPipeline:
         )
         assert joined_template.flux.shape[1] == flux1.shape[1] + flux3.shape[1]
         assert np.all(component_indices[: flux1.shape[1]] == 0)
-        assert np.all(component_indices[flux1.shape[1] :] == emission_line_groups + 1)
+        assert np.all(
+            component_indices[flux1.shape[1] :] == np.array(emission_line_groups) + 1
+        )
         assert np.all(emission_line_indices[flux1.shape[1] :] == True)
 
     def test_make_template_from_array(self):
@@ -390,6 +398,7 @@ class TestPipeline:
             noise=spectra_noise,
         )
         spectra.spectra_modifications = ["log_rebinned"]
+        spectra.velocity_scale = 100.0  # Set a mock velocity scale
 
         # Call the method
         template = Pipeline.make_template_from_array(
@@ -419,6 +428,89 @@ class TestPipeline:
             * wavelength_range_extend_factor
             * wavelength_factor
         )
+
+    def test_get_terms_in_bic(self):
+        # Create a mock ppxf_fit object
+        class MockPpxfFit:
+            def __init__(self):
+                self.goodpixels = np.arange(100)
+                self.weights = np.random.rand(50)
+                self.degree = 4
+                self.sky = np.random.rand(100, 2)
+                self.sol = [100.0, 200.0]
+                self.mdegree = 2
+                self.galaxy = np.random.rand(100)
+                self.bestfit = np.random.rand(100)
+                self.original_noise = np.random.rand(100, 100)
+
+        ppxf_fit = MockPpxfFit()
+
+        # Call the method
+        k, n, log_likelihood = Pipeline.get_terms_in_bic(
+            ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01
+        )
+
+        # Assertions to check the output
+        assert isinstance(k, (int, np.integer))
+        assert isinstance(n, (int, np.integer))
+        assert isinstance(log_likelihood, (float, np.floating))
+
+        # Check the values
+        assert k > 0
+        assert n == len(ppxf_fit.goodpixels)
+
+    def test_get_bic(self):
+        # Create a mock ppxf_fit object
+        class MockPpxfFit:
+            def __init__(self):
+                self.goodpixels = np.arange(100)
+                self.weights = np.random.rand(50)
+                self.degree = 4
+                self.sky = np.random.rand(100, 2)
+                self.sol = [100.0, 200.0]
+                self.mdegree = 2
+                self.galaxy = np.random.rand(100)
+                self.bestfit = np.random.rand(100)
+                self.original_noise = np.random.rand(100, 100)
+
+        ppxf_fit = MockPpxfFit()
+
+        # Call the method
+        bic = Pipeline.get_bic(ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01)
+
+        # Assertions to check the output
+        assert isinstance(bic, float)
+
+        # Check the value
+        assert bic > 0
+
+    def test_get_bic_from_sample(self):
+        # Create a mock ppxf_fit object
+        class MockPpxfFit:
+            def __init__(self):
+                self.goodpixels = np.arange(100)
+                self.weights = np.random.rand(50)
+                self.degree = 4
+                self.sky = np.random.rand(100, 2)
+                self.sol = [100.0, 200.0]
+                self.mdegree = 2
+                self.galaxy = np.random.rand(100)
+                self.bestfit = np.random.rand(100)
+                self.original_noise = np.random.rand(100, 100)
+
+        # Create a list of mock ppxf_fit objects
+        ppxf_fits = [MockPpxfFit() for _ in range(5)]
+
+        # Call the method
+        bic = Pipeline.get_bic_from_sample(
+            ppxf_fits, num_fixed_parameters=1, weight_threshold=0.01
+        )
+
+        # Assertions to check the output
+        assert isinstance(bic, float)
+
+        # Check the value
+        assert bic > 0
 
 
 if __name__ == "__main__":
