@@ -171,6 +171,7 @@ class TestPipeline:
         )
         template.flux = _fluxes
         template.wavelengths = _wavelength
+        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
 
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 200], degree=4)
 
@@ -254,7 +255,7 @@ class TestPipeline:
         )
         template.flux = _fluxes
         template.wavelengths = _wavelength
-
+        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
         (
             velocity_dispersion,
             velocity_dispersion_uncertainty,
