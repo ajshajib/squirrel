@@ -69,7 +69,7 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        signal_image = np.ones(datacube.flux.shape[1:]) * 20
+        signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
 
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
