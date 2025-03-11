@@ -70,10 +70,11 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        signal_image = np.ones_like(np.sum(datacube.flux, axis=0)) * 2
-        noise_image = np.sqrt(np.sum(datacube.noise**2, axis=0))
-        bin_mapping_output = Pipeline.get_voronoi_binning_map(
-            datacube, signal_image, noise_image, 1, max_radius=1.0, plot=True
+        signal_image = np.ones(datacube.flux.shape[1:]) * 20
+        noise_image = np.ones_like(signal_image)
+
+        bin_mapping_output = Pipeline.get_voronoi_Pipeline.run_ppxfbinning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
@@ -160,19 +161,16 @@ class TestPipeline:
         template = Template(
             templates_wavelengths, template_fluxes.T, "AA", template_fwhm
         )
+        template.noise = np.ones_like(template.flux) * 0.01
 
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
-        _fluxes, _wavelength, _ = ppxf_util.log_rebin(
-            template.wavelengths,
-            template.flux,
-            velscale=spectra.velocity_scale / velocity_scale_ratio,
+        Pipeline.log_rebin(
+            template,
+            velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
+            take_covariance=False,
         )
-        template.flux = _fluxes
-        template.wavelengths = _wavelength
-        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
-
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 200], degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
@@ -180,7 +178,9 @@ class TestPipeline:
 
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
-        ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4, spectra_indices=0)
+        ppxf_fit = Pipeline.run_ppxf(
+            spectra, template, start=[0, 200], degree=4, spectra_indices=0
+        )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
         with pytest.raises(ValueError):
@@ -244,18 +244,17 @@ class TestPipeline:
             "AA",
             template_fwhm,
         )
+        template.noise = np.ones_like(template.flux) * 0.01
 
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
-        _fluxes, _wavelength, _ = ppxf_util.log_rebin(
-            template.wavelengths,
-            template.flux,
-            velscale=spectra.velocity_scale / velocity_scale_ratio,
+        Pipeline.log_rebin(
+            template,
+            velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
+            take_covariance=False,
         )
-        template.flux = _fluxes
-        template.wavelengths = _wavelength
-        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
+
         (
             velocity_dispersion,
             velocity_dispersion_uncertainty,
