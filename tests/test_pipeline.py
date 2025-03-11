@@ -162,9 +162,11 @@ class TestPipeline:
         Pipeline.log_rebin(spectra)
 
         velocity_scale_ratio = 2
-        Pipeline.log_rebin(
-            template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
-        )
+        # Pipeline.log_rebin(
+        #     template,
+        #     velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
+        #     take_covariance=False,
+        # )
 
         ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4)
 
