@@ -152,9 +152,6 @@ class Diagnostics(object):
 
         recovered_snrs = np.zeros((len(input_velocity_dispersions), len(target_snrs)))
 
-        if template is None:
-            template = template
-
         # for i, input_dispersion in enumerate(input_velocity_dispersions):
         for i in tqdm(range(len(input_velocity_dispersions)), desc="Input dispersion"):
             input_dispersion = input_velocity_dispersions[i]
