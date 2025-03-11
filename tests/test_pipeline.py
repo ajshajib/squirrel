@@ -282,7 +282,6 @@ class TestPipeline:
     def test_get_emission_line_template(self):
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
-        flux = np.random.normal(1, 0.1, len(wavelengths))
         fwhm = 2.0
         wavelength_factor = 1.0
         wavelength_range_extend_factor = 1.05
@@ -338,7 +337,8 @@ class TestPipeline:
         assert joined_template.flux.shape[1] == flux1.shape[1] + flux2.shape[1]
         assert np.all(component_indices[: flux1.shape[1]] == 0)
         assert np.all(component_indices[flux1.shape[1] :] == 1)
-        assert np.all(emission_line_indices == False)
+        for i in emission_line_indices:
+            assert i is np.False_
 
         # Test joining two kinematic templates and an emission line template
         joined_template, component_indices, emission_line_indices = (
@@ -358,7 +358,11 @@ class TestPipeline:
             component_indices[flux1.shape[1] + flux2.shape[1] :]
             == np.array(emission_line_groups) + 2
         )
-        assert np.all(emission_line_indices[flux1.shape[1] + flux2.shape[1] :] == True)
+        # assert np.all(emission_line_indices[flux1.shape[1] + flux2.shape[1] :] is True)
+        for i in range(flux1.shape[1] + flux2.shape[1]):
+            assert emission_line_indices[i] is np.False_
+        for i in range(flux1.shape[1] + flux2.shape[1], joined_template.flux.shape[1]):
+            assert emission_line_indices[i] is np.True_
 
         # Test joining one kinematic template and an emission line template
         joined_template, component_indices, emission_line_indices = (
@@ -373,7 +377,10 @@ class TestPipeline:
         assert np.all(
             component_indices[flux1.shape[1] :] == np.array(emission_line_groups) + 1
         )
-        assert np.all(emission_line_indices[flux1.shape[1] :] == True)
+        for i in range(flux1.shape[1]):
+            assert emission_line_indices[i] is np.False_
+        for i in range(flux1.shape[1], joined_template.flux.shape[1]):
+            assert emission_line_indices[i] is np.True_
 
     def test_make_template_from_array(self):
         # Create mock data for the test
