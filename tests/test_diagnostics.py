@@ -220,6 +220,42 @@ class TestDiagnostics:
             for ax in ax_row:
                 assert len(ax.lines) > 0
 
+    def test_plot_bias_vs_snr_single(self):
+        # Create mock data for the test
+        input_values = np.array([100, 200])
+        recovered_snrs = np.array([[10, 20, 30], [10, 20, 30]])
+        recovered_values = np.array([[95, 195, 290], [105, 205, 300]])
+        recovered_value_uncertainties = np.array([[5, 5, 5], [5, 5, 5]])
+        recovered_value_scatters = np.array([[2, 2, 2], [2, 2, 2]])
+
+        fig, axes = plt.subplots(len(input_values), 1, figsize=(10, 5))
+
+        # Call the method
+        Diagnostics.plot_bias_vs_snr_single(
+            axes,
+            input_values,
+            recovered_snrs,
+            recovered_values,
+            recovered_value_uncertainties,
+            recovered_value_scatters,
+            show_scatter=True,
+            show_mean_uncertainty=True,
+            bias_threshold=0.02,
+            x_label="SNR",
+            y_label="Value",
+            errorbar_kwargs_mean={"fmt": "o", "color": "blue"},
+            errorbar_kwargs_scatter={"fmt": "s", "color": "red"},
+        )
+
+        # Assertions to check the output
+        assert isinstance(fig, plt.Figure)
+        assert isinstance(axes, np.ndarray)
+        assert axes.shape == (len(input_values),)
+
+        # Check the content of the plots
+        for ax in axes:
+            assert len(ax.lines) > 0
+
 
 if __name__ == "__main__":
     pytest.main()
