@@ -116,8 +116,7 @@ class TestDiagnostics:
             num_sample=10,  # Reduced for test speed
             z_factor=1.0,
             v_systematic=-1327.7238493696473,
-            fit_with_scipy=False,
-            plot=False,
+            plot=True,
         )
 
         # Assertions to check the output
