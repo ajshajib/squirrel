@@ -127,6 +127,9 @@ class Diagnostics(object):
         if spectra_mask_for_snr is None:
             spectra_mask_for_snr = np.ones_like(spectra_data.wavelengths)
 
+        if spectra_data.covariance is None and spectra_data.noise is None:
+            raise ValueError("Either covariance or noise must be provided.")
+
         recovered_velocities = np.zeros(
             (len(input_velocity_dispersions), len(target_snrs))
         )
@@ -204,8 +207,6 @@ class Diagnostics(object):
                         noise = np.random.normal(
                             data.flux * 0, data.noise, size=len(data.flux)
                         )
-                    else:
-                        raise ValueError("No noise or covariance provided.")
 
                     data.flux += noise
 
