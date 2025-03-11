@@ -71,7 +71,7 @@ class TestPipeline:
         )
         signal_image = np.ones(flux.shape[1:]) * central_snr
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
-            datacube, signal_image, 950, 990, 1.0, max_radius=100, plot=True
+            datacube, signal_image, 950, 990, max_radius=1.0, plot=True
         )
 
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
