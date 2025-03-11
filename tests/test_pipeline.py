@@ -161,8 +161,8 @@ class TestPipeline:
         )
 
         Pipeline.log_rebin(spectra)
-
-        # velocity_scale_ratio = 2
+        velocity_scale_ratio = 2
+        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
         # Pipeline.log_rebin(
         #     template,
         #     velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
@@ -240,7 +240,8 @@ class TestPipeline:
 
         Pipeline.log_rebin(spectra)
 
-        # velocity_scale_ratio = 2
+        velocity_scale_ratio = 2
+        template.velocity_scale = spectra.velocity_scale / velocity_scale_ratio
         # Pipeline.log_rebin(
         #     template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
         # )
