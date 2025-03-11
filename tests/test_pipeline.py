@@ -72,7 +72,7 @@ class TestPipeline:
         signal_image = np.ones(datacube.flux.shape[1:]) * 20
         noise_image = np.ones_like(signal_image)
 
-        bin_mapping_output = Pipeline.get_voronoi_Pipeline.run_ppxfbinning_map(
+        bin_mapping_output = Pipeline.get_voronoi_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
