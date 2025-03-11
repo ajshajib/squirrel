@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import matplotlib.pyplot as plt
 from squirrel.data import Spectra
 from squirrel.template import Template
 from squirrel.diagnostics import Diagnostics
@@ -174,6 +175,50 @@ class TestDiagnostics:
                 v_systematic=-1327.7238493696473,
                 plot=True,
             )
+
+    def test_plot_bias_vs_snr(self):
+        # Create mock data for the test
+        input_velocity_dispersions = np.array([100, 200])
+        # target_snrs = np.array([10, 20, 30])
+        recovered_snrs = np.array([[10, 20, 30], [10, 20, 30]])
+        recovered_dispersions = np.array([[95, 195, 290], [105, 205, 300]])
+        recovered_dispersion_uncertainties = np.array([[5, 5, 5], [5, 5, 5]])
+        recovered_dispersion_scatters = np.array([[2, 2, 2], [2, 2, 2]])
+        recovered_velocities = np.array([[0, 0, 0], [0, 0, 0]])
+        recovered_velocity_uncertainties = np.array([[1, 1, 1], [1, 1, 1]])
+        recovered_velocity_scatters = np.array([[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]])
+
+        recovered_values = (
+            recovered_snrs,
+            recovered_dispersions,
+            recovered_dispersion_uncertainties,
+            recovered_dispersion_scatters,
+            recovered_velocities,
+            recovered_velocity_uncertainties,
+            recovered_velocity_scatters,
+        )
+
+        # Call the method
+        fig, axes = Diagnostics.plot_bias_vs_snr(
+            recovered_values,
+            input_velocity_dispersions,
+            fig_width=10,
+            bias_threshold=0.02,
+            show_scatter=True,
+            show_mean_uncertainty=True,
+            errorbar_kwargs_scatter={"fmt": "o", "color": "blue"},
+            errorbar_kwargs_mean={"fmt": "s", "color": "red"},
+        )
+
+        # Assertions to check the output
+        assert isinstance(fig, plt.Figure)
+        assert isinstance(axes, np.ndarray)
+        assert axes.shape == (len(input_velocity_dispersions), 2)
+
+        # Check the content of the plots
+        for ax_row in axes:
+            for ax in ax_row:
+                assert len(ax.lines) > 0
 
 
 if __name__ == "__main__":

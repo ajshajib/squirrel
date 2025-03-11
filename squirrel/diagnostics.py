@@ -125,7 +125,7 @@ class Diagnostics(object):
         :rtype: tuple
         """
         if spectra_mask_for_snr is None:
-            spectra_mask_for_snr = np.ones_like(spectra_data.wavelengths)
+            spectra_mask_for_snr = np.ones_like(spectra_data.wavelengths).astype(bool)
 
         if spectra_data.covariance is None and spectra_data.noise is None:
             raise ValueError("Either covariance or noise must be provided.")
