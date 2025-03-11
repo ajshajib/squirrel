@@ -256,6 +256,43 @@ class TestDiagnostics:
         for ax in axes:
             assert len(ax.lines) > 0
 
+    def test_make_convolved_spectra(self):
+        # Create mock data for the test
+        template_wavelengths = 10 ** np.arange(3.80993853, 3.841304895, 0.00012447)
+        template_flux = np.random.normal(1, 0.1, len(template_wavelengths))
+        velocity_dispersion = 200.0
+        velocity_scale = 100.0
+        velocity_scale_ratio = 2
+        data_wavelength = 10 ** np.arange(3.81192418, 3.839058575, 0.00024894)
+        velocity = 0.0
+        data_weight = 1.0
+        polynomial_degree = 2
+        polynomial_weights = [1.0, 0.5, 0.2]
+        multiplicative_polynomial = 1.0
+        v_systematic = 0.0
+
+        # Call the method
+        convolved_spectra = Diagnostics.make_convolved_spectra(
+            template_flux,
+            velocity_dispersion,
+            velocity_scale,
+            velocity_scale_ratio,
+            data_wavelength,
+            velocity=velocity,
+            data_weight=data_weight,
+            polynomial_degree=polynomial_degree,
+            polynomial_weights=polynomial_weights,
+            multiplicative_polynomial=multiplicative_polynomial,
+            v_systematic=v_systematic,
+        )
+
+        # Assertions to check the output
+        assert isinstance(convolved_spectra, np.ndarray)
+        assert convolved_spectra.shape == data_wavelength.shape
+
+        # Check the values
+        assert np.all(np.isfinite(convolved_spectra))
+
 
 if __name__ == "__main__":
     pytest.main()
