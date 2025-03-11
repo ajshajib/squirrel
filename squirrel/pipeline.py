@@ -453,12 +453,12 @@ class Pipeline(object):
             flux = np.append(flux, emission_line_template.flux, axis=1)
             if kinematic_template_2 is not None:
                 component_indices = np.append(
-                    component_indices, emission_line_groups + 2
+                    component_indices, np.array(emission_line_groups) + 2
                 )
                 emission_line_indices = component_indices > 1.0
             else:
                 component_indices = np.append(
-                    component_indices, emission_line_groups + 1
+                    component_indices, np.array(emission_line_groups) + 1
                 )
                 emission_line_indices = component_indices > 0.0
         else:
@@ -525,6 +525,7 @@ class Pipeline(object):
             & (wavelengths < wavelength_max + wavelength_diff)
         ]
 
+        convolved_fluxes = fluxes
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
                 np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 / wavelength_diff

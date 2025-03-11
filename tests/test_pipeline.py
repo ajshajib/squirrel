@@ -273,6 +273,153 @@ class TestPipeline:
             atol=1,
         )
 
+    def test_get_emission_line_template(self):
+        # Create mock data for the test
+        wavelengths = np.arange(4000, 5000, 0.1)
+        flux = np.random.normal(1, 0.1, len(wavelengths))
+        fwhm = 2.0
+        wavelength_factor = 1.0
+        wavelength_range_extend_factor = 1.05
+
+        # Create a mock Spectra object
+        spectra_wavelengths = np.arange(4100, 4900, 0.1)
+        spectra_flux = np.random.normal(1, 0.1, len(spectra_wavelengths))
+        spectra_noise = np.random.normal(0.1, 0.01, len(spectra_wavelengths))
+        spectra = Spectra(
+            spectra_wavelengths,
+            spectra_flux,
+            "AA",
+            fwhm,
+            0.5,
+            1.0,
+            noise=spectra_noise,
+        )
+        spectra.spectra_modifications = ["log_rebinned"]
+
+        # Call the method
+        template, line_names, line_wavelengths = Pipeline.get_emission_line_template(
+            spectra,
+            wavelengths,
+            wavelength_factor,
+            wavelength_range_extend_factor,
+        )
+
+        # Assertions to check the output
+        assert isinstance(template, Template)
+        assert template.wavelength_unit == "AA"
+        assert template.fwhm == spectra.fwhm
+        assert template.flux.shape[0] == len(wavelengths)
+        assert isinstance(line_names, list)
+        assert isinstance(line_wavelengths, np.ndarray)
+        assert len(line_names) == len(line_wavelengths)
+
+    def test_join_templates(self):
+        # Create mock templates
+        wavelengths = np.arange(4000, 5000, 0.1)
+        flux1 = np.random.normal(1, 0.1, (len(wavelengths), 5))
+        flux2 = np.random.normal(1, 0.1, (len(wavelengths), 3))
+        flux3 = np.random.normal(1, 0.1, (len(wavelengths), 2))
+        emission_line_groups = [0, 0, 1]
+
+        template1 = Template(wavelengths, flux1, "AA", 2.0)
+        template2 = Template(wavelengths, flux2, "AA", 2.0)
+        template3 = Template(wavelengths, flux3, "AA", 2.0)
+
+        # Test joining two kinematic templates
+        joined_template, component_indices, emission_line_indices = (
+            Pipeline.join_templates(template1, template2)
+        )
+        assert joined_template.flux.shape[1] == flux1.shape[1] + flux2.shape[1]
+        assert np.all(component_indices[: flux1.shape[1]] == 0)
+        assert np.all(component_indices[flux1.shape[1] :] == 1)
+        assert np.all(emission_line_indices == False)
+
+        # Test joining two kinematic templates and an emission line template
+        joined_template, component_indices, emission_line_indices = (
+            Pipeline.join_templates(
+                template1, template2, template3, emission_line_groups
+            )
+        )
+        assert (
+            joined_template.flux.shape[1]
+            == flux1.shape[1] + flux2.shape[1] + flux3.shape[1]
+        )
+        assert np.all(component_indices[: flux1.shape[1]] == 0)
+        assert np.all(
+            component_indices[flux1.shape[1] : flux1.shape[1] + flux2.shape[1]] == 1
+        )
+        assert np.all(
+            component_indices[flux1.shape[1] + flux2.shape[1] :]
+            == emission_line_groups + 2
+        )
+        assert np.all(emission_line_indices[flux1.shape[1] + flux2.shape[1] :] == True)
+
+        # Test joining one kinematic template and an emission line template
+        joined_template, component_indices, emission_line_indices = (
+            Pipeline.join_templates(
+                template1,
+                emission_line_template=template3,
+                emission_line_groups=emission_line_groups,
+            )
+        )
+        assert joined_template.flux.shape[1] == flux1.shape[1] + flux3.shape[1]
+        assert np.all(component_indices[: flux1.shape[1]] == 0)
+        assert np.all(component_indices[flux1.shape[1] :] == emission_line_groups + 1)
+        assert np.all(emission_line_indices[flux1.shape[1] :] == True)
+
+    def test_make_template_from_array(self):
+        # Create mock data for the test
+        wavelengths = np.arange(4000, 5000, 0.1)
+        fluxes = np.random.normal(1, 0.1, (len(wavelengths), 5))
+        fwhm_template = 2.0
+        velocity_scale_ratio = 2.0
+        wavelength_factor = 1.0
+        wavelength_range_extend_factor = 1.05
+
+        # Create a mock Spectra object
+        spectra_wavelengths = np.arange(4100, 4900, 0.1)
+        spectra_flux = np.random.normal(1, 0.1, len(spectra_wavelengths))
+        spectra_noise = np.random.normal(0.1, 0.01, len(spectra_wavelengths))
+        spectra = Spectra(
+            spectra_wavelengths,
+            spectra_flux,
+            "AA",
+            fwhm_template,
+            0.5,
+            1.0,
+            noise=spectra_noise,
+        )
+        spectra.spectra_modifications = ["log_rebinned"]
+
+        # Call the method
+        template = Pipeline.make_template_from_array(
+            fluxes,
+            wavelengths,
+            fwhm_template,
+            spectra,
+            velocity_scale_ratio,
+            wavelength_factor,
+            wavelength_range_extend_factor,
+        )
+
+        # Assertions to check the output
+        assert isinstance(template, Template)
+        assert template.wavelength_unit == "AA"
+        assert template.fwhm == spectra.fwhm
+        assert template.flux.shape[1] == fluxes.shape[1]
+        assert np.all(
+            template.wavelengths
+            >= spectra.wavelengths[0]
+            / wavelength_range_extend_factor
+            * wavelength_factor
+        )
+        assert np.all(
+            template.wavelengths
+            <= spectra.wavelengths[-1]
+            * wavelength_range_extend_factor
+            * wavelength_factor
+        )
+
 
 if __name__ == "__main__":
     pytest.main()
