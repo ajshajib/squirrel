@@ -69,9 +69,10 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        signal_image = np.ones(flux.shape[1:]) * central_snr
+        signal_image = np.ones_like(np.sum(datacube.flux, axis=0)) * 2
+        noise_image = np.sqrt(np.sum(datacube.noise**2, axis=0))
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
-            datacube, signal_image, 950, 990, max_radius=1.0, plot=True
+            datacube, signal_image, noise_image, 1, max_radius=1.0, plot=True
         )
 
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
