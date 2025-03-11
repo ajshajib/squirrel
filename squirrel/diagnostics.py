@@ -161,7 +161,6 @@ class Diagnostics(object):
             input_dispersion = input_velocity_dispersions[i]
             mock_flux = cls.make_convolved_spectra(
                 template.flux[:, 0],
-                template.wavelengths,
                 input_dispersion,
                 spectra_data.velocity_scale,
                 int(spectra_data.velocity_scale / template.velocity_scale),
@@ -285,6 +284,8 @@ class Diagnostics(object):
                             plot=False,
                             lam=data.wavelengths,
                             # lam_temp=template.wavelengths,
+                            degree=polynomial_degree,
+                            mdegree=multiplicative_polynomial_degree,
                             vsyst=v_systematic,
                             quiet=True,
                             velscale_ratio=int(
@@ -588,10 +589,8 @@ class Diagnostics(object):
     ):
         """Make a convolved spectra.
 
-        :param template_flux: template flux
+        :param template_flux: template flux. Wavelenghts are not needed as `v_systematic` and `velocity_scale_ratio` will be used to obtain that.
         :type template_flux: numpy.ndarray
-        :param template_wavelength: template wavelength
-        :type template_wavelength: numpy.ndarray
         :param velocity_dispersion: velocity dispersion, in km/s
         :type velocity_dispersion: float
         :param velocity_scale: velocity scale, in km/s
