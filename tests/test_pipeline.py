@@ -168,7 +168,7 @@ class TestPipeline:
         #     take_covariance=False,
         # )
 
-        ppxf_fit = Pipeline.run_ppxf(spectra, template, degree=4)
+        ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 200], degree=4)
 
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
@@ -182,6 +182,7 @@ class TestPipeline:
             Pipeline.run_ppxf(
                 spectra,
                 template,
+                start=[0, 200],
                 degree=4,
                 spectra_indices=[0, 0],
             )
@@ -189,7 +190,7 @@ class TestPipeline:
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
         ppxf_fit = Pipeline.run_ppxf(
-            spectra, template, degree=4, spectra_indices=[0, 0]
+            spectra, template, start=[0, 200], degree=4, spectra_indices=[0, 0]
         )
 
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
@@ -198,6 +199,7 @@ class TestPipeline:
             Pipeline.run_ppxf(
                 spectra,
                 template,
+                start=[0, 200],
                 degree=4,
                 spectra_indices=0,
             )
@@ -237,10 +239,10 @@ class TestPipeline:
 
         Pipeline.log_rebin(spectra)
 
-        velocity_scale_ratio = 2
-        Pipeline.log_rebin(
-            template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
-        )
+        # velocity_scale_ratio = 2
+        # Pipeline.log_rebin(
+        #     template, velocity_scale=spectra.velocity_scale / velocity_scale_ratio
+        # )
 
         (
             velocity_dispersion,
