@@ -1,7 +1,8 @@
 import pytest
-import numpy as np
 import os
+import numpy as np
 import numpy.testing as npt
+from scipy.special import ndtr
 from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
 from squirrel.data import Datacube
@@ -11,14 +12,14 @@ from squirrel.template import Template
 class MockPpxfFit:
     def __init__(self):
         self.goodpixels = np.arange(100)
-        self.weights = np.abs(np.random.rand(10))
+        self.weights = np.linspace(0.2, 1, 10)
         self.degree = 4
         self.sky = np.random.rand(100, 2)
         self.sol = [100.0, 200.0]
         self.mdegree = 2
-        self.galaxy = np.random.rand(100)
-        self.bestfit = np.random.rand(100)
-        self.original_noise = np.random.rand(100, 100)
+        self.galaxy = np.random.normal(1, 0.1, 100)
+        self.bestfit = np.ones(100) * np.random.normal(1, 0.1)
+        self.original_noise = np.diag(np.ones(100) * 0.1**2)
 
 
 class TestPipeline:
@@ -498,9 +499,8 @@ class TestPipeline:
 
     def test_get_relative_bic_weights_for_sample(self):
         # Create mock ppxf fits
-        ppxf_fit_mock = MockPpxfFit()
         ppxf_fits_list = np.array(
-            [[ppxf_fit_mock, ppxf_fit_mock], [ppxf_fit_mock, ppxf_fit_mock]]
+            [[MockPpxfFit(), MockPpxfFit()], [MockPpxfFit(), MockPpxfFit()]]
         )
 
         # Call the method
@@ -517,12 +517,11 @@ class TestPipeline:
         assert np.all(weights >= 0)
 
     def test_combine_measurements_from_templates(self):
-        ppxf_fit_mock = MockPpxfFit()
         ppxf_fits_list = np.array(
-            [[ppxf_fit_mock, ppxf_fit_mock], [ppxf_fit_mock, ppxf_fit_mock]]
+            [[MockPpxfFit(), MockPpxfFit()], [MockPpxfFit(), MockPpxfFit()]]
         )
-        values = np.random.rand(2, 2)
-        uncertainties = np.random.rand(2, 2)
+        values = np.array([[1.0, 2.0], [3.0, 4.0]])
+        uncertainties = np.array([[0.1, 0.2], [0.3, 0.4]])
 
         # Call the method
         (
@@ -615,6 +614,37 @@ class TestPipeline:
                         * (values[:, j] - combined_values[j])
                     ) / (np.sum(weights) - np.sum(weights**2) / np.sum(weights))
                 assert np.isclose(covariance[i, j], expected_covariance, rtol=1e-5)
+
+    def test_calculate_weights_from_bic(self):
+        # Define test cases
+        test_cases = [
+            (0.0, 1.0, 1.0),  # delta_bic = 0, sigma_delta_bic = 1
+            (2.0, 1.0, 0.5),  # delta_bic = 2, sigma_delta_bic = 1
+            (5.0, 2.0, 0.1),  # delta_bic = 5, sigma_delta_bic = 2
+            (-2.0, 1.0, 1.0),  # delta_bic = -2, sigma_delta_bic = 1
+        ]
+
+        for delta_bic, sigma_delta_bic, expected_weight in test_cases:
+            # Call the method
+            weight = Pipeline.calculate_weights_from_bic(delta_bic, sigma_delta_bic)
+
+            # Assertions to check the output
+            assert isinstance(weight, float)
+            assert weight >= 0.0
+            assert weight <= 1.0
+
+            # Check the value
+            integral_1 = ndtr(-delta_bic / sigma_delta_bic)
+            integral_2 = ndtr(delta_bic / sigma_delta_bic - sigma_delta_bic / 2)
+            exp_factor = (sigma_delta_bic**2 / 8) - (delta_bic / 2)
+
+            if integral_2 == 0.0:
+                integral2_multiplied = 0.0
+            else:
+                integral2_multiplied = np.exp(exp_factor + np.log(integral_2))
+
+            expected_weight = integral_1 + integral2_multiplied
+            assert np.isclose(weight, expected_weight, rtol=1e-5)
 
 
 if __name__ == "__main__":

@@ -869,7 +869,6 @@ class Pipeline(object):
             weights[i] = cls.calculate_weights_from_bic(
                 delta_bics[i], bics_uncertainty[i]
             )
-
         return weights
 
     @classmethod
