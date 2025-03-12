@@ -113,6 +113,50 @@ class TestPipeline:
         assert datacube.z_lens == voronoi_binned_spectra.z_lens
         assert datacube.z_source == voronoi_binned_spectra.z_source
         assert datacube.flux_unit == voronoi_binned_spectra.flux_unit
+        assert voronoi_binned_spectra.noise.shape == voronoi_binned_spectra.noise.shape
+        assert voronoi_binned_spectra.covariance is None
+        npt.assert_equal(
+            datacube.spectra_modifications, voronoi_binned_spectra.spectra_modifications
+        )
+        npt.assert_equal(
+            datacube.wavelengths_frame, voronoi_binned_spectra.wavelengths_frame
+        )
+
+        # with covariance
+        datacube = Datacube(
+            wavelengths,
+            flux,
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            center_pixel_x,
+            center_pixel_y,
+            coordinate_transform_matrix,
+            covariance=np.ones((100, 100, 11, 11)),
+        )
+        signal_image = np.ones(datacube.flux.shape[1:]) * 9
+        noise_image = np.ones_like(signal_image)
+
+        bin_mapping_output = Pipeline.get_voronoi_binning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
+        )
+
+        voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
+            datacube, bin_mapping_output
+        )
+        npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
+        assert datacube.wavelength_unit == voronoi_binned_spectra.wavelength_unit
+        assert datacube.fwhm == voronoi_binned_spectra.fwhm
+        assert datacube.z_lens == voronoi_binned_spectra.z_lens
+        assert datacube.z_source == voronoi_binned_spectra.z_source
+        assert datacube.flux_unit == voronoi_binned_spectra.flux_unit
+        assert voronoi_binned_spectra.noise is None
+        assert voronoi_binned_spectra.covariance.shape == (
+            voronoi_binned_spectra.flux.shape[0],
+            voronoi_binned_spectra.flux.shape[0],
+            voronoi_binned_spectra.flux.shape[1],
+        )
         npt.assert_equal(
             datacube.spectra_modifications, voronoi_binned_spectra.spectra_modifications
         )
