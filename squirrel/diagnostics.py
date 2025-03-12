@@ -29,15 +29,18 @@ class Diagnostics(object):
         :return: mean signal per (wavelength unit)^(1/2), and noise
         :rtype: float, float
         """
+        # Extract the signal from the spectra using the provided mask
         signal_slice = spectra.flux[mask]
         total_signal = np.sum(signal_slice)
 
+        # Calculate the total noise based on the covariance or noise array
         if spectra.covariance is not None:
             covariance_slice = spectra.covariance[mask][:, mask]
             total_noise = np.sqrt(np.sum(covariance_slice))
         else:
             total_noise = np.sqrt(np.sum(spectra.noise[mask] ** 2))
 
+        # Calculate the wavelength range covered by the mask
         wavelength_slice = spectra.wavelengths[mask]
         delta_lambda = wavelength_slice[-1] - wavelength_slice[0]
 
@@ -57,6 +60,7 @@ class Diagnostics(object):
         :return: mean SNR per (wavelength unit)^(1/2)
         :rtype: float
         """
+        # Get the specific signal and noise using the provided mask and z_factor
         signal, noise = cls.get_specific_signal_and_noise(
             spectra, mask, z_factor=z_factor
         )
@@ -117,17 +121,18 @@ class Diagnostics(object):
         :param plot: plot one example simulation for each input velocity dispersion and
             SNR
         :type plot: bool
-        :param global_search: perform a global search for the best fit
-        :type global_search: bool
         :return: recovered values
         :rtype: tuple
         """
+        # If no mask is provided, create a default mask that includes all wavelengths
         if spectra_mask_for_snr is None:
             spectra_mask_for_snr = np.ones_like(spectra_data.wavelengths).astype(bool)
 
+        # Ensure that either covariance or noise is provided in the spectra data
         if spectra_data.covariance is None and spectra_data.noise is None:
             raise ValueError("Either covariance or noise must be provided.")
 
+        # Initialize arrays to store recovered values
         recovered_velocities = np.zeros(
             (len(input_velocity_dispersions), len(target_snrs))
         )
@@ -150,9 +155,10 @@ class Diagnostics(object):
 
         recovered_snrs = np.zeros((len(input_velocity_dispersions), len(target_snrs)))
 
-        # for i, input_dispersion in enumerate(input_velocity_dispersions):
+        # Loop over each input velocity dispersion
         for i in tqdm(range(len(input_velocity_dispersions)), desc="Input dispersion"):
             input_dispersion = input_velocity_dispersions[i]
+            # Create mock spectra by convolving the template with the input dispersion
             mock_flux = cls.make_convolved_spectra(
                 template.flux[:, 0],
                 input_dispersion,
@@ -166,28 +172,33 @@ class Diagnostics(object):
                 v_systematic=v_systematic,
             )
 
-            # mock_flux *= multiplicative_polynomial
+            # Add the additive component to the mock flux
             mock_flux += add_component
 
-            # for j, target_snr in enumerate(target_snrs):
+            # Loop over each target SNR
             for j in tqdm(range(len(target_snrs)), desc="Target SNR"):
                 target_snr = target_snrs[j]
+                # Initialize arrays to store samples for each Monte Carlo realization
                 dispersion_samples = np.zeros(num_sample)
                 dispersion_uncertainty_samples = np.zeros(num_sample)
                 velocity_samples = np.zeros(num_sample)
                 velocity_uncertainty_samples = np.zeros(num_sample)
                 snr_samples = np.zeros(num_sample)
 
+                # Perform Monte Carlo realizations
                 for k in range(num_sample):
                     data = deepcopy(spectra_data)
                     data.flux = deepcopy(mock_flux)
 
+                    # Calculate the initial specific SNR
                     initial_specific_snr = cls.get_specific_snr(
                         spectra_data, spectra_mask_for_snr, z_factor=z_factor
                     )
 
+                    # Calculate the noise multiplier to achieve the target SNR
                     noise_multiplier = initial_specific_snr / target_snr
 
+                    # Add noise to the mock spectra
                     if data.covariance is not None:
                         data.covariance *= noise_multiplier**2
                         if not is_positive_definite(data.covariance):
@@ -205,6 +216,7 @@ class Diagnostics(object):
 
                     data.flux += noise
 
+                    # Fit the mock spectra using pPXF
                     mock_ppxf_fit = ppxf(
                         templates=template.flux,
                         galaxy=data.flux,
@@ -217,7 +229,6 @@ class Diagnostics(object):
                         start=[0, input_dispersion],
                         plot=False,
                         lam=data.wavelengths,
-                        # lam_temp=template.wavelengths,
                         degree=polynomial_degree,
                         mdegree=multiplicative_polynomial_degree,
                         vsyst=v_systematic,
@@ -226,20 +237,15 @@ class Diagnostics(object):
                             data.velocity_scale / template.velocity_scale
                         ),
                     )
+                    # Plot the fit for the first realization if plotting is enabled
                     if plot and k == 0:
-                        # plt.plot(data.flux)
-                        # plt.plot(mock_flux)
-                        # plt.plot(spectra_data.flux)
-                        # plt.show()
                         mock_ppxf_fit.plot()
                         plt.title(
                             f"Input dispersion: {input_dispersion} km/s, SNR: {target_snr}"
                         )
                         plt.show()
 
-                    # dispersion_samples.append(mock_ppxf_fit.sol[1])
-                    # velocity_samples.append(mock_ppxf_fit.sol[0])
-                    # snr_samples.append(cls.get_mean_snr(data, spectra_mask_for_snr))
+                    # Store the results of the fit
                     dispersion_samples[k] = mock_ppxf_fit.sol[1]
                     dispersion_uncertainty_samples[k] = mock_ppxf_fit.error[1]
                     velocity_samples[k] = mock_ppxf_fit.sol[0]
@@ -248,15 +254,12 @@ class Diagnostics(object):
                         data, spectra_mask_for_snr, z_factor=z_factor
                     )
 
+                # Calculate the statistics for the recovered values
                 mean, uncertainty_mean, scatter = cls.get_stats(
                     velocity_samples, velocity_uncertainty_samples
                 )
                 recovered_velocities[i, j] = mean
                 recovered_velocity_uncertainties[i, j] = uncertainty_mean
-                # recovered_velocities[i, j] = np.median(velocity_samples)
-                # recovered_velocity_scatters[i, j] = 1.4826 * np.median(
-                #     np.abs(velocity_samples - recovered_velocities[i, j])
-                # )
                 recovered_velocity_scatters[i, j] = scatter
 
                 mean, uncertainty_mean, scatter = cls.get_stats(
@@ -264,10 +267,6 @@ class Diagnostics(object):
                 )
                 recovered_dispersions[i, j] = mean
                 recovered_dispersion_uncertainties[i, j] = uncertainty_mean
-                # recovered_dispersions[i, j] = np.median(dispersion_samples)
-                # recovered_dispersion_scatters[i, j] = 1.4826 * np.median(
-                #     np.abs(dispersion_samples - recovered_dispersions[i, j])
-                # )
                 recovered_dispersion_scatters[i, j] = scatter
                 recovered_snrs[i, j] = np.mean(snr_samples)
 
@@ -294,22 +293,13 @@ class Diagnostics(object):
         :return: mean, uncertainty of the mean, and scatter
         :rtype: tuple
         """
-        # low_percentile = 100 * 0.5 * (1 - erf(sigma / np.sqrt(2)))
-        # high_percentile = 100 - low_percentile
-
-        # low, high = np.percentile(values, [low_percentile, high_percentile])
-
-        # sigma_clipped = sigma_clip(values, sigma=sigma)
-        # low, high = np.min(sigma_clipped), np.max(sigma_clipped)
-
-        # mask = (values >= low) & (values <= high)
-        # mean = np.sum(values[mask] / uncertainties[mask] ** 2) / np.sum(
-        #     1.0 / uncertainties[mask] ** 2
-        # )
-        # uncertainty_mean = np.sum(1.0 / uncertainties[mask] ** 2) ** -0.5
+        # Generate samples from a normal distribution using the values and uncertainties
         samples = np.random.normal(values, uncertainties, size=(1000, len(values)))
+        # Calculate the median of the values
         mean = np.median(values)
+        # Calculate the uncertainty of the mean using the standard deviation of the medians
         uncertainty_mean = np.std(np.median(samples, axis=1))
+        # Calculate the scatter as the standard deviation of the values
         scatter = np.std(values)
 
         return mean, uncertainty_mean, scatter
@@ -329,10 +319,13 @@ class Diagnostics(object):
     ):
         """Plot the bias in the velocity dispersion measurement as a function of SNR.
 
+        This function generates plots to visualize the bias in the velocity dispersion
+        and velocity measurements as a function of Signal-to-Noise Ratio (SNR). It
+        creates subplots for each input velocity dispersion and plots the recovered
+        values along with their uncertainties and scatters.
+
         :param recovered_values: recovered values from check_bias_vs_snr
         :type recovered_values: tuple
-        :param target_snrs: target SNRs
-        :type target_snrs: numpy.ndarray
         :param input_velocity_dispersions: input velocity dispersions
         :type input_velocity_dispersions: numpy.ndarray
         :param fig_width: width of the figure
@@ -350,6 +343,7 @@ class Diagnostics(object):
         :return: figure and axes
         :rtype: tuple
         """
+        # Unpack the recovered values
         (
             recovered_snrs,
             recovered_dispersions,
@@ -360,12 +354,14 @@ class Diagnostics(object):
             recovered_velocity_scatters,
         ) = recovered_values
 
+        # Create subplots for each input velocity dispersion
         fig, axes = plt.subplots(
             len(input_velocity_dispersions),
             2,
             figsize=(fig_width, fig_width / 8.0 * len(input_velocity_dispersions)),
         )
 
+        # Plot the bias in velocity dispersion
         cls.plot_bias_vs_snr_single(
             axes[:, 0],
             input_velocity_dispersions,
@@ -383,6 +379,7 @@ class Diagnostics(object):
             **kwargs,
         )
 
+        # Plot the bias in velocity
         cls.plot_bias_vs_snr_single(
             axes[:, 1],
             np.zeros(len(recovered_velocities)),
@@ -400,7 +397,7 @@ class Diagnostics(object):
             **kwargs,
         )
 
-        # remove gap between subplots
+        # Adjust the spacing between subplots
         plt.subplots_adjust(hspace=0.0)
 
         return fig, axes
@@ -422,9 +419,13 @@ class Diagnostics(object):
         errorbar_kwargs_scatter={},
         **kwargs,
     ):
-        """Plot the bias in the velocity dispersion measurement as a function of SNR.
+        """Plot the bias in velocity dispersion measurement as a function of SNR.
 
-        :param axes: array of ax objects to plot, must match in length with `input_values`
+        This function visualizes the bias in a single kinematic value as a function of
+        Signal-to-Noise Ratio (SNR). It plots the recovered values along with their
+        uncertainties and scatters.
+
+        :param axes: array of ax objects to plot, must match the length of `input_values`
         :type axes: numpy.ndarray or list
         :param input_values: input values
         :type input_values: numpy.ndarray
@@ -432,19 +433,19 @@ class Diagnostics(object):
         :type recovered_snrs: numpy.ndarray
         :param recovered_values: recovered values
         :type recovered_values: numpy.ndarray
-        :param recovered_value_uncertainties: recovered value uncertainties
+        :param recovered_value_uncertainties: uncertainties of recovered values
         :type recovered_value_uncertainties: numpy.ndarray
-        :param recovered_value_scatters: recovered value scatters
+        :param recovered_value_scatters: scatters of recovered values
         :type recovered_value_scatters: numpy.ndarray
-        :param show_scatter: show scatter of the points
+        :param show_scatter: whether to show scatter of the points
         :type show_scatter: bool
-        :param show_mean_uncertainty: show mean uncertainty of the points
+        :param show_mean_uncertainty: whether to show mean uncertainty of the points
         :type show_mean_uncertainty: bool
         :param bias_threshold: bias threshold line for plotting
         :type bias_threshold: float
-        :param x_label: x label
+        :param x_label: label for the x-axis
         :type x_label: str
-        :param y_label: y label
+        :param y_label: label for the y-axis
         :type y_label: str
         :param errorbar_kwargs_mean: keyword arguments for errorbar for mean uncertainty
         :type errorbar_kwargs_mean: dict
@@ -454,14 +455,10 @@ class Diagnostics(object):
         :rtype: None
         """
 
-        # assert axes has the same length as input_values
+        # Assert axes has the same length as input_values
         assert len(axes) == len(input_values)
 
-        # if "marker" not in errorbar_kwargs_mean:
-        #     errorbar_kwargs_mean["marker"] = "o"
-        # if "ls" not in errorbar_kwargs_mean:
-        #     errorbar_kwargs_mean["ls"] = ":"
-
+        # Plot the recovered values with scatter and mean uncertainty
         for i, input_value in enumerate(input_values):
             if show_scatter:
                 axes[i].errorbar(
@@ -478,6 +475,7 @@ class Diagnostics(object):
                     **errorbar_kwargs_scatter,
                 )
 
+            # Set default marker and linestyle if not provided
             if "marker" not in kwargs:
                 kwargs["marker"] = "o"
             if "ls" not in kwargs:
@@ -485,6 +483,7 @@ class Diagnostics(object):
             if "markersize" not in kwargs:
                 kwargs["markersize"] = 2
 
+            # Plot the recovered values
             axes[i].plot(
                 recovered_snrs[i],
                 recovered_values[i],
@@ -492,8 +491,10 @@ class Diagnostics(object):
                 zorder=20,
                 **kwargs,
             )
+            # Plot the input value as a horizontal line
             axes[i].axhline(input_value, color="grey", linestyle="--", alpha=0.6)
 
+            # Plot the bias threshold as a shaded region
             if bias_threshold > 0.0:
                 axes[i].axhspan(
                     input_value * (1 - bias_threshold),
@@ -523,7 +524,11 @@ class Diagnostics(object):
     ):
         """Make a convolved spectra.
 
-        :param template_flux: template flux. Wavelenghts are not needed as `v_systematic` and `velocity_scale_ratio` will be used to obtain that.
+        This function generates a mock spectrum by convolving a template spectrum with
+        a given velocity dispersion. It also applies a polynomial to the convolved
+        spectrum to simulate various observational effects.
+
+        :param template_flux: template flux. Wavelengths are not needed as `v_systematic` and `velocity_scale_ratio` will be used to obtain that.
         :type template_flux: numpy.ndarray
         :param velocity_dispersion: velocity dispersion, in km/s
         :type velocity_dispersion: float
@@ -531,8 +536,6 @@ class Diagnostics(object):
         :type velocity_scale: float
         :param velocity_scale_ratio: velocity scale ratio
         :type velocity_scale_ratio: int
-        :param data_npix: number of pixels in data
-        :type data_npix: int
         :param data_wavelength: data wavelength
         :type data_wavelength: numpy.ndarray
         :param velocity: velocity, km/s
@@ -549,8 +552,10 @@ class Diagnostics(object):
         :return: convolved spectra
         :rtype: numpy.ndarray
         """
+        # Number of pixels in the data wavelength array
         data_num_pix = len(data_wavelength)
 
+        # Convolve the template flux with the given velocity dispersion
         galaxy_model = convolve_gauss_hermite(
             template_flux,
             velocity_scale,
@@ -560,9 +565,11 @@ class Diagnostics(object):
             vsyst=v_systematic,
         )
 
+        # Generate a Legendre polynomial
         x = np.linspace(-1, 1, data_num_pix)
         vand = legendre.legvander(x, polynomial_degree)
 
+        # Return the convolved spectrum with the polynomial applied
         return multiplicative_polynomial * data_weight * galaxy_model + np.dot(
             vand, polynomial_weights
         )
