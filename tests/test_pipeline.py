@@ -379,21 +379,28 @@ class TestPipeline:
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
     def test_run_ppxf_on_binned_spectra(self):
+        """
+        Test the pPXF fitting on binned spectra.
+        This method tests the pPXF fitting on spectra that have been binned and checks for expected results.
+        """
+        # Define the wavelength range and line properties
         start_wavelength = 9100
         end_wavelength = 9600
         line_mean = 9350
         line_sigma = 20
 
+        # Create the wavelengths and flux for the spectra
         wavelengths = np.arange(start_wavelength, end_wavelength, 0.5)
         flux = (
             -np.exp(-0.5 * (wavelengths - line_mean) ** 2 / line_sigma**2)
             + (wavelengths - line_mean) / 1000
         )
-        flux = np.tile(flux, (2, 1)).T
+        flux = np.tile(flux, (2, 1)).T  # Tile the flux to simulate binned spectra
         noise = np.ones_like(flux) * 0.1
         fwhm = 0.0
         spectra = Spectra(wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=noise)
 
+        # Create the template wavelengths and fluxes
         template_sigma = 1
         template_fwhm = 2.355 * template_sigma
         templates_wavelengths = np.arange(
@@ -415,6 +422,7 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
+        # Perform log rebinning on the spectra and template
         Pipeline.log_rebin(
             spectra, take_covariance=False, num_samples_for_covariance=10
         )
@@ -427,6 +435,7 @@ class TestPipeline:
             num_samples_for_covariance=10,
         )
 
+        # Run pPXF on the binned spectra
         (
             velocity_dispersion,
             velocity_dispersion_uncertainty,
@@ -436,8 +445,10 @@ class TestPipeline:
             spectra, template, start=[0, 600], degree=4
         )
 
+        # Calculate the expected velocity dispersion
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
 
+        # Assert that the calculated velocity dispersion matches the expected value
         npt.assert_allclose(
             velocity_dispersion,
             [input_velocity_dispersion, input_velocity_dispersion],
@@ -446,6 +457,10 @@ class TestPipeline:
         )
 
     def test_get_emission_line_template(self):
+        """
+        Test the creation of an emission line template.
+        This method tests the creation of an emission line template from given spectra and checks for expected properties.
+        """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
         fwhm = 2.0
@@ -467,7 +482,7 @@ class TestPipeline:
         )
         spectra.spectra_modifications = ["log_rebinned"]
 
-        # Call the method
+        # Call the method to get the emission line template
         template, line_names, line_wavelengths = Pipeline.get_emission_line_template(
             spectra,
             wavelengths,
