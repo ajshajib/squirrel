@@ -384,6 +384,12 @@ class TestVoronoiBinnedSpectra:
             self.voronoi_binned_spectra.area, np.ones_like(self.x_coordinates)
         )
 
+    def test_snr(self):
+        # Check the snr property
+        assert np.allclose(
+            self.voronoi_binned_spectra.snr, np.ones_like(self.x_coordinates)
+        )
+
     def test_get_single_spectra(self):
         # Call the method for a specific bin index
         bin_index = 1
