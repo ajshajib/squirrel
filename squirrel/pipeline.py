@@ -943,11 +943,11 @@ class Pipeline(object):
     ):
         """Calculate the relative BIC weights for a given sample of pPXF fits.
 
-        This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
-        It computes the BIC for each pPXF fit in the sample,
-        performs bootstrap sampling to estimate uncertainties, and
-        calculates the relative BIC weights.
+        This function follows the methodology provided by Knabel & Mozumdar et al.
+        (2025,
+        https://arxiv.org/abs/2502.16034).
+         It computes the BIC for each pPXF fit in the sample, performs bootstrap
+        sampling to estimate uncertainties, and calculates the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
@@ -1160,8 +1160,9 @@ class Pipeline(object):
     def calculate_weights_from_bic(delta_bic, sigma_delta_bic):
         """Calculate the relative BIC weight after accounting for the uncertainty.
 
-        This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        This function follows the methodology provided by Knabel & Mozumdar et al.
+        (2025,
+        https://arxiv.org/abs/2502.16034).
 
         :param delta_bic: The difference in BIC values between the model and the best
             model.
