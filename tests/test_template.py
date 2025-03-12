@@ -26,6 +26,85 @@ class TestTemplate:
     def test_wavelengths(self):
         npt.assert_array_equal(self.template.wavelengths, self.wavelengths)
 
+    def test_merge(self):
+        # Create mock data for the test
+        wavelengths = np.linspace(4000, 5000, 1000)
+        flux1 = np.random.normal(1, 0.1, (1000, 5))
+        flux2 = np.random.normal(1, 0.1, (1000, 3))
+        wavelength_unit = "AA"
+        fwhm = 2.0
+
+        # Create two Template objects
+        template1 = Template(wavelengths, flux1, wavelength_unit, fwhm)
+        template2 = Template(wavelengths, flux2, wavelength_unit, fwhm)
+
+        # Call the merge method
+        merged_template = template1.merge(template2)
+
+        # Assertions to check the output
+        assert isinstance(merged_template, Template)
+        assert merged_template.flux.shape == (1000, 8)
+        np.testing.assert_equal(merged_template.wavelengths, wavelengths)
+
+    def test_and_operator(self):
+        # Create mock data for the test
+        wavelengths = np.linspace(4000, 5000, 1000)
+        flux1 = np.random.normal(1, 0.1, (1000, 5))
+        flux2 = np.random.normal(1, 0.1, (1000, 3))
+        wavelength_unit = "AA"
+        fwhm = 2.0
+
+        # Create two Template objects
+        template1 = Template(wavelengths, flux1, wavelength_unit, fwhm)
+        template2 = Template(wavelengths, flux2, wavelength_unit, fwhm)
+
+        # Call the __and__ method
+        merged_template = template1 & template2
+
+        # Assertions to check the output
+        assert isinstance(merged_template, Template)
+        assert merged_template.flux.shape == (1000, 8)
+        np.testing.assert_equal(merged_template.wavelengths, wavelengths)
+
+    def test_iand_operator(self):
+        # Create mock data for the test
+        wavelengths = np.linspace(4000, 5000, 1000)
+        flux1 = np.random.normal(1, 0.1, (1000, 5))
+        flux2 = np.random.normal(1, 0.1, (1000, 3))
+        wavelength_unit = "AA"
+        fwhm = 2.0
+
+        # Create two Template objects
+        template1 = Template(wavelengths, flux1, wavelength_unit, fwhm)
+        template2 = Template(wavelengths, flux2, wavelength_unit, fwhm)
+
+        # Call the __iand__ method
+        template1 &= template2
+
+        # Assertions to check the output
+        assert isinstance(template1, Template)
+        assert template1.flux.shape == (1000, 8)
+        np.testing.assert_equal(template1.wavelengths, wavelengths)
+
+    def test_combine_weighted(self):
+        # Create mock data for the test
+        wavelengths = np.linspace(4000, 5000, 1000)
+        flux = np.random.normal(1, 0.1, (1000, 5))
+        weights = np.random.rand(5)
+        wavelength_unit = "AA"
+        fwhm = 2.0
+
+        # Create a Template object
+        template = Template(wavelengths, flux, wavelength_unit, fwhm)
+
+        # Call the combine_weighted method
+        combined_template = template.combine_weighted(weights)
+
+        # Assertions to check the output
+        assert isinstance(combined_template, Template)
+        assert combined_template.flux.shape == (1000, 1)
+        np.testing.assert_equal(combined_template.wavelengths, wavelengths)
+
 
 if __name__ == "__main__":
     pytest.main()
