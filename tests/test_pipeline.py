@@ -245,9 +245,10 @@ class TestPipeline:
             take_covariance=False,
             num_samples_for_covariance=10,
         )
-        ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
-
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
+
+        # regular test
+        ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
         spectra.flux = np.tile(flux, (2, 1)).T
@@ -255,6 +256,14 @@ class TestPipeline:
         spectra.covariance = None
         ppxf_fit = Pipeline.run_ppxf(
             spectra, template, start=[0, 600], degree=4, spectra_indices=0
+        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
+
+        # test with no noise
+        spectra_temp = deepcopy(spectra)
+        spectra_temp.noise = None
+        ppxf_fit = Pipeline.run_ppxf(
+            spectra_temp, template, start=[0, 600], degree=4, spectra_indices=0
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
@@ -273,6 +282,17 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
+        # Test error raising when providing no index
+        spectra.flux = np.tile(flux, (2, 2, 1)).T
+        spectra.noise = np.tile(noise, (2, 2, 1)).T
+        spectra.covariance = None
+        with pytest.raises(ValueError):
+            ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
+
+        # Test incorrect indexing for 1dimensionally aranged spectra (e.g., Voronoi binned)
+        spectra.flux = np.tile(flux, (2, 1)).T
+        spectra.noise = np.tile(noise, (2, 1)).T
+        spectra.covariance = None
         with pytest.raises(ValueError):
             Pipeline.run_ppxf(
                 spectra,
@@ -282,7 +302,7 @@ class TestPipeline:
                 spectra_indices=[0, 0],
             )
 
-        # Test with multiple spectra
+        # Test incorrect indexing with datacube
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
         spectra.covariance = None

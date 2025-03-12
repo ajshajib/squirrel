@@ -588,6 +588,11 @@ class Pipeline(object):
         """
         noise = None
 
+        if data.flux.ndim > 1 and spectra_indices is None:
+            raise ValueError(
+                "Spectra indices must be provided for datacubes or binned spectra."
+            )
+
         if spectra_indices is not None:
             if isinstance(spectra_indices, int) and data.flux.ndim == 2:
                 assert (
