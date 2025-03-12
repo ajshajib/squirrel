@@ -7,8 +7,6 @@ from numpy.polynomial import legendre
 from ppxf.ppxf import ppxf
 from ppxf.ppxf_util import convolve_gauss_hermite
 from tqdm.notebook import tqdm
-from scipy import optimize
-import scipy.linalg as splinalg
 
 from .util import is_positive_definite
 from .util import get_nearest_positive_definite_matrix
