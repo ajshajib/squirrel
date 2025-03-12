@@ -749,32 +749,32 @@ class Pipeline(object):
     ):
         """Perform the kinematic analysis using pPXF on binned spectra.
 
-        :param binned_spectra: binned spectra to analyze
+        This method runs the Penalized Pixel-Fitting (pPXF) method on the provided binned spectra using the given template.
+        It allows for the analysis of Voronoi binned spectra.
+
+        :param binned_spectra: Binned spectra to analyze.
         :type binned_spectra: `VoronoiBinnedSpectra` class
-        :param template_library: library of templates
-        :type template_library: `TemplateLibrary` class
-        :param velocity_dispersion_guess: initial guess for the velocity dispersion
-        :type velocity_dispersion_guess: float
-        :param degree: degree of the additive polynomial
-        :type degree: int
-        :param velocity_scale_ratio: ratio of the velocity scale to the velocity dispersion
-        :type velocity_scale_ratio: float
-        :param background_template: background template to fit
-        :type background_template: `Template` class
-        :param spectra_indices: indices of the spectra to fit
-        :type spectra_indices: list of int or int
-        :param kwargs: additional arguments for `ppxf`
-        :type kwargs: dict
-        :return: velocity dispersions, velocity dispersion uncertainties, mean velocities, mean velocity uncertainties
+        :param template: Template library to use for fitting.
+        :type template: `Template` class
+        :param start: Initial guess for the velocity and dispersion for each kinematic component.
+        :type start: list
+        :param background_template: Background spectra to fit, if any.
+        :type background_template: `Template` class, optional
+        :param kwargs_ppxf: Additional options for `ppxf`, check documentation of `ppxf.ppxf()`.
+        :type kwargs_ppxf: dict
+        :return: Velocity dispersions, velocity dispersion uncertainties, mean velocities, mean velocity uncertainties.
         :rtype: tuple of np.ndarray
         """
+        # Number of spectra in the binned spectra
         num_spectra = binned_spectra.flux.shape[1]
 
+        # Initialize lists to store the results
         velocity_dispersions = []
         velocity_dispersion_uncertainties = []
         mean_velocities = []
         mean_velocity_uncertainties = []
 
+        # Loop through each binned spectrum and run pPXF
         for i in range(num_spectra):
             ppxf_fit = cls.run_ppxf(
                 binned_spectra,
@@ -785,11 +785,13 @@ class Pipeline(object):
                 **kwargs_ppxf,
             )
 
+            # Append the results to the lists
             velocity_dispersions.append(ppxf_fit.sol[1])
             velocity_dispersion_uncertainties.append(ppxf_fit.error[1])
             mean_velocities.append(ppxf_fit.sol[0])
             mean_velocity_uncertainties.append(ppxf_fit.error[0])
 
+        # Convert the lists to numpy arrays and return
         return (
             np.array(velocity_dispersions),
             np.array(velocity_dispersion_uncertainties),
@@ -799,17 +801,24 @@ class Pipeline(object):
 
     @staticmethod
     def get_terms_in_bic(ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
-        """Get the k, n, and log_L terms that is needed to compute the BIC.
+        """Get the k, n, and log_L terms needed to compute the BIC.
 
-        :param ppxf_fit: ppxf fit object
+        This method extracts the number of parameters (k), the number of data points (n), and the log-likelihood (log_L)
+        from a pPXF fit object, which are required to compute the Bayesian Information Criterion (BIC).
+
+        :param ppxf_fit: ppxf fit object.
         :type ppxf_fit: ppxf.ppxf
-        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :param num_fixed_parameters: Number of fixed parameters in `fixed` given to ppxf.
         :type num_fixed_parameters: int
-        :return: k, n, log_L
+        :param weight_threshold: Threshold for the weights. Default is 1% (0.01).
+        :type weight_threshold: float
+        :return: Number of parameters (k), number of data points (n), and log-likelihood (log_L).
         :rtype: tuple of int, int, float
         """
+        # Number of good pixels used in the fit
         n = len(ppxf_fit.goodpixels)
 
+        # Determine the number of templates used based on the weight threshold
         if weight_threshold is not None:
             num_templates = np.sum(
                 ppxf_fit.weights > weight_threshold * ppxf_fit.weights.sum()
@@ -817,55 +826,64 @@ class Pipeline(object):
         else:
             num_templates = len(ppxf_fit.weights)
 
+        # Calculate the number of linear parameters
         k_linear = num_templates + ppxf_fit.degree + 1
         if ppxf_fit.sky is not None:
             k_linear += ppxf_fit.sky.shape[1]
 
-        # check if  ppxf_fit.sol[0] is float
+        # Calculate the number of non-linear parameters
         if isinstance(ppxf_fit.sol[0], float):
             k_non_linear = len(ppxf_fit.sol) + ppxf_fit.mdegree
         else:
             k_non_linear = np.sum([len(a) for a in ppxf_fit.sol]) + ppxf_fit.mdegree
 
+        # Total number of parameters
         k = k_linear + k_non_linear - num_fixed_parameters
 
-        # likelihood computation based on ppxf numbers
-        # dof = ppxf_fit.dof
-        # chi2 = ppxf_fit.chi2
-        # log_likelihood = -0.5 * ppxf_fit.chi2 * ppxf_fit.dof
-
-        # likelihood computation based on residuals
-        # dof = len(ppxf_fit.galaxy)  # - len(ppxf_fit.weights)
+        # Compute the residuals between the observed and best-fit spectra
         residuals = ppxf_fit.galaxy - ppxf_fit.bestfit
 
+        # Create a mask for the good pixels
         mask = np.zeros_like(residuals)
         mask[ppxf_fit.goodpixels] = 1
         residuals = residuals[mask == 1]
+
+        # Extract the covariance matrix for the good pixels
         covariance = np.copy(ppxf_fit.original_noise)
         covariance = covariance[mask == 1][:, mask == 1]
 
+        # Compute the chi-squared value
         chi2 = np.dot(residuals, np.dot(np.linalg.inv(covariance), residuals))
+
+        # Compute the log-likelihood
         log_likelihood = -0.5 * chi2
 
         return k, n, log_likelihood
 
     @classmethod
     def get_bic(cls, ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
-        """
-        :param ppxf_fit: ppxf fit object
+        """Compute the Bayesian Information Criterion (BIC) for a given pPXF fit.
+
+        This method calculates the BIC for a pPXF fit object using the number of parameters (k), the number of data points (n),
+        and the log-likelihood (log_L) extracted from the fit.
+
+        :param ppxf_fit: ppxf fit object.
         :type ppxf_fit: ppxf.ppxf
-        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :param num_fixed_parameters: Number of fixed parameters in `fixed` given to ppxf.
         :type num_fixed_parameters: int
-        :param weight_threshold: threshold for the weights. Default is 1% (0.01).
+        :param weight_threshold: Threshold for the weights. Default is 1% (0.01).
         :type weight_threshold: float
-        :return: BIC
+        :return: BIC value.
         :rtype: float
         """
+        # Get the terms needed to compute the BIC
         k, n, log_likelihood = cls.get_terms_in_bic(
             ppxf_fit,
             num_fixed_parameters=num_fixed_parameters,
             weight_threshold=weight_threshold,
         )
+
+        # Compute the BIC
         bic = k * np.log(n) - 2 * log_likelihood
 
         return bic
