@@ -649,7 +649,36 @@ class TestPipeline:
             num_bootstrap_samples=10,
             weight_threshold=0.01,
             do_bessel_correction=True,
-            verbose=False,
+            verbose=True,
+        )
+
+        # Assertions to check the output
+        assert isinstance(combined_values, np.ndarray)
+        assert isinstance(combined_systematic_uncertainty, np.ndarray)
+        assert isinstance(combined_statistical_uncertainty, np.ndarray)
+        assert isinstance(covariance, np.ndarray)
+
+        assert combined_values.shape == (2,)
+        assert combined_systematic_uncertainty.shape == (2,)
+        assert combined_statistical_uncertainty.shape == (2,)
+
+        # With no BIC weighting
+        # Call the method
+        (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        ) = Pipeline.combine_measurements_from_templates(
+            values,
+            uncertainties,
+            ppxf_fits_list,
+            apply_bic_weighting=False,
+            num_fixed_parameters=0,
+            num_bootstrap_samples=10,
+            weight_threshold=0.01,
+            do_bessel_correction=True,
+            verbose=True,
         )
 
         # Assertions to check the output
