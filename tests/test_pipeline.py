@@ -550,6 +550,35 @@ class TestPipeline:
         assert k > 0
         assert n == len(ppxf_fit.goodpixels)
 
+        # with no weights
+        k, n, log_likelihood = Pipeline.get_terms_in_bic(
+            ppxf_fit, num_fixed_parameters=1, weight_threshold=None
+        )
+
+        # Assertions to check the output
+        assert isinstance(k, (int, np.integer))
+        assert isinstance(n, (int, np.integer))
+        assert isinstance(log_likelihood, (float, np.floating))
+
+        # Check the values
+        assert k > 0
+        assert n == len(ppxf_fit.goodpixels)
+
+        # with multi-dimensional ppxf.sol
+        ppxf_fit.sol = np.array([[100.0, 200.0], [100.0, 200.0]])
+        k, n, log_likelihood = Pipeline.get_terms_in_bic(
+            ppxf_fit, num_fixed_parameters=1, weight_threshold=None
+        )
+
+        # Assertions to check the output
+        assert isinstance(k, (int, np.integer))
+        assert isinstance(n, (int, np.integer))
+        assert isinstance(log_likelihood, (float, np.floating))
+
+        # Check the values
+        assert k > 0
+        assert n == len(ppxf_fit.goodpixels)
+
     def test_get_bic(self):
         ppxf_fit = MockPpxfFit()
 
