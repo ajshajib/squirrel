@@ -258,6 +258,14 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
+        # with covariance
+        spectra.covariance = np.tile(np.diag(noise**2), (2, 1, 1)).T
+        spectra.noise = None
+        ppxf_fit = Pipeline.run_ppxf(
+            spectra, template, start=[0, 600], degree=4, spectra_indices=0
+        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
+
         with pytest.raises(ValueError):
             Pipeline.run_ppxf(
                 spectra,
@@ -267,8 +275,10 @@ class TestPipeline:
                 spectra_indices=[0, 0],
             )
 
+        # Test with multiple spectra
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
+        spectra.covariance = None
         ppxf_fit = Pipeline.run_ppxf(
             spectra, template, start=[0, 600], degree=4, spectra_indices=[0, 0]
         )
