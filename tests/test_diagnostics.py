@@ -7,15 +7,13 @@ from squirrel.diagnostics import Diagnostics
 
 
 class TestDiagnostics:
-    """
-    Test suite for the Diagnostics class in the squirrel package.
-    """
+    """Test suite for the Diagnostics class in the squirrel package."""
 
     def test_get_specific_signal_and_noise(self):
-        """
-        Test the get_specific_signal_and_noise method of the Diagnostics class.
-        This method calculates the signal and noise for a given spectra object,
-        mask, and redshift factor.
+        """Test the get_specific_signal_and_noise method of the Diagnostics class.
+
+        This method calculates the signal and noise for a given spectra object, mask,
+        and redshift factor.
         """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
@@ -53,10 +51,10 @@ class TestDiagnostics:
         assert np.isclose(noise, expected_noise, rtol=1e-5)
 
     def test_get_specific_snr(self):
-        """
-        Test the get_specific_snr method of the Diagnostics class.
-        This method calculates the signal-to-noise ratio (SNR) for a given spectra object,
-        mask, and redshift factor.
+        """Test the get_specific_snr method of the Diagnostics class.
+
+        This method calculates the signal-to-noise ratio (SNR) for a given spectra
+        object, mask, and redshift factor.
         """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
@@ -90,10 +88,10 @@ class TestDiagnostics:
         assert np.isclose(snr, expected_snr, rtol=1e-5)
 
     def test_check_bias_vs_snr(self):
-        """
-        Test the check_bias_vs_snr method of the Diagnostics class.
-        This method checks the bias versus signal-to-noise ratio (SNR) for a given spectra
-        and template object.
+        """Test the check_bias_vs_snr method of the Diagnostics class.
+
+        This method checks the bias versus signal-to-noise ratio (SNR) for a given
+        spectra and template object.
         """
         # Create mock data for the test
         wavelengths = 10 ** np.arange(3.81192418, 3.839058575, 0.00024894)
@@ -223,8 +221,8 @@ class TestDiagnostics:
             )
 
     def test_plot_bias_vs_snr(self):
-        """
-        Test the plot_bias_vs_snr method of the Diagnostics class.
+        """Test the plot_bias_vs_snr method of the Diagnostics class.
+
         This method plots the bias versus signal-to-noise ratio (SNR) for a given set of
         recovered values and input velocity dispersions.
         """
@@ -271,10 +269,10 @@ class TestDiagnostics:
                 assert len(ax.lines) > 0
 
     def test_plot_bias_vs_snr_single(self):
-        """
-        Test the plot_bias_vs_snr_single method of the Diagnostics class.
-        This method plots the bias versus signal-to-noise ratio (SNR) for a single set of
-        recovered values and input values.
+        """Test the plot_bias_vs_snr_single method of the Diagnostics class.
+
+        This method plots the bias versus signal-to-noise ratio (SNR) for a single set
+        of recovered values and input values.
         """
         # Create mock data for the test
         input_values = np.array([100, 200])
@@ -312,8 +310,8 @@ class TestDiagnostics:
             assert len(ax.lines) > 0
 
     def test_make_convolved_spectra(self):
-        """
-        Test the make_convolved_spectra method of the Diagnostics class.
+        """Test the make_convolved_spectra method of the Diagnostics class.
+
         This method creates a convolved spectra from a given template flux and various
         parameters such as velocity dispersion, velocity scale, and polynomial weights.
         """
