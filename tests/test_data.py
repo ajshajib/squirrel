@@ -175,6 +175,7 @@ class TestDatacube:
         self.flux_unit = "arbitrary"
         self.wavelength_unit = "nm"
         self.noise = np.ones_like(self.flux)
+        self.covariance = np.ones((10, 10, 3, 3))
         self.z_lens = 0.5
         self.z_source = 1.0
         self.fwhm = 2.0
@@ -194,6 +195,7 @@ class TestDatacube:
             self.coordinate_transform_matrix,
             self.flux_unit,
             self.noise,
+            covariance=self.covariance,
         )
 
     def test_center_pixel_x(self):
@@ -213,6 +215,34 @@ class TestDatacube:
             self.datacube.y_coordinates,
             [[-0.1, -0.1, -0.1], [0, 0, 0], [0.1, 0.1, 0.1]],
         )
+
+    def test_get_1d_spectra(self):
+        # Test with mask
+        mask = np.zeros((3, 3))
+        mask[1:2, 1:2] = 1
+        spectra = self.datacube.get_1d_spectra(mask=mask)
+        assert isinstance(spectra, Spectra)
+        assert spectra.flux.shape == (10,)
+        assert spectra.noise.shape == (10,)
+        assert spectra.covariance.shape == (10, 10)
+
+        # Test with specific coordinates
+        spectra = self.datacube.get_1d_spectra(x=2, y=2)
+        assert isinstance(spectra, Spectra)
+        assert spectra.flux.shape == (10,)
+        assert spectra.noise.shape == (10,)
+        assert spectra.covariance.shape == (10, 10)
+
+        # Test with invalid coordinates
+        with pytest.raises(ValueError):
+            self.datacube.get_1d_spectra(x=3)
+
+        # Test without any parameters
+        spectra = self.datacube.get_1d_spectra()
+        assert isinstance(spectra, Spectra)
+        assert spectra.flux.shape == (10,)
+        assert spectra.noise.shape == (10,)
+        assert spectra.covariance.shape == (10, 10)
 
 
 class TestVoronoiBinnedSpectra:
@@ -246,6 +276,10 @@ class TestVoronoiBinnedSpectra:
             self.y_pixels,
             self.flux_unit,
             self.noise,
+            bin_center_x=np.mean(self.x_coordinates),
+            bin_center_y=np.mean(self.y_coordinates),
+            area=np.ones_like(self.x_coordinates),
+            snr=np.ones_like(self.x_coordinates),
         )
 
     def test_x_coordinates(self):
@@ -281,6 +315,20 @@ class TestVoronoiBinnedSpectra:
         test_map[2, 2] = 2
         test_map[3, 3] = 2
         npt.assert_array_equal(spaxel_map, test_map)
+
+    def test_bin_center_x(self):
+        # Check the bin_center_x property
+        assert self.voronoi_binned_spectra.bin_center_x == np.mean(self.x_coordinates)
+
+    def test_bin_center_y(self):
+        # Check the bin_center_y property
+        assert self.voronoi_binned_spectra.bin_center_y == np.mean(self.y_coordinates)
+
+    def test_area(self):
+        # Check the area property
+        assert np.allclose(
+            self.voronoi_binned_spectra.area, np.ones_like(self.x_coordinates)
+        )
 
 
 class TestRadiallyBinnedSpectra:
