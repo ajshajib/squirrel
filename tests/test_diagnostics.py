@@ -127,7 +127,35 @@ class TestDiagnostics:
         for value in recovered_values:
             assert isinstance(value, np.ndarray)
 
-        # with no covariance
+        # Test with positive definite covariance
+        spectra_data.covariance = np.diag(noise**2)
+        spectra_data.covariance[0, 0] = 0.0
+        recovered_values = Diagnostics.check_bias_vs_snr(
+            spectra_data,
+            template,
+            spectra_mask_for_snr=None,
+            target_snrs=np.arange(40, 51, 10),
+            input_velocity_dispersions=[250],
+            template_weight=1.0,
+            polynomial_degree=0,
+            multiplicative_polynomial_degree=0,
+            polynomial_weights=[1.0],
+            multiplicative_component=1.0,
+            add_component=0.0,
+            num_sample=10,  # Reduced for test speed
+            z_factor=1.0,
+            v_systematic=-1327.7238493696473,
+            plot=False,
+        )
+
+        # Assertions to check the output
+        assert isinstance(recovered_values, tuple)
+        assert len(recovered_values) == 7
+
+        for value in recovered_values:
+            assert isinstance(value, np.ndarray)
+
+        # Test with no covariance
         spectra_data.covariance = None
         recovered_values = Diagnostics.check_bias_vs_snr(
             spectra_data,
@@ -154,7 +182,7 @@ class TestDiagnostics:
         for value in recovered_values:
             assert isinstance(value, np.ndarray)
 
-        # no noise or covariance
+        # Test with no noise or covariance
         spectra_data.noise = None
 
         with pytest.raises(ValueError):
