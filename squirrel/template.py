@@ -1,5 +1,5 @@
-"""This module contains the class to store stellar and other templates and process
-them."""
+"""This module contains the class to store stellar and other templates and
+process them."""
 
 import numpy as np
 from copy import deepcopy

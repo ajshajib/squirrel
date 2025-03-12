@@ -10,6 +10,8 @@ class TestTemplate:
 
         This method is called before every test method to set up any
         state that is shared across tests.
+        This method is called before every test method to set up any state that is
+        shared across tests.
         """
         # Initialize wavelengths array
         self.wavelengths = np.array([1, 2, 3])

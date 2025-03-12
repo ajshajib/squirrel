@@ -1,4 +1,5 @@
-"""This module contains the class to wrap the pPXF package for kinematic analysis."""
+"""This module contains the class to wrap the pPXF package for kinematic
+analysis."""
 
 import numpy as np
 from copy import deepcopy
@@ -22,9 +23,10 @@ from .util import get_nearest_positive_definite_matrix
 class Pipeline(object):
     """A class to wrap the pPXF package for kinematic analysis.
 
-    This class provides various static methods to perform kinematic analysis using the
-    pPXF package. It includes methods for log rebinning, Voronoi binning, creating
-    kinematic maps, and running pPXF fits.
+    This class provides various static methods to perform kinematic
+    analysis using the pPXF package. It includes methods for log
+    rebinning, Voronoi binning, creating kinematic maps, and running
+    pPXF fits.
     """
 
     _speed_of_light = 299792.458  # speed of light in km/s
@@ -316,15 +318,18 @@ class Pipeline(object):
 
     @staticmethod
     def create_kinematic_map_from_bins(bin_mapping, kinematic_values):
-        """Create a kinematic map from the binned spectra and the kinematic values.
+        """Create a kinematic map from the binned spectra and the kinematic
+        values.
 
-        This function generates a 2D kinematic map by assigning kinematic values to each
-        pixel based on the bin mapping.
+        This function generates a 2D kinematic map by assigning
+        kinematic values to each pixel based on the bin mapping.
 
-        :param bin_mapping: A 2D array showing bin numbers for each pixel. Pixels not
-            assigned to any bin should have a value of -1.
+        :param bin_mapping: A 2D array showing bin numbers for each
+            pixel. Pixels not assigned to any bin should have a value of
+            -1.
         :type bin_mapping: np.ndarray
-        :param kinematic_values: A list of kinematic values corresponding to each bin.
+        :param kinematic_values: A list of kinematic values
+            corresponding to each bin.
         :type kinematic_values: list of float
         :return: A 2D kinematic map with the same shape as bin_mapping.
         :rtype: np.ndarray
@@ -865,7 +870,8 @@ class Pipeline(object):
 
     @classmethod
     def get_bic(cls, ppxf_fit, num_fixed_parameters=0, weight_threshold=0.01):
-        """Compute the Bayesian Information Criterion (BIC) for a given pPXF fit.
+        """Compute the Bayesian Information Criterion (BIC) for a given pPXF
+        fit.
 
         This method calculates the BIC for a pPXF fit object using the number of parameters (k), the number of data points (n),
         and the log-likelihood (log_L) extracted from the fit.
@@ -895,7 +901,8 @@ class Pipeline(object):
     def get_bic_from_sample(
         cls, ppxf_fits, num_fixed_parameters=0, weight_threshold=0.01
     ):
-        """Calculate the Bayesian Information Criterion (BIC) for a sample of pPXF fits.
+        """Calculate the Bayesian Information Criterion (BIC) for a sample of
+        pPXF fits.
 
         This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
         It computes the BIC for each pPXF fit in the sample and returns the total BIC.
@@ -939,20 +946,23 @@ class Pipeline(object):
     ):
         """Calculate the relative BIC weights for a given sample of pPXF fits.
 
-        This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025,
+        This function follows the methodology provided by Knabel &
+        Mozumdar et al. (2025,
         https://arxiv.org/abs/2502.16034).
-             It computes the BIC for each pPXF fit in the sample, performs bootstrap
-        sampling to estimate uncertainties, and calculates the relative BIC weights.
+               It computes the BIC for each pPXF fit in the sample,
+        performs bootstrap sampling to estimate uncertainties, and
+        calculates the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
-        :param num_fixed_parameters: The number of fixed parameters in the model.
+        :param num_fixed_parameters: The number of fixed parameters in
+            the model.
         :type num_fixed_parameters: int
-        :param num_bootstrap_samples: The number of bootstrap samples to use.
+        :param num_bootstrap_samples: The number of bootstrap samples to
+            use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is
-            1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC
+            weights. Default is 1% (0.01).
         :type weight_threshold: float
         :return: Relative BIC weights for the sample.
         :rtype: np.ndarray
@@ -1011,14 +1021,15 @@ class Pipeline(object):
     ):
         """Combine measurements using the relative BIC weights.
 
-        This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025,
+        This function follows the methodology provided by Knabel &
+        Mozumdar et al. (2025,
         https://arxiv.org/abs/2502.16034).
-             It combines the values and uncertainties from multiple templates using
-        relative BIC weights.
+               It combines the values and uncertainties from multiple
+        templates using relative BIC weights.
 
-        :param values: The values to combine, with shape [number of bins or systems,
-            number of templates], or just [number of templates].
+        :param values: The values to combine, with shape [number of bins
+            or systems, number of templates], or just [number of
+            templates].
         :type values: np.ndarray
         :param uncertainties: The uncertainties in the values.
         :type uncertainties: np.ndarray
@@ -1026,19 +1037,21 @@ class Pipeline(object):
         :type ppxf_fits_list: np.ndarray
         :param apply_bic_weighting: Whether to apply BIC weighting.
         :type apply_bic_weighting: bool
-        :param num_fixed_parameters: The number of fixed parameters in the model.
+        :param num_fixed_parameters: The number of fixed parameters in
+            the model.
         :type num_fixed_parameters: int
-        :param num_bootstrap_samples: The number of bootstrap samples to use.
+        :param num_bootstrap_samples: The number of bootstrap samples to
+            use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is
-            1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC
+            weights. Default is 1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty, combined
-            statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty,
+            combined statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         # Calculate the relative BIC weights if apply_bic_weighting is True
@@ -1079,8 +1092,8 @@ class Pipeline(object):
     ):
         """Combine the values using the weights.
 
-        The weighted combination with Bessel correction is described in Knabel &
-        Mozumdar et al. (2025,
+        The weighted combination with Bessel correction is described in
+        Knabel & Mozumdar et al. (2025,
         https://arxiv.org/abs/2502.16034).
 
         :param values: The values to combine.
@@ -1091,8 +1104,8 @@ class Pipeline(object):
         :type weights: np.ndarray
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
-        :return: The combined values, combined systematic uncertainty, combined
-            statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty,
+            combined statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         sum_w2 = np.sum(weights**2)
@@ -1152,14 +1165,15 @@ class Pipeline(object):
 
     @staticmethod
     def calculate_weights_from_bic(delta_bic, sigma_delta_bic):
-        """Calculate the relative BIC weight after accounting for the uncertainty.
+        """Calculate the relative BIC weight after accounting for the
+        uncertainty.
 
-        This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025,
+        This function follows the methodology provided by Knabel &
+        Mozumdar et al. (2025,
         https://arxiv.org/abs/2502.16034).
 
-        :param delta_bic: The difference in BIC values between the model and the best
-            model.
+        :param delta_bic: The difference in BIC values between the model
+            and the best model.
         :type delta_bic: float
         :param sigma_delta_bic: The uncertainty in the delta_BIC value.
         :type sigma_delta_bic: float
