@@ -634,7 +634,7 @@ class Pipeline(object):
         if noise is None:
             noise = 0.1 * np.ones_like(flux)
 
-        if len(noise.shape) == 2 and not is_positive_definite(noise):
+        if noise.ndim == 2 and not is_positive_definite(noise):
             noise = get_nearest_positive_definite_matrix(noise)
 
         original_noise = deepcopy(noise)

@@ -267,7 +267,7 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # with covariance
+        # test with covariance
         spectra.covariance = np.tile(np.diag(noise**2), (2, 1, 1)).T
         spectra.noise = None
         ppxf_fit = Pipeline.run_ppxf(
@@ -275,11 +275,11 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # with non-positive-definite covariance
-        spectra.coavriance = np.ones((2, 2, 2))
-        ppxf_fit = Pipeline.run_ppxf(
-            spectra, template, start=[0, 600], degree=4, spectra_indices=0
-        )
+        # test with non-positive-definite covariance
+        spectra.flux = flux
+        spectra.covariance = np.diag(noise**2)
+        spectra.covariance[0, 0] = 0
+        ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
         # Test error raising when providing no index
@@ -320,6 +320,14 @@ class TestPipeline:
                 degree=4,
                 spectra_indices=0,
             )
+
+        # Test with correct indexing for datacube and covariance
+        spectra.covariance = np.tile(np.diag(noise**2), (2, 2, 1, 1)).T
+        spectra.noise = None
+        ppxf_fit = Pipeline.run_ppxf(
+            spectra, template, start=[0, 600], degree=4, spectra_indices=[0, 0]
+        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
     def test_run_ppxf_on_binned_spectra(self):
         start_wavelength = 9100
