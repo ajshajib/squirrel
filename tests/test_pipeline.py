@@ -853,6 +853,25 @@ class TestPipeline:
         expected_covariance[:, boosting_mask] *= boost_factor
         assert np.allclose(boosted_spectra.covariance, expected_covariance, rtol=1e-5)
 
+        # Call the method without boosting mask
+        boosted_spectra = Pipeline.boost_noise(self.spectra, boost_factor, None)
+
+        # Assertions to check the output
+        assert isinstance(boosted_spectra, Spectra)
+        assert boosted_spectra.noise.shape == self.spectra.noise.shape
+        assert boosted_spectra.covariance.shape == self.spectra.covariance.shape
+
+        # Check the noise values
+        expected_noise = deepcopy(self.spectra.noise)
+        expected_noise *= boost_factor
+        assert np.allclose(boosted_spectra.noise, expected_noise, rtol=1e-5)
+
+        # Check the covariance matrix
+        expected_covariance = deepcopy(self.spectra.covariance)
+        expected_covariance *= boost_factor**2
+
+        assert np.allclose(boosted_spectra.covariance, expected_covariance, rtol=1e-5)
+
 
 if __name__ == "__main__":
     pytest.main()
