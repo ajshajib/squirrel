@@ -330,6 +330,22 @@ class TestVoronoiBinnedSpectra:
             self.voronoi_binned_spectra.area, np.ones_like(self.x_coordinates)
         )
 
+    def test_get_single_spectra(self):
+        # Call the method for a specific bin index
+        bin_index = 1
+        spectra = self.voronoi_binned_spectra.get_single_spectra(bin_index)
+
+        # Assertions to check the output
+        assert isinstance(spectra, Spectra)
+        assert spectra.flux.shape == (10,)
+        assert spectra.noise.shape == (10,)
+        assert np.array_equal(spectra.wavelengths, self.wavelengths)
+        assert spectra.wavelength_unit == self.wavelength_unit
+        assert spectra.fwhm == self.fwhm
+        assert spectra.z_lens == self.z_lens
+        assert spectra.z_source == self.z_source
+        assert spectra.flux_unit == self.flux_unit
+
 
 class TestRadiallyBinnedSpectra:
     def setup_method(self):
