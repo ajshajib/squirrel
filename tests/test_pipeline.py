@@ -755,6 +755,47 @@ class TestPipeline:
                     ) / (np.sum(weights) - np.sum(weights**2) / np.sum(weights))
                 assert np.isclose(covariance[i, j], expected_covariance, rtol=1e-5)
 
+        # for 1D values
+        values = np.array([1.0, 2.0, 3.0])
+        uncertainties = np.array([0.1, 0.2, 0.3])
+        weights = np.array([0.2, 0.3, 0.5])
+
+        # Call the method
+        (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        ) = Pipeline.combine_weighted(
+            values,
+            uncertainties,
+            weights,
+            do_bessel_correction=False,
+        )
+
+        # Assertions to check the output
+        assert isinstance(combined_values, np.ndarray)
+        assert isinstance(combined_systematic_uncertainty, np.ndarray)
+        assert isinstance(combined_statistical_uncertainty, np.ndarray)
+        assert covariance is None
+
+        assert combined_values.shape == (1,)
+        assert combined_systematic_uncertainty.shape == (1,)
+        assert combined_statistical_uncertainty.shape == (1,)
+
+        # Check the values
+        expected_combined_values = np.average(values, weights=weights)
+        assert np.allclose(combined_values, expected_combined_values, rtol=1e-5)
+
+        expected_combined_statistical_uncertainty = np.sqrt(
+            np.sum(weights * uncertainties**2) / np.sum(weights)
+        )
+        assert np.allclose(
+            combined_statistical_uncertainty,
+            expected_combined_statistical_uncertainty,
+            rtol=1e-5,
+        )
+
     def test_calculate_weights_from_bic(self):
         # Define test cases
         test_cases = [
