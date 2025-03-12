@@ -57,11 +57,8 @@ class Pipeline(object):
             num_samples_for_covariance = spectra.flux.shape[0]
 
         flux_shape = spectra.flux.shape
-        flux_flattenned = np.atleast_2d(spectra.flux.reshape(flux_shape[0], -1))
-        noise_flattenned = np.atleast_2d(spectra.noise.reshape(flux_shape[0], -1))
-        if flux_flattenned.shape[0] == 1:
-            flux_flattenned = flux_flattenned.T
-            noise_flattenned = noise_flattenned.T
+        flux_flattened = np.atleast_2d(spectra.flux.reshape(flux_shape[0], -1))
+        noise_flattened = np.atleast_2d(spectra.noise.reshape(flux_shape[0], -1))
 
         if take_covariance:
             covariance = np.atleast_3d(
@@ -69,7 +66,7 @@ class Pipeline(object):
                     (
                         rebinned_spectra.shape[0],
                         rebinned_spectra.shape[0],
-                        *flux_flattenned.shape[1:],
+                        *flux_flattened.shape[1:],
                     )
                 )
             )
@@ -77,14 +74,14 @@ class Pipeline(object):
         else:
             covariance = None
             noise = np.atleast_2d(
-                np.zeros((rebinned_spectra.shape[0], *flux_flattenned.shape[1:]))
+                np.zeros((rebinned_spectra.shape[0], *flux_flattened.shape[1:]))
             )
 
-        for i in tqdm(range(flux_flattenned.shape[1])):
+        for i in tqdm(range(flux_flattened.shape[1])):
             flux_realizations = np.random.normal(
-                flux_flattenned[:, i],
-                noise_flattenned[:, i],
-                (num_samples_for_covariance, len(flux_flattenned[:, i])),
+                flux_flattened[:, i],
+                noise_flattened[:, i],
+                (num_samples_for_covariance, len(flux_flattened[:, i])),
             ).T
             rebinned_realizations, _, _ = ppxf_util.log_rebin(
                 wavelength_range, flux_realizations, velscale=velocity_scale
