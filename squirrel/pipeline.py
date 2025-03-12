@@ -901,7 +901,7 @@ class Pipeline(object):
         """Calculate the Bayesian Information Criterion (BIC) for a sample of pPXF fits.
 
         This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025, https://arxiv.org/abs/2502.16034). It computes the BIC for each
+        (2025), https://arxiv.org/abs/2502.16034. It computes the BIC for each
         pPXF fit in the sample and returns the total BIC.
 
         :param ppxf_fits: List of pPXF fit objects.
@@ -944,9 +944,9 @@ class Pipeline(object):
         """Calculate the relative BIC weights for a given sample of pPXF fits.
 
         This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025, https://arxiv.org/abs/2502.16034).
-        It computes the BIC for each pPXF fit in the sample, performs bootstrap
-        sampling to estimate uncertainties, and calculates the relative BIC weights.
+        (2025), https://arxiv.org/abs/2502.16034. It computes the BIC for each pPXF
+        fit in the sample, performs bootstrap sampling to estimate uncertainties,
+        and calculates the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
@@ -1015,7 +1015,7 @@ class Pipeline(object):
         """Combine measurements using the relative BIC weights.
 
         This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034). It
+        Mozumdar et al. (2025), https://arxiv.org/abs/2502.16034. It
         combines the values and uncertainties from multiple templates
         using relative BIC weights.
 
@@ -1085,7 +1085,7 @@ class Pipeline(object):
         """Combine the values using the weights.
 
         The weighted combination with Bessel correction is described in Knabel &
-        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        Mozumdar et al. (2025), https://arxiv.org/abs/2502.16034.
 
         :param values: The values to combine.
         :type values: np.ndarray
@@ -1159,7 +1159,7 @@ class Pipeline(object):
         """Calculate the relative BIC weight after accounting for the uncertainty.
 
         This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025, https://arxiv.org/abs/2502.16034).
+        (2025), https://arxiv.org/abs/2502.16034.
 
         :param delta_bic: The difference in BIC values between the model and the best
             model.
