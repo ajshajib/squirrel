@@ -10,7 +10,7 @@ class TestUtil:
     This class contains tests for the functions `is_positive_definite` and `get_nearest_positive_definite_matrix`.
     """
 
-    def test_is_positive_definite():
+    def test_is_positive_definite(self):
         """Test the function `is_positive_definite` to check if a given matrix is
         positive-definite.
 
@@ -27,7 +27,7 @@ class TestUtil:
         # Assert that the matrix is not positive-definite
         assert is_positive_definite(matrix) is False
 
-    def test_get_nearest_positive_definite_matrix():
+    def test_get_nearest_positive_definite_matrix(self):
         """Test the function `get_nearest_positive_definite_matrix` to find the nearest
         positive-definite matrix.
 
