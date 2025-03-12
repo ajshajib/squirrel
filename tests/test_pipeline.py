@@ -468,7 +468,7 @@ class TestPipeline:
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
         fluxes = np.random.normal(1, 0.1, (len(wavelengths), 5))
-        fwhm_template = 2.0
+        fwhm_template = 0.5
         velocity_scale_ratio = 2.0
         wavelength_factor = 1.0
         wavelength_range_extend_factor = 1.05
@@ -481,7 +481,7 @@ class TestPipeline:
             spectra_wavelengths,
             spectra_flux,
             "AA",
-            fwhm_template,
+            2,
             0.5,
             1.0,
             noise=spectra_noise,
