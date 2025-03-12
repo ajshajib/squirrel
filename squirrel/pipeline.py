@@ -430,16 +430,21 @@ class Pipeline(object):
         emission_line_template=None,
         emission_line_groups=None,
     ):
+        assert (
+            len(kinematic_template.flux.shape) == 2
+        ), "kinematic_template.flux must be 2D."
+
         flux = kinematic_template.flux
         component_indices = np.zeros(kinematic_template.flux.shape[1], dtype=int)
 
         if kinematic_template_2 is not None:
-            if len(flux.shape) > len(kinematic_template_2.flux.shape):
-                kinematic_template_2.flux = np.expand_dims(
-                    kinematic_template_2.flux, axis=1
-                )
-            elif len(flux.shape) < len(kinematic_template_2.flux.shape):
-                flux = np.expand_dims(flux, axis=1)
+            assert (
+                len(kinematic_template_2.flux.shape) == 2
+            ), "kinematic_template_2.flux must be 2D."
+            assert (
+                kinematic_template.flux.shape[0] == kinematic_template_2.flux.shape[0]
+            ), "Flux array shape mismatch between the templates!"
+
             flux = np.append(flux, kinematic_template_2.flux, axis=1)
             component_indices = np.append(
                 component_indices,

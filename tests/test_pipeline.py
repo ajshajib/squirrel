@@ -412,14 +412,11 @@ class TestPipeline:
         for i in emission_line_indices:
             assert i is np.False_
 
-        joined_template, component_indices, emission_line_indices = (
-            Pipeline.join_templates(template2, template1)
-        )
-        assert joined_template.flux.shape[1] == 6
-        assert np.all(component_indices[:1] == 0)
-        assert np.all(component_indices[1:] == 1)
-        for i in emission_line_indices:
-            assert i is np.False_
+        with pytest.raises(AssertionError):
+            template2.flux = np.squeeze(template2.flux)
+            joined_template, component_indices, emission_line_indices = (
+                Pipeline.join_templates(template2, template1)
+            )
 
         # Test joining two kinematic templates and an emission line template
         flux2 = np.random.normal(1, 0.1, (len(wavelengths), 2))
