@@ -469,13 +469,32 @@ class Pipeline(object):
         emission_line_template=None,
         emission_line_groups=None,
     ):
+        """Join multiple templates into a single template object.
+
+        This function combines kinematic and emission line templates into a single template object.
+        It also generates component indices to identify which component each template belongs to.
+
+        :param kinematic_template: The primary kinematic template.
+        :type kinematic_template: `Template` class
+        :param kinematic_template_2: An optional secondary kinematic template.
+        :type kinematic_template_2: `Template` class, optional
+        :param emission_line_template: An optional emission line template.
+        :type emission_line_template: `Template` class, optional
+        :param emission_line_groups: Groups for the emission line templates.
+        :type emission_line_groups: list of int, optional
+        :return: Combined template, component indices, and emission line indices.
+        :rtype: tuple of `Template` class, np.ndarray, np.ndarray
+        """
+        # Ensure the primary kinematic template flux is 2D
         assert (
             len(kinematic_template.flux.shape) == 2
         ), "kinematic_template.flux must be 2D."
 
+        # Initialize the combined flux and component indices
         flux = kinematic_template.flux
         component_indices = np.zeros(kinematic_template.flux.shape[1], dtype=int)
 
+        # If a secondary kinematic template is provided, append its flux and update component indices
         if kinematic_template_2 is not None:
             assert (
                 len(kinematic_template_2.flux.shape) == 2
@@ -490,6 +509,7 @@ class Pipeline(object):
                 np.ones(kinematic_template_2.flux.shape[1], dtype=int),
             )
 
+        # If an emission line template is provided, append its flux and update component indices
         if emission_line_template is not None:
             flux = np.append(flux, emission_line_template.flux, axis=1)
             if kinematic_template_2 is not None:
@@ -505,6 +525,7 @@ class Pipeline(object):
         else:
             emission_line_indices = np.zeros_like(component_indices, dtype=bool)
 
+        # Create the combined template object
         template = Template(
             kinematic_template.wavelengths,
             flux,
@@ -525,28 +546,33 @@ class Pipeline(object):
         wavelength_factor=1.0,
         wavelength_range_extend_factor=1.05,
     ):
-        """Get the template object from the given fluxes and wavelengths.
+        """Create a template object from given fluxes and wavelengths.
 
-        :param fluxes: fluxes of the templates, dimensions must be (n_wavelengths, n_templates)
+        This function generates a template object from provided fluxes and wavelengths.
+        It performs convolution to match the spectral resolution and log rebinning.
+
+        :param fluxes: Fluxes of the templates, dimensions must be (n_wavelengths, n_templates).
         :type fluxes: np.ndarray
-        :param wavelengths: wavelengths of the templates in Angstrom
+        :param wavelengths: Wavelengths of the templates in Angstrom.
         :type wavelengths: np.ndarray
-        :param spectra: log rebinned spectra, which the templates will be used for
+        :param spectra: Log rebinned spectra, which the templates will be used for.
         :type spectra: `Spectra` or a child class
-        :param velocity_scale_ratio: velocity scale ratio for the template
+        :param velocity_scale_ratio: Velocity scale ratio for the template.
         :type velocity_scale_ratio: float
-        :param wavelength_factor: factor to multiply the wavelength range to get the templates for, used for de-redshifting, if necessary
+        :param wavelength_factor: Factor to multiply the wavelength range to get the templates for, used for de-redshifting, if necessary.
         :type wavelength_factor: float
-        :param wavelength_range_extend_factor: factor to extend the wavelength range
+        :param wavelength_range_extend_factor: Factor to extend the wavelength range.
         :type wavelength_range_extend_factor: float
-        :return: template
+        :return: Template object.
         :rtype: `Template` class
         """
+        # Ensure the wavelength unit is in Angstrom and data is log rebinned
         assert spectra.wavelength_unit == "AA", "Wavelength unit must be in Angstrom."
         assert (
             "log_rebinned" in spectra.spectra_modifications
         ), "Data must be log rebinned."
 
+        # Define the wavelength range for the templates
         wavelength_min = (
             spectra.wavelengths[0] / wavelength_range_extend_factor * wavelength_factor
         )
@@ -554,8 +580,10 @@ class Pipeline(object):
             spectra.wavelengths[-1] * wavelength_range_extend_factor * wavelength_factor
         )
 
+        # Calculate the wavelength difference
         wavelength_diff = np.mean(np.diff(wavelengths))
 
+        # Filter the fluxes and wavelengths based on the defined range
         fluxes = fluxes[
             (wavelengths > wavelength_min - wavelength_diff)
             & (wavelengths < wavelength_max + wavelength_diff),
@@ -566,6 +594,7 @@ class Pipeline(object):
             & (wavelengths < wavelength_max + wavelength_diff)
         ]
 
+        # Convolve the fluxes to match the spectral resolution if necessary
         convolved_fluxes = fluxes
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
@@ -573,16 +602,20 @@ class Pipeline(object):
             )
             convolved_fluxes = ndimage.gaussian_filter1d(fluxes, sigma_diff, axis=0)
 
+        # Perform log rebinning on the convolved fluxes
         rebinned_fluxes, log_wavelengths, velocity_scale_template = ppxf_util.log_rebin(
             wavelengths,
             convolved_fluxes,
             velscale=spectra.velocity_scale / velocity_scale_ratio,
         )
 
+        # Normalize the rebinned fluxes
         rebinned_fluxes /= np.nanmean(rebinned_fluxes, axis=0)
 
+        # Convert the log wavelengths back to linear scale
         templates_wavelengths = np.exp(log_wavelengths) / wavelength_factor
 
+        # Create the template object
         template = Template(
             templates_wavelengths,
             rebinned_fluxes,
