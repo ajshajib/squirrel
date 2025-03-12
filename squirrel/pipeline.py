@@ -893,21 +893,25 @@ class Pipeline(object):
         cls, ppxf_fits, num_fixed_parameters=0, weight_threshold=0.01
     ):
         """
-        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        Calculate the Bayesian Information Criterion (BIC) for a sample of pPXF fits.
 
-        :param ppxf_fits: ppxf fit objects
+        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        It computes the BIC for each pPXF fit in the sample and returns the total BIC.
+
+        :param ppxf_fits: List of pPXF fit objects.
         :type ppxf_fits: list of ppxf.ppxf
-        :param num_fixed_parameters: number of fixed parameters in `fixed` given to ppxf
+        :param num_fixed_parameters: Number of fixed parameters in `fixed` given to ppxf.
         :type num_fixed_parameters: int
-        :param weight_threshold: threshold for the weights. Default is 1% (0.01).
+        :param weight_threshold: Threshold for the weights. Default is 1% (0.01).
         :type weight_threshold: float
-        :return: BIC
+        :return: Total BIC for the sample.
         :rtype: float
         """
         k_total = 0
         n_total = 0
         log_likelihood_total = 0
 
+        # Loop through each pPXF fit and accumulate the terms needed for BIC calculation
         for ppxf_fit in ppxf_fits:
             k, n, log_likelihood = cls.get_terms_in_bic(
                 ppxf_fit,
@@ -918,6 +922,7 @@ class Pipeline(object):
             n_total += n
             log_likelihood_total += log_likelihood
 
+        # Calculate the total BIC for the sample
         bic = k_total * np.log(n_total) - 2 * log_likelihood_total
 
         return bic
@@ -930,7 +935,12 @@ class Pipeline(object):
         num_bootstrap_samples=1000,
         weight_threshold=0.01,
     ):
-        """Calculate the relative BIC weights for a given sample of pPXF fits. This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        """
+        Calculate the relative BIC weights for a given sample of pPXF fits.
+
+        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        It computes the BIC for each pPXF fit in the sample, performs bootstrap sampling to estimate uncertainties,
+        and calculates the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
@@ -938,13 +948,15 @@ class Pipeline(object):
         :type num_fixed_parameters: int
         :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is
-            1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
         :type weight_threshold: float
+        :return: Relative BIC weights for the sample.
+        :rtype: np.ndarray
         """
         bics = np.zeros(len(ppxf_fits_list))
         weights = np.zeros_like(bics)
 
+        # Calculate BIC for each pPXF fit in the sample
         for i, ppxf_fits in enumerate(ppxf_fits_list):
             bics[i] = cls.get_bic_from_sample(
                 ppxf_fits,
@@ -952,9 +964,10 @@ class Pipeline(object):
                 weight_threshold=weight_threshold,
             )
 
+        # Calculate the difference in BIC values relative to the minimum BIC
         delta_bics = bics - np.min(bics)
 
-        # do bootstrap sampling
+        # Perform bootstrap sampling to estimate BIC uncertainties
         bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
         for i in range(num_bootstrap_samples):
             indices = np.random.randint(
@@ -969,8 +982,10 @@ class Pipeline(object):
                     weight_threshold=weight_threshold,
                 )
 
+        # Calculate the standard deviation of the BIC samples to estimate uncertainties
         bics_uncertainty = np.std(bics_samples, axis=0)
 
+        # Calculate the relative BIC weights for each pPXF fit
         for i in range(len(bics)):
             weights[i] = cls.calculate_weights_from_bic(
                 delta_bics[i], bics_uncertainty[i]
@@ -981,7 +996,7 @@ class Pipeline(object):
     def combine_measurements_from_templates(
         cls,
         values,
-        uncertanties,
+        uncertainties,
         ppxf_fits_list,
         apply_bic_weighting=True,
         num_fixed_parameters=0,
@@ -990,13 +1005,16 @@ class Pipeline(object):
         do_bessel_correction=True,
         verbose=False,
     ):
-        """Combine measurements using the relative BIC weights. This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        """
+        Combine measurements using the relative BIC weights.
 
-        :param values: The values to combine, with shape [number of bins or systems,
-            number of templates], or just [number of templates].
+        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        It combines the values and uncertainties from multiple templates using relative BIC weights.
+
+        :param values: The values to combine, with shape [number of bins or systems, number of templates], or just [number of templates].
         :type values: np.ndarray
-        :param uncertanties: The uncertainties in the values.
-        :type uncertanties: np.ndarray
+        :param uncertainties: The uncertainties in the values.
+        :type uncertainties: np.ndarray
         :param ppxf_fits_list: The list of pPXF fits.
         :type ppxf_fits_list: np.ndarray
         :param apply_bic_weighting: Whether to apply BIC weighting.
@@ -1005,17 +1023,16 @@ class Pipeline(object):
         :type num_fixed_parameters: int
         :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is
-            1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is 1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty, combined
-            statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
+        # Calculate the relative BIC weights if apply_bic_weighting is True
         if apply_bic_weighting:
             weights = cls.get_relative_bic_weights_for_sample(
                 ppxf_fits_list,
@@ -1030,13 +1047,14 @@ class Pipeline(object):
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
             print("Weights:", weights / np.sum(weights))
 
+        # Combine the values and uncertainties using the calculated weights
         (
             combined_values,
             combined_systematic_uncertainty,
             combined_statistical_uncertainty,
             covariance,
         ) = cls.combine_weighted(
-            values, uncertanties, weights, do_bessel_correction=do_bessel_correction
+            values, uncertainties, weights, do_bessel_correction=do_bessel_correction
         )
 
         return (
@@ -1047,45 +1065,55 @@ class Pipeline(object):
         )
 
     @classmethod
-    def combine_weighted(cls, values, uncertanties, weights, do_bessel_correction=True):
-        """Combine the values using the weights. The weighted combination with Bessel correction is described Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+    def combine_weighted(
+        cls, values, uncertainties, weights, do_bessel_correction=True
+    ):
+        """
+        Combine the values using the weights.
+
+        The weighted combination with Bessel correction is described in Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
 
         :param values: The values to combine.
         :type values: np.ndarray
-        :param uncertanties: The uncertainties in the values.
-        :type uncertanties: np.ndarray
+        :param uncertainties: The uncertainties in the values.
+        :type uncertainties: np.ndarray
         :param weights: The weights to use for the combination.
         :type weights: np.ndarray
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
-        :return: The combined values, combined systematic uncertainty, combined
-            statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         sum_w2 = np.sum(weights**2)
         sum_w = np.sum(weights)
         w = weights[:, np.newaxis]
 
+        # Ensure values and uncertainties have the correct dimensions
         if values.ndim == 1:
             values = values[:, np.newaxis]
-            uncertanties = uncertanties[:, np.newaxis]
+            uncertainties = uncertainties[:, np.newaxis]
 
+        # Calculate the combined values using the weights
         combined_values = np.sum(w * values, axis=0) / sum_w
 
+        # Calculate the denominator for the systematic uncertainty
         if do_bessel_correction:
             denominator = sum_w - sum_w2 / sum_w
         else:
             denominator = sum_w
 
+        # Calculate the combined systematic uncertainty
         combined_systematic_uncertainty = np.sqrt(
             np.sum(w * (values - combined_values[np.newaxis, :]) ** 2, axis=0)
             / denominator
         )
 
+        # Calculate the combined statistical uncertainty
         combined_statistical_uncertainty = np.sqrt(
-            np.sum(w * uncertanties**2, axis=0) / sum_w
+            np.sum(w * uncertainties**2, axis=0) / sum_w
         )
 
+        # Calculate the covariance matrix if there are multiple values
         if values.shape[1] > 1:
             covariance = np.zeros((len(combined_values), len(combined_values)))
 
@@ -1113,49 +1141,60 @@ class Pipeline(object):
 
     @staticmethod
     def calculate_weights_from_bic(delta_bic, sigma_delta_bic):
-        """Calculate the relative BIC weight after accounting for the uncetainty. This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        """
+        Calculate the relative BIC weight after accounting for the uncertainty.
 
-        :param delta_bic: The difference in BIC values between the model and the best
-            model.
+        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+
+        :param delta_bic: The difference in BIC values between the model and the best model.
         :type delta_bic: float
         :param sigma_delta_bic: The uncertainty in the delta_BIC value.
         :type sigma_delta_bic: float
         :return: The relative weight of the model.
         :rtype: float
         """
+        # Calculate the integrals and exponential factor for the weight calculation
         integral_1 = ndtr(-delta_bic / sigma_delta_bic)
         integral_2 = ndtr(delta_bic / sigma_delta_bic - sigma_delta_bic / 2)
         exp_factor = (sigma_delta_bic**2 / 8) - (delta_bic / 2)
 
+        # Calculate the second integral multiplied by the exponential factor
         if integral_2 == 0.0:
             integral2_multiplied = 0.0
         else:
             integral2_multiplied = np.exp(exp_factor + np.log(integral_2))
 
+        # Calculate the relative weight of the model
         weight = integral_1 + integral2_multiplied
 
         return weight
 
     @staticmethod
     def boost_noise(spectra, boost_factor, boosting_mask=None):
-        """Boost the noise in the spectra.
+        """
+        Boost the noise in the spectra.
 
-        :param  spectra: The spectra to boost the noise in.
+        This function increases the noise in the spectra by a specified boost factor. It can optionally apply the boosting to a specific mask.
+
+        :param spectra: The spectra to boost the noise in.
         :type spectra: `Spectra` or a child class
         :param boost_factor: The factor to boost the noise by.
         :type boost_factor: float
         :param boosting_mask: The mask to apply the boosting to.
         :type boosting_mask: np.ndarray
-        :return spectra: The spectra with the boosted noise.
+        :return: The spectra with the boosted noise.
         :rtype: `Spectra` or a child class
         """
+        # Create a deep copy of the spectra to avoid modifying the original object
         noise_boosted_spectra = deepcopy(spectra)
         if boosting_mask is None:
             boosting_mask = np.ones_like(spectra.wavelengths, dtype=bool)
 
+        # Boost the noise in the spectra
         if noise_boosted_spectra.noise is not None:
             noise_boosted_spectra.noise[boosting_mask] *= boost_factor
 
+        # Boost the covariance in the spectra if it exists
         if noise_boosted_spectra.covariance is not None:
             noise_boosted_spectra.covariance[boosting_mask] *= boost_factor
             noise_boosted_spectra.covariance[:, boosting_mask] *= boost_factor
