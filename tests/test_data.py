@@ -406,6 +406,22 @@ class TestVoronoiBinnedSpectra:
         assert spectra.z_source == self.z_source
         assert spectra.flux_unit == self.flux_unit
 
+        voronoi_binned_spectra_temp = deepcopy(self.voronoi_binned_spectra)
+        voronoi_binned_spectra_temp.covariance = np.zeros(
+            (
+                voronoi_binned_spectra_temp.flux.shape[0],
+                voronoi_binned_spectra_temp.flux.shape[0],
+                voronoi_binned_spectra_temp.flux.shape[1],
+            )
+        )
+        for i in range(voronoi_binned_spectra_temp.flux.shape[1]):
+            voronoi_binned_spectra_temp.covariance[:, :, i] = np.diag(
+                voronoi_binned_spectra_temp.noise[:, i] ** 2
+            )
+
+        spectra = voronoi_binned_spectra_temp.get_single_spectra(bin_index)
+        assert spectra.covariance.shape == (10, 10)
+
 
 class TestRadiallyBinnedSpectra:
     def setup_method(self):
