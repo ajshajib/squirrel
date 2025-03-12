@@ -8,6 +8,19 @@ from squirrel.data import Datacube
 from squirrel.template import Template
 
 
+class MockPpxfFit:
+    def __init__(self):
+        self.goodpixels = np.arange(100)
+        self.weights = np.abs(np.random.rand(10))
+        self.degree = 4
+        self.sky = np.random.rand(100, 2)
+        self.sol = [100.0, 200.0]
+        self.mdegree = 2
+        self.galaxy = np.random.rand(100)
+        self.bestfit = np.random.rand(100)
+        self.original_noise = np.random.rand(100, 100)
+
+
 class TestPipeline:
     def setup_method(self):
         """Set up the test."""
@@ -438,18 +451,6 @@ class TestPipeline:
 
     def test_get_terms_in_bic(self):
         # Create a mock ppxf_fit object
-        class MockPpxfFit:
-            def __init__(self):
-                self.goodpixels = np.arange(100)
-                self.weights = np.random.rand(50)
-                self.degree = 4
-                self.sky = np.random.rand(100, 2)
-                self.sol = [100.0, 200.0]
-                self.mdegree = 2
-                self.galaxy = np.random.rand(100)
-                self.bestfit = np.random.rand(100)
-                self.original_noise = np.random.rand(100, 100)
-
         ppxf_fit = MockPpxfFit()
 
         # Call the method
@@ -467,19 +468,6 @@ class TestPipeline:
         assert n == len(ppxf_fit.goodpixels)
 
     def test_get_bic(self):
-        # Create a mock ppxf_fit object
-        class MockPpxfFit:
-            def __init__(self):
-                self.goodpixels = np.arange(100)
-                self.weights = np.random.rand(50)
-                self.degree = 4
-                self.sky = np.random.rand(100, 2)
-                self.sol = [100.0, 200.0]
-                self.mdegree = 2
-                self.galaxy = np.random.rand(100)
-                self.bestfit = np.random.rand(100)
-                self.original_noise = np.random.rand(100, 100)
-
         ppxf_fit = MockPpxfFit()
 
         # Call the method
@@ -493,17 +481,6 @@ class TestPipeline:
 
     def test_get_bic_from_sample(self):
         # Create a mock ppxf_fit object
-        class MockPpxfFit:
-            def __init__(self):
-                self.goodpixels = np.arange(100)
-                self.weights = np.random.rand(50)
-                self.degree = 4
-                self.sky = np.random.rand(100, 2)
-                self.sol = [100.0, 200.0]
-                self.mdegree = 2
-                self.galaxy = np.random.rand(100)
-                self.bestfit = np.random.rand(100)
-                self.original_noise = np.random.rand(100, 100)
 
         # Create a list of mock ppxf_fit objects
         ppxf_fits = [MockPpxfFit() for _ in range(5)]
@@ -518,6 +495,126 @@ class TestPipeline:
 
         # Check the value
         assert bic > 0
+
+    def test_get_relative_bic_weights_for_sample(self):
+        # Create mock ppxf fits
+        ppxf_fit_mock = MockPpxfFit()
+        ppxf_fits_list = np.array(
+            [[ppxf_fit_mock, ppxf_fit_mock], [ppxf_fit_mock, ppxf_fit_mock]]
+        )
+
+        # Call the method
+        weights = Pipeline.get_relative_bic_weights_for_sample(
+            ppxf_fits_list,
+            num_fixed_parameters=1,
+            num_bootstrap_samples=10,
+            weight_threshold=0.01,
+        )
+
+        # Assertions to check the output
+        assert isinstance(weights, np.ndarray)
+        assert weights.shape == (2,)
+        assert np.all(weights >= 0)
+
+    def test_combine_measurements_from_templates(self):
+        ppxf_fit_mock = MockPpxfFit()
+        ppxf_fits_list = np.array(
+            [[ppxf_fit_mock, ppxf_fit_mock], [ppxf_fit_mock, ppxf_fit_mock]]
+        )
+        values = np.random.rand(2, 2)
+        uncertainties = np.random.rand(2, 2)
+
+        # Call the method
+        (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        ) = Pipeline.combine_measurements_from_templates(
+            values,
+            uncertainties,
+            ppxf_fits_list,
+            apply_bic_weighting=True,
+            num_fixed_parameters=0,
+            num_bootstrap_samples=10,
+            weight_threshold=0.01,
+            do_bessel_correction=True,
+            verbose=False,
+        )
+
+        # Assertions to check the output
+        assert isinstance(combined_values, np.ndarray)
+        assert isinstance(combined_systematic_uncertainty, np.ndarray)
+        assert isinstance(combined_statistical_uncertainty, np.ndarray)
+        assert isinstance(covariance, np.ndarray)
+
+        assert combined_values.shape == (2,)
+        assert combined_systematic_uncertainty.shape == (2,)
+        assert combined_statistical_uncertainty.shape == (2,)
+
+    def test_combine_weighted(self):
+        # Create mock values, uncertainties, and weights
+        values = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+        uncertainties = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
+        weights = np.array([0.2, 0.3, 0.5])
+
+        # Call the method
+        (
+            combined_values,
+            combined_systematic_uncertainty,
+            combined_statistical_uncertainty,
+            covariance,
+        ) = Pipeline.combine_weighted(
+            values,
+            uncertainties,
+            weights,
+            do_bessel_correction=True,
+        )
+
+        # Assertions to check the output
+        assert isinstance(combined_values, np.ndarray)
+        assert isinstance(combined_systematic_uncertainty, np.ndarray)
+        assert isinstance(combined_statistical_uncertainty, np.ndarray)
+        assert isinstance(covariance, np.ndarray)
+
+        assert combined_values.shape == (2,)
+        assert combined_systematic_uncertainty.shape == (2,)
+        assert combined_statistical_uncertainty.shape == (2,)
+        assert covariance.shape == (2, 2)
+
+        # Check the values
+        expected_combined_values = np.average(values, axis=0, weights=weights)
+        assert np.allclose(combined_values, expected_combined_values, rtol=1e-5)
+
+        expected_combined_statistical_uncertainty = np.sqrt(
+            np.sum(weights[:, np.newaxis] * uncertainties**2, axis=0) / np.sum(weights)
+        )
+        assert np.allclose(
+            combined_statistical_uncertainty,
+            expected_combined_statistical_uncertainty,
+            rtol=1e-5,
+        )
+
+        # Check the covariance matrix
+        for i in range(covariance.shape[0]):
+            for j in range(covariance.shape[0]):
+                if i == j:
+                    expected_covariance = (
+                        np.sum(
+                            weights
+                            * (values[:, i] - combined_values[i])
+                            * (values[:, j] - combined_values[j])
+                        )
+                        / (np.sum(weights) - np.sum(weights**2) / np.sum(weights))
+                        + combined_statistical_uncertainty[i] ** 2
+                    )
+                else:
+                    expected_covariance = np.sum(
+                        weights
+                        * (values[:, i] - combined_values[i])
+                        * (values[:, j] - combined_values[j])
+                    ) / (np.sum(weights) - np.sum(weights**2) / np.sum(weights))
+                assert np.isclose(covariance[i, j], expected_covariance, rtol=1e-5)
 
 
 if __name__ == "__main__":

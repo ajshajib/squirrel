@@ -887,9 +887,7 @@ class Pipeline(object):
     ):
         """Combine measurements using the relative BIC weights.
 
-        :param values: The values to combine, can be a sample average values for
-            different templates, or array of values (in which case should match the
-            ppxf_fits_list shape).
+        :param values: The values to combine, with shape [number of bins or systems, number of templates], or just [number of templates].
         :type values: np.ndarray
         :param uncertanties: The uncertainties in the values.
         :type uncertanties: np.ndarray
