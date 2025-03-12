@@ -512,6 +512,7 @@ class Datacube(Spectra):
             covariance=covariance,
         )
 
+        # Copy the state of the spectra
         spectra.spectra_modifications = deepcopy(self.spectra_modifications)
         spectra.velocity_scale = deepcopy(self.velocity_scale)
 
@@ -718,7 +719,8 @@ class VoronoiBinnedSpectra(Spectra):
             covariance=covariance,
         )
 
-        # Copy additional attributes from the parent Spectra object
+        # Copy the state of the spectra
+        spectra.spectra_modifications = deepcopy(self.spectra_modifications)
         spectra.velocity_scale = deepcopy(self.velocity_scale)
 
         return spectra

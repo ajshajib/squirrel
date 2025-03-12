@@ -36,7 +36,7 @@ class Pipeline(object):
         num_samples_for_covariance=None,
         take_covariance=True,
     ):
-        """Rebin the data to log scale.
+        """Rebin the data to log scale. The input spectra object will be modified.
 
         :param spectra: data to rebin
         :type spectra: `Spectra` class
@@ -46,6 +46,8 @@ class Pipeline(object):
         :type num_samples_for_covariance: int
         :param take_covariance: take the covariance into account
         :type take_covariance: bool
+        :return: rebinned spectra
+        :rtype: `Spectra` class
         """
         if "log_rebinned" in spectra.spectra_modifications:
             raise ValueError("Data has already been log rebinned.")
@@ -124,6 +126,8 @@ class Pipeline(object):
         spectra.wavelengths = np.exp(log_rebinned_wavelength)
         spectra.velocity_scale = velocity_scale
         spectra.spectra_modifications += ["log_rebinned"]
+
+        return spectra
 
     @staticmethod
     def get_voronoi_binning_map(
