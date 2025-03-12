@@ -944,9 +944,9 @@ class Pipeline(object):
         """Calculate the relative BIC weights for a given sample of pPXF fits.
 
         This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025), arxiv.org/abs/2502.16034. It computes the BIC for each pPXF
-        fit in the sample, performs bootstrap sampling to estimate uncertainties,
-        and calculates the relative BIC weights.
+        (2025), arxiv.org/abs/2502.16034. It computes the BIC for each pPXF fit in the
+        sample, performs bootstrap sampling to estimate uncertainties, and calculates
+        the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
         :type ppxf_fits_list: np.ndarray
