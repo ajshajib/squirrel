@@ -310,8 +310,6 @@ class Spectra(object):
                 (
                     self.covariance.shape[0] + other.covariance.shape[0],
                     self.covariance.shape[1] + other.covariance.shape[1],
-                    self.covariance.shape[2],
-                    self.covariance.shape[3],
                 )
             )
             destination.covariance[

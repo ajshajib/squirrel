@@ -178,12 +178,40 @@ class TestSpectra:
         npt.assert_equal(spectra.flux, np.array([6, 8, 10]))
 
     def test_concat_function(self):
-        spectra = Spectra(np.array([5, 6, 7]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+        spectra = Spectra(
+            np.array([5, 6, 7]),
+            np.array([2, 3, 4]),
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            noise=np.array([0.1, 0.2, 0.3]),
+        )
 
         cat_spectra = deepcopy(self.spectra)
         self.spectra._concat(spectra, cat_spectra)
         npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
         npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+        npt.assert_equal(cat_spectra.noise, np.array([0.1, 0.2, 0.3, 0.1, 0.2, 0.3]))
+
+        spectra = Spectra(
+            np.array([5, 6, 7]),
+            np.array([2, 3, 4]),
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            covariance=np.diag(np.array([0.1, 0.2, 0.3]) ** 2),
+        )
+
+        cat_spectra = deepcopy(self.spectra)
+        self.spectra._concat(spectra, cat_spectra)
+        npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
+        npt.assert_equal(cat_spectra.flux, np.array([4, 5, 6, 2, 3, 4]))
+        npt.assert_equal(
+            cat_spectra.covariance,
+            np.diag(np.array([0.1, 0.2, 0.3, 0.1, 0.2, 0.3]) ** 2),
+        )
 
         cat_spectra = self.spectra & spectra
         npt.assert_equal(cat_spectra.wavelengths, np.array([1, 2, 3, 5, 6, 7]))
