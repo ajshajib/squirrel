@@ -137,11 +137,37 @@ class TestSpectra:
         assert self.spectra.wavelengths_frame == "observed"
 
     def test_add_function(self):
-        spectra = Spectra(np.array([1, 2, 3]), np.array([2, 3, 4]), "nm", 2.0, 0.5, 1.0)
+        spectra = Spectra(
+            np.array([1, 2, 3]),
+            np.array([2, 3, 4]),
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            noise=np.array([0.1, 0.2, 0.3]),
+        )
         sum_spectra = deepcopy(self.spectra)
         self.spectra._add(spectra, sum_spectra)
         npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
         npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+        npt.assert_equal(sum_spectra.noise, np.sqrt(2) * np.array([0.1, 0.2, 0.3]))
+
+        spectra = Spectra(
+            np.array([1, 2, 3]),
+            np.array([2, 3, 4]),
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            covariance=np.diag(np.array([0.1, 0.2, 0.3]) ** 2),
+        )
+        sum_spectra = deepcopy(self.spectra)
+        self.spectra._add(spectra, sum_spectra)
+        npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
+        npt.assert_equal(sum_spectra.flux, np.array([6, 8, 10]))
+        npt.assert_equal(
+            sum_spectra.covariance, 2 * np.diag(np.array([0.1, 0.2, 0.3]) ** 2)
+        )
 
         sum_spectra = self.spectra + spectra
         npt.assert_equal(sum_spectra.wavelengths, np.array([1, 2, 3]))
