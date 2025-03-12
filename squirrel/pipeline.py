@@ -942,7 +942,7 @@ class Pipeline(object):
         This function follows the methodology provided by Knabel & Mozumdar et al.
         (2025,
         https://arxiv.org/abs/2502.16034).
-           It computes the BIC for each pPXF fit in the sample, performs bootstrap
+            It computes the BIC for each pPXF fit in the sample, performs bootstrap
         sampling to estimate uncertainties, and calculates the relative BIC weights.
 
         :param ppxf_fits_list: The sample of pPXF fits.
@@ -1014,7 +1014,7 @@ class Pipeline(object):
         This function follows the methodology provided by Knabel & Mozumdar et al.
         (2025,
         https://arxiv.org/abs/2502.16034).
-           It combines the values and uncertainties from multiple templates using
+            It combines the values and uncertainties from multiple templates using
         relative BIC weights.
 
         :param values: The values to combine, with shape [number of bins or systems,
