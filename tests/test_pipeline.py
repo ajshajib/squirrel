@@ -58,6 +58,17 @@ class TestPipeline:
         with pytest.raises(ValueError):
             Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
 
+        # Test with num_samples_for_covariance as None
+        self.spectra.reset()
+        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=None)
+        assert "log_rebinned" in self.spectra.spectra_modifications
+
+        # Cover the case where flux_flattenned.shape[0] == 1
+        self.spectra.reset()
+        self.spectra.flux = self.spectra.flux[np.newaxis, :].T
+        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
+        assert "log_rebinned" in self.spectra.spectra_modifications
+
     def test_voronoi_binning(self):
         x = np.arange(11)
         y = np.arange(11)
