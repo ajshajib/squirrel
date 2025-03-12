@@ -418,6 +418,7 @@ class TestVoronoiBinnedSpectra:
             voronoi_binned_spectra_temp.covariance[:, :, i] = np.diag(
                 voronoi_binned_spectra_temp.noise[:, i] ** 2
             )
+        voronoi_binned_spectra_temp.noise = None
 
         spectra = voronoi_binned_spectra_temp.get_single_spectra(bin_index)
         assert spectra.covariance.shape == (10, 10)
