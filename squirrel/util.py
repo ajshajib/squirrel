@@ -22,29 +22,27 @@ def get_nearest_positive_definite_matrix(matrix):
     :return: nearest positive-definite matrix
     :rtype: numpy.ndarray
     """
-
+    # Step 1: Make the matrix symmetric
     b = (matrix + matrix.T) / 2
+
+    # Step 2: Perform Singular Value Decomposition (SVD)
     _, s, v = la.svd(b)
 
+    # Step 3: Construct the symmetric positive semi-definite matrix
     h = np.dot(v.T, np.dot(np.diag(s), v))
 
+    # Step 4: Average b and h to get a new symmetric matrix
     matrix_2 = (b + h) / 2
 
+    # Step 5: Ensure the matrix is symmetric
     matrix_3 = (matrix_2 + matrix_2.T) / 2
 
+    # Step 6: Check if the matrix is positive-definite
     if is_positive_definite(matrix_3):
         return matrix_3
 
+    # Step 7: If not, adjust the matrix to make it positive-definite
     spacing = np.spacing(la.norm(matrix))
-    # The above is different from [1]. It appears that MATLAB's `chol` Cholesky
-    # decomposition will accept matrixes with exactly 0-eigenvalue, whereas
-    # Numpy's will not. So where [1] uses `eps(mineig)` (where `eps` is Matlab
-    # for `np.spacing`), we use the above definition. CAVEAT: our `spacing`
-    # will be much larger than [1]'s `eps(mineig)`, since `mineig` is usually on
-    # the order of 1e-16, and `eps(1e-16)` is on the order of 1e-34, whereas
-    # `spacing` will, for Gaussian random matrixes of small dimension, be on
-    # othe order of 1e-16. In practice, both ways converge, as the unit test
-    # below suggests.
     identity = np.eye(matrix.shape[0])
     k = 1
     while not is_positive_definite(matrix_3):
@@ -57,6 +55,10 @@ def get_nearest_positive_definite_matrix(matrix):
 
 def is_positive_definite(matrix):
     """Returns true when input is positive-definite, via Cholesky.
+
+    This function attempts to perform a Cholesky decomposition of the input
+    matrix. If the decomposition is successful, the matrix is positive-definite.
+    If it fails, the matrix is not positive-definite.
 
     :param matrix: matrix to check
     :type matrix: numpy.ndarray
