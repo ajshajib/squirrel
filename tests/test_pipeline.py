@@ -266,6 +266,13 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
+        # with non-positive-definite covariance
+        spectra.coavriance = np.ones((2, 2, 2))
+        ppxf_fit = Pipeline.run_ppxf(
+            spectra, template, start=[0, 600], degree=4, spectra_indices=0
+        )
+        assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
+
         with pytest.raises(ValueError):
             Pipeline.run_ppxf(
                 spectra,
