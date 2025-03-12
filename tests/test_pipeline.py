@@ -500,6 +500,10 @@ class TestPipeline:
         assert len(line_names) == len(line_wavelengths)
 
     def test_join_templates(self):
+        """
+        Test the joining of multiple templates.
+        This method tests the joining of kinematic and emission line templates and checks for expected properties.
+        """
         # Create mock templates
         wavelengths = np.arange(4000, 5000, 0.1)
         flux1 = np.random.normal(1, 0.1, (len(wavelengths), 5))
@@ -521,6 +525,7 @@ class TestPipeline:
         for i in emission_line_indices:
             assert i is np.False_
 
+        # Test for AssertionError when template2 flux is squeezed
         with pytest.raises(AssertionError):
             template2.flux = np.squeeze(template2.flux)
             joined_template, component_indices, emission_line_indices = (
@@ -571,6 +576,10 @@ class TestPipeline:
             assert emission_line_indices[i] is np.True_
 
     def test_make_template_from_array(self):
+        """
+        Test the creation of a template from an array of fluxes and wavelengths.
+        This method tests the creation of a template from given fluxes and wavelengths and checks for expected properties.
+        """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
         fluxes = np.random.normal(1, 0.1, (len(wavelengths), 5))
@@ -595,7 +604,7 @@ class TestPipeline:
         spectra.spectra_modifications = ["log_rebinned"]
         spectra.velocity_scale = 100.0  # Set a mock velocity scale
 
-        # Call the method
+        # Call the method to create the template
         template = Pipeline.make_template_from_array(
             fluxes,
             wavelengths,
@@ -625,10 +634,14 @@ class TestPipeline:
         )
 
     def test_get_terms_in_bic(self):
+        """
+        Test the calculation of terms in the Bayesian Information Criterion (BIC).
+        This method tests the calculation of the number of parameters (k), number of data points (n), and log-likelihood from a ppxf fit object.
+        """
         # Create a mock ppxf_fit object
         ppxf_fit = MockPpxfFit()
 
-        # Call the method
+        # Call the method to get terms in BIC
         k, n, log_likelihood = Pipeline.get_terms_in_bic(
             ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01
         )
@@ -642,7 +655,7 @@ class TestPipeline:
         assert k > 0
         assert n == len(ppxf_fit.goodpixels)
 
-        # with no weights
+        # Test with no weights
         k, n, log_likelihood = Pipeline.get_terms_in_bic(
             ppxf_fit, num_fixed_parameters=1, weight_threshold=None
         )
@@ -656,7 +669,7 @@ class TestPipeline:
         assert k > 0
         assert n == len(ppxf_fit.goodpixels)
 
-        # with multi-dimensional ppxf.sol
+        # Test with multi-dimensional ppxf.sol
         ppxf_fit.sol = np.array([[100.0, 200.0], [100.0, 200.0]])
         k, n, log_likelihood = Pipeline.get_terms_in_bic(
             ppxf_fit, num_fixed_parameters=1, weight_threshold=None
@@ -672,24 +685,31 @@ class TestPipeline:
         assert n == len(ppxf_fit.goodpixels)
 
     def test_get_bic(self):
+        """
+        Test the calculation of the Bayesian Information Criterion (BIC).
+        This method tests the calculation of the BIC from a ppxf fit object and checks for expected properties.
+        """
+        # Create a mock ppxf_fit object
         ppxf_fit = MockPpxfFit()
 
-        # Call the method
+        # Call the method to calculate BIC
         bic = Pipeline.get_bic(ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01)
 
         # Assertions to check the output
         assert isinstance(bic, float)
 
-        # Check the value
+        # Check the value of BIC
         assert bic > 0
 
     def test_get_bic_from_sample(self):
-        # Create a mock ppxf_fit object
-
+        """
+        Test the calculation of the BIC from a sample of ppxf fit objects.
+        This method tests the calculation of the BIC from a list of ppxf fit objects and checks for expected properties.
+        """
         # Create a list of mock ppxf_fit objects
         ppxf_fits = [MockPpxfFit() for _ in range(5)]
 
-        # Call the method
+        # Call the method to calculate BIC from the sample
         bic = Pipeline.get_bic_from_sample(
             ppxf_fits, num_fixed_parameters=1, weight_threshold=0.01
         )
@@ -697,16 +717,20 @@ class TestPipeline:
         # Assertions to check the output
         assert isinstance(bic, float)
 
-        # Check the value
+        # Check the value of BIC
         assert bic > 0
 
     def test_get_relative_bic_weights_for_sample(self):
-        # Create mock ppxf fits
+        """
+        Test the calculation of relative BIC weights for a sample of ppxf fit objects.
+        This method tests the calculation of relative BIC weights from a list of ppxf fit objects and checks for expected properties.
+        """
+        # Create a 2D array of mock ppxf fit objects
         ppxf_fits_list = np.array(
             [[MockPpxfFit(), MockPpxfFit()], [MockPpxfFit(), MockPpxfFit()]]
         )
 
-        # Call the method
+        # Call the method to calculate relative BIC weights
         weights = Pipeline.get_relative_bic_weights_for_sample(
             ppxf_fits_list,
             num_fixed_parameters=1,
@@ -717,16 +741,20 @@ class TestPipeline:
         # Assertions to check the output
         assert isinstance(weights, np.ndarray)
         assert weights.shape == (2,)
-        # assert np.all(weights >= 0)
 
     def test_combine_measurements_from_templates(self):
+        """
+        Test the combination of measurements from multiple templates.
+        This method tests the combination of values and uncertainties from multiple templates and checks for expected properties.
+        """
+        # Create a 2D array of mock ppxf fit objects
         ppxf_fits_list = np.array(
             [[MockPpxfFit(), MockPpxfFit()], [MockPpxfFit(), MockPpxfFit()]]
         )
         values = np.array([[1.0, 2.0], [3.0, 4.0]])
         uncertainties = np.array([[0.1, 0.2], [0.3, 0.4]])
 
-        # Call the method
+        # Call the method to combine measurements with BIC weighting
         (
             combined_values,
             combined_systematic_uncertainty,
@@ -754,8 +782,7 @@ class TestPipeline:
         assert combined_systematic_uncertainty.shape == (2,)
         assert combined_statistical_uncertainty.shape == (2,)
 
-        # With no BIC weighting
-        # Call the method
+        # Call the method to combine measurements without BIC weighting
         (
             combined_values,
             combined_systematic_uncertainty,
@@ -784,12 +811,16 @@ class TestPipeline:
         assert combined_statistical_uncertainty.shape == (2,)
 
     def test_combine_weighted(self):
+        """
+        Test the combination of weighted measurements.
+        This method tests the combination of values and uncertainties using weights and checks for expected properties.
+        """
         # Create mock values, uncertainties, and weights
         values = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
         uncertainties = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
         weights = np.array([0.2, 0.3, 0.5])
 
-        # Call the method
+        # Call the method to combine weighted measurements
         (
             combined_values,
             combined_systematic_uncertainty,
@@ -813,10 +844,11 @@ class TestPipeline:
         assert combined_statistical_uncertainty.shape == (2,)
         assert covariance.shape == (2, 2)
 
-        # Check the values
+        # Check the combined values
         expected_combined_values = np.average(values, axis=0, weights=weights)
         assert np.allclose(combined_values, expected_combined_values, rtol=1e-5)
 
+        # Check the combined statistical uncertainty
         expected_combined_statistical_uncertainty = np.sqrt(
             np.sum(weights[:, np.newaxis] * uncertainties**2, axis=0) / np.sum(weights)
         )
@@ -847,12 +879,12 @@ class TestPipeline:
                     ) / (np.sum(weights) - np.sum(weights**2) / np.sum(weights))
                 assert np.isclose(covariance[i, j], expected_covariance, rtol=1e-5)
 
-        # for 1D values
+        # Test for 1D values
         values = np.array([1.0, 2.0, 3.0])
         uncertainties = np.array([0.1, 0.2, 0.3])
         weights = np.array([0.2, 0.3, 0.5])
 
-        # Call the method
+        # Call the method to combine weighted measurements for 1D values
         (
             combined_values,
             combined_systematic_uncertainty,
@@ -875,10 +907,11 @@ class TestPipeline:
         assert combined_systematic_uncertainty.shape == (1,)
         assert combined_statistical_uncertainty.shape == (1,)
 
-        # Check the values
+        # Check the combined values
         expected_combined_values = np.average(values, weights=weights)
         assert np.allclose(combined_values, expected_combined_values, rtol=1e-5)
 
+        # Check the combined statistical uncertainty
         expected_combined_statistical_uncertainty = np.sqrt(
             np.sum(weights * uncertainties**2) / np.sum(weights)
         )
@@ -889,7 +922,11 @@ class TestPipeline:
         )
 
     def test_calculate_weights_from_bic(self):
-        # Define test cases
+        """
+        Test the calculation of weights from BIC values.
+        This method tests the calculation of weights from delta BIC and sigma delta BIC values and checks for expected properties.
+        """
+        # Define test cases with delta BIC, sigma delta BIC, and expected weight
         test_cases = [
             (0.0, 1.0, 1.0),  # delta_bic = 0, sigma_delta_bic = 1
             (2.0, 1.0, 0.5),  # delta_bic = 2, sigma_delta_bic = 1
@@ -898,7 +935,7 @@ class TestPipeline:
         ]
 
         for delta_bic, sigma_delta_bic, expected_weight in test_cases:
-            # Call the method
+            # Call the method to calculate weights from BIC
             weight = Pipeline.calculate_weights_from_bic(delta_bic, sigma_delta_bic)
 
             # Assertions to check the output
@@ -906,7 +943,7 @@ class TestPipeline:
             assert weight >= 0.0
             assert weight <= 1.0
 
-            # Check the value
+            # Check the calculated weight
             integral_1 = ndtr(-delta_bic / sigma_delta_bic)
             integral_2 = ndtr(delta_bic / sigma_delta_bic - sigma_delta_bic / 2)
             exp_factor = (sigma_delta_bic**2 / 8) - (delta_bic / 2)
@@ -920,11 +957,15 @@ class TestPipeline:
             assert np.isclose(weight, expected_weight, rtol=1e-5)
 
     def test_boost_noise(self):
+        """
+        Test the boosting of noise in spectra.
+        This method tests the boosting of noise in spectra using a boost factor and a boosting mask and checks for expected properties.
+        """
         boost_factor = 2.0
         boosting_mask = np.zeros_like(self.spectra.noise, dtype=bool)
         boosting_mask[100:-100] = True
 
-        # Call the method
+        # Call the method to boost noise with a boosting mask
         boosted_spectra = Pipeline.boost_noise(
             self.spectra, boost_factor, boosting_mask
         )
@@ -934,18 +975,18 @@ class TestPipeline:
         assert boosted_spectra.noise.shape == self.spectra.noise.shape
         assert boosted_spectra.covariance.shape == self.spectra.covariance.shape
 
-        # Check the noise values
+        # Check the boosted noise values
         expected_noise = deepcopy(self.spectra.noise)
         expected_noise[boosting_mask] *= boost_factor
         assert np.allclose(boosted_spectra.noise, expected_noise, rtol=1e-5)
 
-        # Check the covariance matrix
+        # Check the boosted covariance matrix
         expected_covariance = deepcopy(self.spectra.covariance)
         expected_covariance[boosting_mask] *= boost_factor
         expected_covariance[:, boosting_mask] *= boost_factor
         assert np.allclose(boosted_spectra.covariance, expected_covariance, rtol=1e-5)
 
-        # Call the method without boosting mask
+        # Call the method to boost noise without a boosting mask
         boosted_spectra = Pipeline.boost_noise(self.spectra, boost_factor, None)
 
         # Assertions to check the output
@@ -953,12 +994,12 @@ class TestPipeline:
         assert boosted_spectra.noise.shape == self.spectra.noise.shape
         assert boosted_spectra.covariance.shape == self.spectra.covariance.shape
 
-        # Check the noise values
+        # Check the boosted noise values
         expected_noise = deepcopy(self.spectra.noise)
         expected_noise *= boost_factor
         assert np.allclose(boosted_spectra.noise, expected_noise, rtol=1e-5)
 
-        # Check the covariance matrix
+        # Check the boosted covariance matrix
         expected_covariance = deepcopy(self.spectra.covariance)
         expected_covariance *= boost_factor**2
 
