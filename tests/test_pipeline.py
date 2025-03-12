@@ -386,9 +386,10 @@ class TestPipeline:
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
     def test_run_ppxf_on_binned_spectra(self):
-        """
-        Test the pPXF fitting on binned spectra.
-        This method tests the pPXF fitting on spectra that have been binned and checks for expected results.
+        """Test the pPXF fitting on binned spectra.
+
+        This method tests the pPXF fitting on spectra that have been binned and checks
+        for expected results.
         """
         # Define the wavelength range and line properties
         start_wavelength = 9100
@@ -464,9 +465,10 @@ class TestPipeline:
         )
 
     def test_get_emission_line_template(self):
-        """
-        Test the creation of an emission line template.
-        This method tests the creation of an emission line template from given spectra and checks for expected properties.
+        """Test the creation of an emission line template.
+
+        This method tests the creation of an emission line template from given spectra
+        and checks for expected properties.
         """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
@@ -507,9 +509,10 @@ class TestPipeline:
         assert len(line_names) == len(line_wavelengths)
 
     def test_join_templates(self):
-        """
-        Test the joining of multiple templates.
-        This method tests the joining of kinematic and emission line templates and checks for expected properties.
+        """Test the joining of multiple templates.
+
+        This method tests the joining of kinematic and emission line templates and
+        checks for expected properties.
         """
         # Create mock templates
         wavelengths = np.arange(4000, 5000, 0.1)
@@ -583,9 +586,10 @@ class TestPipeline:
             assert emission_line_indices[i] is np.True_
 
     def test_make_template_from_array(self):
-        """
-        Test the creation of a template from an array of fluxes and wavelengths.
-        This method tests the creation of a template from given fluxes and wavelengths and checks for expected properties.
+        """Test the creation of a template from an array of fluxes and wavelengths.
+
+        This method tests the creation of a template from given fluxes and wavelengths
+        and checks for expected properties.
         """
         # Create mock data for the test
         wavelengths = np.arange(4000, 5000, 0.1)
@@ -641,9 +645,10 @@ class TestPipeline:
         )
 
     def test_get_terms_in_bic(self):
-        """
-        Test the calculation of terms in the Bayesian Information Criterion (BIC).
-        This method tests the calculation of the number of parameters (k), number of data points (n), and log-likelihood from a ppxf fit object.
+        """Test the calculation of terms in the Bayesian Information Criterion (BIC).
+
+        This method tests the calculation of the number of parameters (k), number of
+        data points (n), and log-likelihood from a ppxf fit object.
         """
         # Create a mock ppxf_fit object
         ppxf_fit = MockPpxfFit()
@@ -692,9 +697,10 @@ class TestPipeline:
         assert n == len(ppxf_fit.goodpixels)
 
     def test_get_bic(self):
-        """
-        Test the calculation of the Bayesian Information Criterion (BIC).
-        This method tests the calculation of the BIC from a ppxf fit object and checks for expected properties.
+        """Test the calculation of the Bayesian Information Criterion (BIC).
+
+        This method tests the calculation of the BIC from a ppxf fit object and checks
+        for expected properties.
         """
         # Create a mock ppxf_fit object
         ppxf_fit = MockPpxfFit()
@@ -709,9 +715,10 @@ class TestPipeline:
         assert bic > 0
 
     def test_get_bic_from_sample(self):
-        """
-        Test the calculation of the BIC from a sample of ppxf fit objects.
-        This method tests the calculation of the BIC from a list of ppxf fit objects and checks for expected properties.
+        """Test the calculation of the BIC from a sample of ppxf fit objects.
+
+        This method tests the calculation of the BIC from a list of ppxf fit objects and
+        checks for expected properties.
         """
         # Create a list of mock ppxf_fit objects
         ppxf_fits = [MockPpxfFit() for _ in range(5)]
@@ -728,9 +735,11 @@ class TestPipeline:
         assert bic > 0
 
     def test_get_relative_bic_weights_for_sample(self):
-        """
-        Test the calculation of relative BIC weights for a sample of ppxf fit objects.
-        This method tests the calculation of relative BIC weights from a list of ppxf fit objects and checks for expected properties.
+        """Test the calculation of relative BIC weights for a sample of ppxf fit
+        objects.
+
+        This method tests the calculation of relative BIC weights from a list of ppxf
+        fit objects and checks for expected properties.
         """
         # Create a 2D array of mock ppxf fit objects
         ppxf_fits_list = np.array(
@@ -750,9 +759,10 @@ class TestPipeline:
         assert weights.shape == (2,)
 
     def test_combine_measurements_from_templates(self):
-        """
-        Test the combination of measurements from multiple templates.
-        This method tests the combination of values and uncertainties from multiple templates and checks for expected properties.
+        """Test the combination of measurements from multiple templates.
+
+        This method tests the combination of values and uncertainties from multiple
+        templates and checks for expected properties.
         """
         # Create a 2D array of mock ppxf fit objects
         ppxf_fits_list = np.array(
@@ -818,9 +828,10 @@ class TestPipeline:
         assert combined_statistical_uncertainty.shape == (2,)
 
     def test_combine_weighted(self):
-        """
-        Test the combination of weighted measurements.
-        This method tests the combination of values and uncertainties using weights and checks for expected properties.
+        """Test the combination of weighted measurements.
+
+        This method tests the combination of values and uncertainties using weights and
+        checks for expected properties.
         """
         # Create mock values, uncertainties, and weights
         values = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
@@ -929,9 +940,10 @@ class TestPipeline:
         )
 
     def test_calculate_weights_from_bic(self):
-        """
-        Test the calculation of weights from BIC values.
-        This method tests the calculation of weights from delta BIC and sigma delta BIC values and checks for expected properties.
+        """Test the calculation of weights from BIC values.
+
+        This method tests the calculation of weights from delta BIC and sigma delta BIC
+        values and checks for expected properties.
         """
         # Define test cases with delta BIC, sigma delta BIC, and expected weight
         test_cases = [
@@ -964,9 +976,10 @@ class TestPipeline:
             assert np.isclose(weight, expected_weight, rtol=1e-5)
 
     def test_boost_noise(self):
-        """
-        Test the boosting of noise in spectra.
-        This method tests the boosting of noise in spectra using a boost factor and a boosting mask and checks for expected properties.
+        """Test the boosting of noise in spectra.
+
+        This method tests the boosting of noise in spectra using a boost factor and a
+        boosting mask and checks for expected properties.
         """
         boost_factor = 2.0
         boosting_mask = np.zeros_like(self.spectra.noise, dtype=bool)
