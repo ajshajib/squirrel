@@ -3,6 +3,7 @@ import os
 import numpy as np
 import numpy.testing as npt
 from scipy.special import ndtr
+from copy import deepcopy
 from squirrel.pipeline import Pipeline
 from squirrel.data import Spectra
 from squirrel.data import Datacube
@@ -34,6 +35,7 @@ class TestPipeline:
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "AA"
         self.noise = np.ones_like(self.flux)
+        self.covariance = np.diag(self.noise**2)
         self.fwhm = 2.0
         self.z_lens = 0.5
         self.z_source = 1.0
@@ -46,6 +48,7 @@ class TestPipeline:
             self.z_source,
             self.flux_unit,
             self.noise,
+            covariance=self.covariance,
         )
 
     def test_log_rebin(self):
@@ -645,6 +648,32 @@ class TestPipeline:
 
             expected_weight = integral_1 + integral2_multiplied
             assert np.isclose(weight, expected_weight, rtol=1e-5)
+
+    def test_boost_noise(self):
+        boost_factor = 2.0
+        boosting_mask = np.zeros_like(self.spectra.noise, dtype=bool)
+        boosting_mask[100:-100] = True
+
+        # Call the method
+        boosted_spectra = Pipeline.boost_noise(
+            self.spectra, boost_factor, boosting_mask
+        )
+
+        # Assertions to check the output
+        assert isinstance(boosted_spectra, Spectra)
+        assert boosted_spectra.noise.shape == self.spectra.noise.shape
+        assert boosted_spectra.covariance.shape == self.spectra.covariance.shape
+
+        # Check the noise values
+        expected_noise = deepcopy(self.spectra.noise)
+        expected_noise[boosting_mask] *= boost_factor
+        assert np.allclose(boosted_spectra.noise, expected_noise, rtol=1e-5)
+
+        # Check the covariance matrix
+        expected_covariance = deepcopy(self.spectra.covariance)
+        expected_covariance[boosting_mask] *= boost_factor
+        expected_covariance[:, boosting_mask] *= boost_factor
+        assert np.allclose(boosted_spectra.covariance, expected_covariance, rtol=1e-5)
 
 
 if __name__ == "__main__":
