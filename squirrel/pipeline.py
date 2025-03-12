@@ -639,37 +639,39 @@ class Pipeline(object):
     ):
         """Perform the kinematic analysis using pPXF.
 
-        :param data: data to analyze
+        This method runs the Penalized Pixel-Fitting (pPXF) method on the provided data using the given template.
+        It allows for the analysis of both single spectra and datacubes or binned spectra.
+
+        :param data: Data to analyze.
         :type data: `Data` class
-        :param template_library: library of templates
-        :type template_library: `TemplateLibrary` class
-        :param start: initial guess for the velocity and dispersion for each kinematic component, , check documentation of `ppxf.ppxf()`
+        :param template: Template library to use for fitting.
+        :type template: `Template` class
+        :param start: Initial guess for the velocity and dispersion for each kinematic component.
         :type start: list
-        :param velocity_scale_ratio: ratio of the velocity scale to the velocity dispersion
-        :type velocity_scale_ratio: float
-        :param background_template: background spectra to fit
-        :type background_template: `Data` class
-        :param spectra_indices: indices of the spectra to fit, used for datacubes or binned spectra
-        :type spectra_indices: list of int or int
-        :param quiet: suppress the output
-        :type quiet: bool
-        :param kwargs_ppxf: additional options for `ppxf`, check documentation of `ppxf.ppxf()`
+        :param background_template: Background spectra to fit, if any.
+        :type background_template: `Data` class, optional
+        :param spectra_indices: Indices of the spectra to fit, used for datacubes or binned spectra.
+        :type spectra_indices: list of int or int, optional
+        :param quiet: Suppress the output.
+        :type quiet: bool, optional
+        :param plot: Plot the fit results.
+        :type plot: bool, optional
+        :param kwargs_ppxf: Additional options for `ppxf`, check documentation of `ppxf.ppxf()`.
         :type kwargs_ppxf: dict
-        :return: pPXF fit
+        :return: pPXF fit object.
         :rtype: `ppxf` class
         """
         noise = None
 
+        # Check if spectra indices are provided for datacubes or binned spectra
         if data.flux.ndim > 1 and spectra_indices is None:
             raise ValueError(
                 "Spectra indices must be provided for datacubes or binned spectra."
             )
 
+        # Extract the flux and noise for the specified spectra indices
         if spectra_indices is not None:
             if isinstance(spectra_indices, int) and data.flux.ndim == 2:
-                assert (
-                    data.flux.ndim == 2
-                ), f"Spectra indices must be an integer for spectra with {data.spectra.ndim} dimensions."
                 flux = data.flux[:, spectra_indices]
                 if data.covariance is not None:
                     noise = data.covariance[:, :, spectra_indices]
@@ -703,14 +705,18 @@ class Pipeline(object):
             elif data.noise is not None:
                 noise = data.noise
 
+        # If noise is not provided, set a default noise level
         if noise is None:
             noise = 0.1 * np.ones_like(flux)
 
+        # Ensure the noise matrix is positive definite if it is 2D
         if noise.ndim == 2 and not is_positive_definite(noise):
             noise = get_nearest_positive_definite_matrix(noise)
 
+        # Deep copy the original noise for later use
         original_noise = deepcopy(noise)
 
+        # Run the pPXF fitting
         ppxf_fit = ppxf(
             templates=template.flux,
             galaxy=flux,
@@ -728,6 +734,7 @@ class Pipeline(object):
             **kwargs_ppxf,
         )
 
+        # Store the original noise in the pPXF fit object
         ppxf_fit.original_noise = original_noise
         return ppxf_fit
 
