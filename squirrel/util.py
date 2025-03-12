@@ -56,9 +56,9 @@ def get_nearest_positive_definite_matrix(matrix):
 def is_positive_definite(matrix):
     """Returns true when input is positive-definite, via Cholesky.
 
-    This function attempts to perform a Cholesky decomposition of the
-    input matrix. If the decomposition is successful, the matrix is
-    positive-definite. If it fails, the matrix is not positive-definite.
+    This function attempts to perform a Cholesky decomposition of the input matrix. If
+    the decomposition is successful, the matrix is positive-definite. If it fails, the
+    matrix is not positive-definite.
 
     :param matrix: matrix to check
     :type matrix: numpy.ndarray

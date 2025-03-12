@@ -8,10 +8,9 @@ class TestTemplate:
     def setup_method(self):
         """Set up the test environment.
 
-        This method is called before every test method to set up any
-        state that is shared across tests.
         This method is called before every test method to set up any state that is
-        shared across tests.
+        shared across tests. This method is called before every test method to set up
+        any state that is shared across tests.
         """
         # Initialize wavelengths array
         self.wavelengths = np.array([1, 2, 3])
@@ -40,8 +39,8 @@ class TestTemplate:
     def test_flux(self):
         """Test the flux attribute of the Template object.
 
-        This method checks if the flux attribute of the Template object
-        matches the expected flux array.
+        This method checks if the flux attribute of the Template object matches the
+        expected flux array.
         """
         # Assert that the flux attribute of the template matches the expected flux array
         npt.assert_array_equal(self.template.flux, self.flux)
@@ -49,8 +48,8 @@ class TestTemplate:
     def test_wavelengths(self):
         """Test the wavelengths attribute of the Template object.
 
-        This method checks if the wavelengths attribute of the Template
-        object matches the expected wavelengths array.
+        This method checks if the wavelengths attribute of the Template object matches
+        the expected wavelengths array.
         """
         # Assert that the wavelengths attribute of the template matches the expected wavelengths array
         npt.assert_array_equal(self.template.wavelengths, self.wavelengths)
@@ -58,9 +57,8 @@ class TestTemplate:
     def test_merge(self):
         """Test the merge method of the Template class.
 
-        This method creates two Template objects and merges them using
-        the merge method. It then checks if the merged Template object
-        has the expected attributes.
+        This method creates two Template objects and merges them using the merge method.
+        It then checks if the merged Template object has the expected attributes.
         """
         # Create mock data for the test
         wavelengths = np.linspace(4000, 5000, 1000)
@@ -82,12 +80,10 @@ class TestTemplate:
         np.testing.assert_equal(merged_template.wavelengths, wavelengths)
 
     def test_and_operator(self):
-        """Test the __and__ method (overloaded & operator) of the Template
-        class.
+        """Test the __and__ method (overloaded & operator) of the Template class.
 
-        This method creates two Template objects and merges them using
-        the & operator. It then checks if the merged Template object has
-        the expected attributes.
+        This method creates two Template objects and merges them using the & operator.
+        It then checks if the merged Template object has the expected attributes.
         """
         # Create mock data for the test
         wavelengths = np.linspace(4000, 5000, 1000)
@@ -109,12 +105,10 @@ class TestTemplate:
         np.testing.assert_equal(merged_template.wavelengths, wavelengths)
 
     def test_iand_operator(self):
-        """Test the __iand__ method (overloaded &= operator) of the Template
-        class.
+        """Test the __iand__ method (overloaded &= operator) of the Template class.
 
-        This method creates two Template objects and merges them using
-        the &= operator. It then checks if the merged Template object
-        has the expected attributes.
+        This method creates two Template objects and merges them using the &= operator.
+        It then checks if the merged Template object has the expected attributes.
         """
         # Create mock data for the test
         wavelengths = np.linspace(4000, 5000, 1000)
@@ -138,10 +132,9 @@ class TestTemplate:
     def test_combine_weighted(self):
         """Test the combine_weighted method of the Template class.
 
-        This method creates a Template object and combines its flux
-        values using the combine_weighted method with specified weights.
-        It then checks if the combined Template object has the expected
-        attributes.
+        This method creates a Template object and combines its flux values using the
+        combine_weighted method with specified weights. It then checks if the combined
+        Template object has the expected attributes.
         """
         # Create mock data for the test
         wavelengths = np.linspace(4000, 5000, 1000)

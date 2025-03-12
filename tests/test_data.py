@@ -95,8 +95,7 @@ class TestSpectra:
         assert self.spectra.spectra_modifications == []
 
     def test_spectra_modifications_setter(self):
-        """Test the spectra_modifications setter method of the Spectra
-        object."""
+        """Test the spectra_modifications setter method of the Spectra object."""
         self.spectra.spectra_modifications = "rebinned"
         assert self.spectra.spectra_modifications == "rebinned"
 
@@ -205,8 +204,7 @@ class TestSpectra:
         npt.assert_equal(spectra.flux, np.array([6, 8, 10]))
 
     def test_concat_function(self):
-        """Test the _concat method and concatenation operator of the Spectra
-        object."""
+        """Test the _concat method and concatenation operator of the Spectra object."""
         spectra = Spectra(
             np.array([5, 6, 7]),
             np.array([2, 3, 4]),
@@ -340,8 +338,7 @@ class TestVoronoiBinnedSpectra:
     """Test suite for the VoronoiBinnedSpectra class."""
 
     def setup_method(self):
-        """Setup method to initialize the VoronoiBinnedSpectra object with test
-        data."""
+        """Setup method to initialize the VoronoiBinnedSpectra object with test data."""
         # Initialize test data for wavelengths, flux, and other properties
         self.wavelengths = np.arange(10)
         self.flux = np.random.normal(size=(10, 3))
@@ -385,15 +382,13 @@ class TestVoronoiBinnedSpectra:
         )
 
     def test_x_coordinates(self):
-        """Test the x_coordinates property of the VoronoiBinnedSpectra
-        object."""
+        """Test the x_coordinates property of the VoronoiBinnedSpectra object."""
         npt.assert_array_equal(
             self.voronoi_binned_spectra.x_coordinates, self.x_coordinates
         )
 
     def test_y_coordinates(self):
-        """Test the y_coordinates property of the VoronoiBinnedSpectra
-        object."""
+        """Test the y_coordinates property of the VoronoiBinnedSpectra object."""
         npt.assert_array_equal(
             self.voronoi_binned_spectra.y_coordinates, self.y_coordinates
         )
@@ -405,22 +400,20 @@ class TestVoronoiBinnedSpectra:
         )
 
     def test_x_pixels_of_bins(self):
-        """Test the x_pixels_of_bins property of the VoronoiBinnedSpectra
-        object."""
+        """Test the x_pixels_of_bins property of the VoronoiBinnedSpectra object."""
         npt.assert_array_equal(
             self.voronoi_binned_spectra.x_pixels_of_bins, self.x_pixels
         )
 
     def test_y_pixels_of_bins(self):
-        """Test the y_pixels_of_bins property of the VoronoiBinnedSpectra
-        object."""
+        """Test the y_pixels_of_bins property of the VoronoiBinnedSpectra object."""
         npt.assert_array_equal(
             self.voronoi_binned_spectra.y_pixels_of_bins, self.y_pixels
         )
 
     def test_get_spaxel_map_with_bin_number(self):
-        """Test the get_spaxel_map_with_bin_number method of the
-        VoronoiBinnedSpectra object."""
+        """Test the get_spaxel_map_with_bin_number method of the VoronoiBinnedSpectra
+        object."""
         # Generate the spaxel map using the method
         spaxel_map = self.voronoi_binned_spectra.get_spaxel_map_with_bin_number()
 
@@ -435,13 +428,11 @@ class TestVoronoiBinnedSpectra:
         npt.assert_array_equal(spaxel_map, test_map)
 
     def test_bin_center_x(self):
-        """Test the bin_center_x property of the VoronoiBinnedSpectra
-        object."""
+        """Test the bin_center_x property of the VoronoiBinnedSpectra object."""
         assert self.voronoi_binned_spectra.bin_center_x == np.mean(self.x_coordinates)
 
     def test_bin_center_y(self):
-        """Test the bin_center_y property of the VoronoiBinnedSpectra
-        object."""
+        """Test the bin_center_y property of the VoronoiBinnedSpectra object."""
         assert self.voronoi_binned_spectra.bin_center_y == np.mean(self.y_coordinates)
 
     def test_area(self):
@@ -457,8 +448,7 @@ class TestVoronoiBinnedSpectra:
         )
 
     def test_get_single_spectra(self):
-        """Test the get_single_spectra method of the VoronoiBinnedSpectra
-        object."""
+        """Test the get_single_spectra method of the VoronoiBinnedSpectra object."""
         # Call the method for a specific bin index
         bin_index = 1
         spectra = self.voronoi_binned_spectra.get_single_spectra(bin_index)
@@ -500,8 +490,8 @@ class TestRadiallyBinnedSpectra:
     """Test suite for the RadiallyBinnedSpectra class."""
 
     def setup_method(self):
-        """Setup method to initialize the RadiallyBinnedSpectra object with
-        test data."""
+        """Setup method to initialize the RadiallyBinnedSpectra object with test
+        data."""
         # Initialize test data for wavelengths, flux, and other properties
         self.wavelengths = np.arange(10)
         self.flux = np.random.normal(size=(10, 3))
