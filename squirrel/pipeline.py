@@ -873,7 +873,8 @@ class Pipeline(object):
         """Compute the Bayesian Information Criterion (BIC) for a given pPXF
         fit.
 
-        This method calculates the BIC for a pPXF fit object using the number of parameters (k), the number of data points (n),
+        This method calculates the BIC for a pPXF fit object using the number of
+        parameters (k), the number of data points (n),
         and the log-likelihood (log_L) extracted from the fit.
 
         :param ppxf_fit: ppxf fit object.
@@ -904,8 +905,9 @@ class Pipeline(object):
         """Calculate the Bayesian Information Criterion (BIC) for a sample of
         pPXF fits.
 
-        This function follows the methodology provided by Knabel & Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
-        It computes the BIC for each pPXF fit in the sample and returns the total BIC.
+        This function follows the methodology provided by Knabel & Mozumdar et al.
+        (2025, https://arxiv.org/abs/2502.16034). It computes the BIC for each
+        pPXF fit in the sample and returns the total BIC.
 
         :param ppxf_fits: List of pPXF fit objects.
         :type ppxf_fits: list of ppxf.ppxf
@@ -947,9 +949,8 @@ class Pipeline(object):
         """Calculate the relative BIC weights for a given sample of pPXF fits.
 
         This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025,
-        https://arxiv.org/abs/2502.16034).
-               It computes the BIC for each pPXF fit in the sample,
+        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
+        It computes the BIC for each pPXF fit in the sample,
         performs bootstrap sampling to estimate uncertainties, and
         calculates the relative BIC weights.
 
@@ -1022,10 +1023,9 @@ class Pipeline(object):
         """Combine measurements using the relative BIC weights.
 
         This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025,
-        https://arxiv.org/abs/2502.16034).
-               It combines the values and uncertainties from multiple
-        templates using relative BIC weights.
+        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034). It
+        combines the values and uncertainties from multiple templates
+        using relative BIC weights.
 
         :param values: The values to combine, with shape [number of bins
             or systems, number of templates], or just [number of
@@ -1169,8 +1169,7 @@ class Pipeline(object):
         uncertainty.
 
         This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025,
-        https://arxiv.org/abs/2502.16034).
+        Mozumdar et al. (2025, https://arxiv.org/abs/2502.16034).
 
         :param delta_bic: The difference in BIC values between the model
             and the best model.
@@ -1200,7 +1199,8 @@ class Pipeline(object):
     def boost_noise(spectra, boost_factor, boosting_mask=None):
         """Boost the noise in the spectra.
 
-        This function increases the noise in the spectra by a specified boost factor. It can optionally apply the boosting to a specific mask.
+        This function increases the noise in the spectra by a specified boost factor. It can
+        optionally apply the boosting to a specific mask.
 
         :param spectra: The spectra to boost the noise in.
         :type spectra: `Spectra` or a child class
