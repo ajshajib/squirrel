@@ -11,6 +11,11 @@ from squirrel.template import Template
 
 
 class MockPpxfFit:
+    """
+    A mock class to simulate the behavior of a ppxf fit object.
+    This class is used for testing purposes.
+    """
+
     def __init__(self):
         self.goodpixels = np.arange(100)
         self.weights = np.linspace(0.2, 1, 10)
@@ -24,13 +29,17 @@ class MockPpxfFit:
 
 
 class TestPipeline:
+    """
+    A test class for the Pipeline module.
+    This class contains various test methods to ensure the correctness of the Pipeline functionalities.
+    """
+
     def setup_method(self):
-        """Set up the test."""
-        self.wavelengths = np.arange(
-            9e3,
-            1.2e4,
-            5,
-        )
+        """
+        Set up the test environment.
+        This method is called before each test method to set up any state that is shared between tests.
+        """
+        self.wavelengths = np.arange(9e3, 1.2e4, 5)
         self.flux = np.ones_like(self.wavelengths)
         self.flux_unit = "arbitrary unit"
         self.wavelength_unit = "AA"
@@ -52,34 +61,48 @@ class TestPipeline:
         )
 
     def test_log_rebin(self):
+        """
+        Test the log_rebin method of the Pipeline class.
+        This method tests the log rebinning of spectra and checks for expected modifications.
+        """
+        # Perform log rebinning on the spectra
         Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
+        # Test for ValueError when log rebinning is performed again
         with pytest.raises(ValueError):
             Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
 
-        # Test with num_samples_for_covariance as None
+        # Test log rebinning with num_samples_for_covariance as None
         self.spectra.reset()
         Pipeline.log_rebin(self.spectra, num_samples_for_covariance=None)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
-        # Cover the case where flux_flattenned.shape[0] == 1
+        # Test log rebinning when flux_flattened.shape[0] == 1
         self.spectra.reset()
         self.spectra.flux = self.spectra.flux[np.newaxis, :].T
         Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
     def test_voronoi_binning(self):
+        """
+        Test the Voronoi binning functionality of the Pipeline class.
+        This method tests the creation of Voronoi bins and the extraction of binned spectra.
+        """
+        # Create a grid of coordinates
         x = np.arange(11)
         y = np.arange(11)
         xx, yy = np.meshgrid(x, y)
 
+        # Define the center pixel and coordinate transformation matrix
         center_pixel_x = 5
         center_pixel_y = 5
         coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
 
+        # Calculate the radial distance from the center pixel
         r = np.sqrt((xx - 5) ** 2 + (yy - 5) ** 2)
 
+        # Define the central signal-to-noise ratio (SNR)
         central_snr = 30
         flux = np.ones((100, 11, 11))
         flux *= (central_snr**2 / (1 + r))[np.newaxis, :, :]
@@ -100,10 +123,12 @@ class TestPipeline:
         signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
 
+        # Get the Voronoi binning map
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
+        # Get the Voronoi binned spectra
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
             datacube, bin_mapping_output
         )
@@ -122,7 +147,7 @@ class TestPipeline:
             datacube.wavelengths_frame, voronoi_binned_spectra.wavelengths_frame
         )
 
-        # with covariance
+        # Test Voronoi binning with covariance
         datacube = Datacube(
             wavelengths,
             flux,
@@ -138,10 +163,12 @@ class TestPipeline:
         signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
 
+        # Get the Voronoi binning map
         bin_mapping_output = Pipeline.get_voronoi_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
+        # Get the Voronoi binned spectra
         voronoi_binned_spectra = Pipeline.get_voronoi_binned_spectra(
             datacube, bin_mapping_output
         )
@@ -165,6 +192,11 @@ class TestPipeline:
         )
 
     def test_create_kinematic_map_from_bins(self):
+        """
+        Test the creation of kinematic maps from bin mappings.
+        This method tests the creation of kinematic maps using bin mappings and input values.
+        """
+        # Define the bin mapping and test map
         bin_mapping = np.zeros((4, 4)) - 1
         bin_mapping[0, 0] = 0
         bin_mapping[1, 1] = 1
@@ -177,14 +209,20 @@ class TestPipeline:
         test_map[2, 2] = 300
         test_map[3, 3] = 300
 
+        # Create the kinematic map from bins
         kinematic_map = Pipeline.create_kinematic_map_from_bins(
             bin_mapping, [100, 200, 300]
         )
         npt.assert_equal(kinematic_map, test_map)
 
     def test_get_template_from_library(self):
+        """
+        Test the retrieval of templates from a library.
+        This method tests the retrieval of templates from a specified library and checks for expected properties.
+        """
         library_path = f"{os.path.dirname(__file__)}/spectra_emiles_short_9.0.npz"
 
+        # Test for AssertionError when spectra is not log rebinned
         with pytest.raises(AssertionError):
             Pipeline.get_template_from_library(
                 library_path,
@@ -192,6 +230,7 @@ class TestPipeline:
                 2,
             )
 
+        # Perform log rebinning on the spectra
         Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         template = Pipeline.get_template_from_library(
             library_path,
@@ -202,11 +241,17 @@ class TestPipeline:
         assert template.flux.shape[1] == 2
 
     def test_run_ppxf(self):
+        """
+        Test the pPXF fitting functionality of the Pipeline class.
+        This method tests the pPXF fitting on spectra using templates and checks for expected results.
+        """
+        # Define the wavelength range and line properties
         start_wavelength = 9100
         end_wavelength = 9600
         line_mean = 9350
         line_sigma = 20
 
+        # Create the wavelengths and flux for the spectra
         wavelengths = np.arange(start_wavelength, end_wavelength, 0.5)
         flux = (
             -np.exp(-0.5 * (wavelengths - line_mean) ** 2 / line_sigma**2)
@@ -216,6 +261,7 @@ class TestPipeline:
         fwhm = 0.0
         spectra = Spectra(wavelengths, flux, "nm", fwhm, 0.5, 2.0, noise=noise)
 
+        # Create the template wavelengths and fluxes
         template_sigma = 1
         template_fwhm = 2.355 * template_sigma
         templates_wavelengths = np.arange(
@@ -234,6 +280,7 @@ class TestPipeline:
         )
         template.noise = np.ones_like(template.flux) * 0.01
 
+        # Perform log rebinning on the spectra and template
         Pipeline.log_rebin(
             spectra, take_covariance=False, num_samples_for_covariance=10
         )
@@ -247,10 +294,11 @@ class TestPipeline:
         )
         input_velocity_dispersion = line_sigma / line_mean * 299792.458
 
-        # regular test
+        # Regular test for pPXF fitting
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
+        # Test pPXF fitting with tiled flux and noise
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
         spectra.covariance = None
@@ -259,7 +307,7 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # test with no noise
+        # Test pPXF fitting with no noise
         spectra_temp = deepcopy(spectra)
         spectra_temp.noise = None
         ppxf_fit = Pipeline.run_ppxf(
@@ -267,7 +315,7 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # test with covariance
+        # Test pPXF fitting with covariance
         spectra.covariance = np.tile(np.diag(noise**2), (2, 1, 1)).T
         spectra.noise = None
         ppxf_fit = Pipeline.run_ppxf(
@@ -275,21 +323,21 @@ class TestPipeline:
         )
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # test with non-positive-definite covariance
+        # Test pPXF fitting with non-positive-definite covariance
         spectra.flux = flux
         spectra.covariance = np.diag(noise**2)
         spectra.covariance[0, 0] = 0
         ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
-        # Test error raising when providing no index
+        # Test error raising when providing no index for multidimensional spectra
         spectra.flux = np.tile(flux, (2, 2, 1)).T
         spectra.noise = np.tile(noise, (2, 2, 1)).T
         spectra.covariance = None
         with pytest.raises(ValueError):
             ppxf_fit = Pipeline.run_ppxf(spectra, template, start=[0, 600], degree=4)
 
-        # Test incorrect indexing for 1dimensionally aranged spectra (e.g., Voronoi binned)
+        # Test incorrect indexing for 1D arranged spectra (e.g., Voronoi binned)
         spectra.flux = np.tile(flux, (2, 1)).T
         spectra.noise = np.tile(noise, (2, 1)).T
         spectra.covariance = None
@@ -312,6 +360,7 @@ class TestPipeline:
 
         assert ppxf_fit.sol[1] == pytest.approx(input_velocity_dispersion, rel=0.005)
 
+        # Test error raising when providing incorrect index for datacube
         with pytest.raises(ValueError):
             Pipeline.run_ppxf(
                 spectra,
@@ -321,7 +370,7 @@ class TestPipeline:
                 spectra_indices=0,
             )
 
-        # Test with correct indexing for datacube and covariance
+        # Test pPXF fitting with correct indexing for datacube and covariance
         spectra.covariance = np.tile(np.diag(noise**2), (2, 2, 1, 1)).T
         spectra.noise = None
         ppxf_fit = Pipeline.run_ppxf(
