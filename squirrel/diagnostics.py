@@ -13,20 +13,18 @@ from .util import get_nearest_positive_definite_matrix
 
 
 class Diagnostics(object):
-    """This class contains functions to diagnose the performance of the
-    pipeline."""
+    """This class contains functions to diagnose the performance of the pipeline."""
 
     @staticmethod
     def get_specific_signal_and_noise(spectra, mask, z_factor=1.0):
-        """Get the mean signal per (wavelength unit)^(1/2) and noise of the
-        spectra.
+        """Get the mean signal per (wavelength unit)^(1/2) and noise of the spectra.
 
         :param spectra: spectra object
         :type spectra: squirrel.data.Spectra
         :param mask: mask for spectra
         :type mask: numpy.ndarray
-        :param z_factor: multiplicative factor for wavelength (e.g., 1 +
-            z), if the SNR is computed at a different frame
+        :param z_factor: multiplicative factor for wavelength (e.g., 1 + z), if the SNR
+            is computed at a different frame
         :type z_factor: float
         :return: mean signal per (wavelength unit)^(1/2), and noise
         :rtype: float, float
@@ -56,8 +54,8 @@ class Diagnostics(object):
         :type spectra: squirrel.data.Spectra
         :param mask: mask for spectra
         :type mask: numpy.ndarray
-        :param z_factor: multiplicative factor for wavelength (e.g., 1 +
-            z), if the SNR is computed at a different frame
+        :param z_factor: multiplicative factor for wavelength (e.g., 1 + z), if the SNR
+            is computed at a different frame
         :type z_factor: float
         :return: mean SNR per (wavelength unit)^(1/2)
         :rtype: float
@@ -88,8 +86,7 @@ class Diagnostics(object):
         v_systematic=0.0,
         plot=True,
     ):
-        """Check the bias in the velocity dispersion measurement as a function
-        of SNR.
+        """Check the bias in the velocity dispersion measurement as a function of SNR.
 
         :param spectra_data: data object
         :type spectra_data: squirrel.data.Spectra
@@ -285,8 +282,7 @@ class Diagnostics(object):
 
     @staticmethod
     def get_stats(values, uncertainties, sigma=3):
-        """Compute the mean and standard deviation of the array after sigma-
-        clipping.
+        """Compute the mean and standard deviation of the array after sigma- clipping.
 
         :param values: values
         :type arr: numpy.ndarray
@@ -321,8 +317,7 @@ class Diagnostics(object):
         errorbar_kwargs_mean={},
         **kwargs,
     ):
-        """Plot the bias in the velocity dispersion measurement as a function
-        of SNR.
+        """Plot the bias in the velocity dispersion measurement as a function of SNR.
 
         This function generates plots to visualize the bias in the
         velocity dispersion and velocity measurements as a function of
@@ -428,8 +423,7 @@ class Diagnostics(object):
         errorbar_kwargs_scatter={},
         **kwargs,
     ):
-        """Plot the bias in velocity dispersion measurement as a function of
-        SNR.
+        """Plot the bias in velocity dispersion measurement as a function of SNR.
 
         This function visualizes the bias in a single kinematic value as a function of
         Signal-to-Noise Ratio (SNR). It plots the recovered values along with their

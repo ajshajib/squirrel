@@ -11,8 +11,8 @@ class TestUtil:
     """
 
     def test_is_positive_definite(self):
-        """Test the function `is_positive_definite` to check if a given matrix
-        is positive-definite.
+        """Test the function `is_positive_definite` to check if a given matrix is
+        positive-definite.
 
         This function will test the behavior of `is_positive_definite` with both positive-definite
         and non-positive-definite matrices.
@@ -28,8 +28,8 @@ class TestUtil:
         assert is_positive_definite(matrix) is False
 
     def test_get_nearest_positive_definite_matrix(self):
-        """Test the function `get_nearest_positive_definite_matrix` to find the
-        nearest positive-definite matrix.
+        """Test the function `get_nearest_positive_definite_matrix` to find the nearest
+        positive-definite matrix.
 
         This function will test the behavior of `get_nearest_positive_definite_matrix` with non-positive-definite
         matrices and check if the returned matrix is positive-definite and close to the original matrix.

@@ -1,5 +1,5 @@
-"""This module contains the class to store data products in 3D datacube or 2D
-detector image."""
+"""This module contains the class to store data products in 3D datacube or 2D detector
+image."""
 
 from copy import deepcopy
 import numpy as np
@@ -28,8 +28,8 @@ class Spectra(object):
         :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
-        :param fwhm: full width at half maximum of the data. Needs to be
-            in the same unit as the wavelengths
+        :param fwhm: full width at half maximum of the data. Needs to be in the same
+            unit as the wavelengths
         :type fwhm: float
         :param z_lens: lens redshift
         :type z_lens: float
@@ -182,8 +182,7 @@ class Spectra(object):
 
         :param redshift: redshift to deredshift the data to
         :type redshift: float
-        :param target_frame: frame to deredshift the data to, "lens" or
-            "source"
+        :param target_frame: frame to deredshift the data to, "lens" or "source"
         :type target_frame: str
         """
         if redshift is None:
@@ -457,8 +456,8 @@ class Datacube(Spectra):
             return self._y_coordinates
 
     def get_1d_spectra(self, x=None, y=None, mask=None):
-        """Return the spectra at a given pixel, or summed within a given mask.
-        If nothing is provided, the entire datacube will be summed over.
+        """Return the spectra at a given pixel, or summed within a given mask. If
+        nothing is provided, the entire datacube will be summed over.
 
         :param x: x coordinate of the pixel
         :type x: int
@@ -522,11 +521,10 @@ class Datacube(Spectra):
 class VoronoiBinnedSpectra(Spectra):
     """A class to store binned spectra using Voronoi binning.
 
-    This class extends the Spectra class to handle data that has been
-    binned using Voronoi binning. It includes additional attributes to
-    store the coordinates of the original datacube's spatial pixels, the
-    bin numbers, and the coordinates of the bin centers, among other
-    properties.
+    This class extends the Spectra class to handle data that has been binned using
+    Voronoi binning. It includes additional attributes to store the coordinates of the
+    original datacube's spatial pixels, the bin numbers, and the coordinates of the bin
+    centers, among other properties.
     """
 
     def __init__(
@@ -550,8 +548,7 @@ class VoronoiBinnedSpectra(Spectra):
         area=None,
         snr=None,
     ):
-        """Initialize the VoronoiBinnedSpectra object with the given
-        parameters.
+        """Initialize the VoronoiBinnedSpectra object with the given parameters.
 
         :param wavelengths: wavelengths of the data
         :type wavelengths: numpy.ndarray
@@ -669,8 +666,8 @@ class VoronoiBinnedSpectra(Spectra):
             return self._snr
 
     def get_spaxel_map_with_bin_number(self):
-        """Return Voronoi bin mapping. -1 is masked pixel. Unmasked pixel start
-        counting from 0.
+        """Return Voronoi bin mapping. -1 is masked pixel. Unmasked pixel start counting
+        from 0.
 
         :return: 2D array with bin mapping
         :rtype: numpy.ndarray
@@ -730,9 +727,8 @@ class VoronoiBinnedSpectra(Spectra):
 class RadiallyBinnedSpectra(Spectra):
     """A class to store radially binned spectra.
 
-    This class extends the Spectra class to handle data that has been
-    binned radially. It includes an additional attribute to store the
-    radial edges of the bins.
+    This class extends the Spectra class to handle data that has been binned radially.
+    It includes an additional attribute to store the radial edges of the bins.
     """
 
     def __init__(
@@ -748,8 +744,7 @@ class RadiallyBinnedSpectra(Spectra):
         noise=None,
         covariance=None,
     ):
-        """Initialize the RadiallyBinnedSpectra object with the given
-        parameters.
+        """Initialize the RadiallyBinnedSpectra object with the given parameters.
 
         :param wavelengths: wavelengths of the data
         :type wavelengths: numpy.ndarray
@@ -763,9 +758,8 @@ class RadiallyBinnedSpectra(Spectra):
         :type z_lens: float
         :param z_source: source redshift
         :type z_source: float
-        :param bin_radii: radial edges of the bins, starting with the
-            inner edge of the first bin. The first value should be zero
-            if the first bin is a circle.
+        :param bin_radii: radial edges of the bins, starting with the inner edge of the
+            first bin. The first value should be zero if the first bin is a circle.
         :type bin_radii: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
