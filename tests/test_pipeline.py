@@ -11,8 +11,8 @@ from squirrel.template import Template
 
 
 class MockPpxfFit:
-    """
-    A mock class to simulate the behavior of a ppxf fit object.
+    """A mock class to simulate the behavior of a ppxf fit object.
+
     This class is used for testing purposes.
     """
 
@@ -29,15 +29,17 @@ class MockPpxfFit:
 
 
 class TestPipeline:
-    """
-    A test class for the Pipeline module.
-    This class contains various test methods to ensure the correctness of the Pipeline functionalities.
+    """A test class for the Pipeline module.
+
+    This class contains various test methods to ensure the correctness of the Pipeline
+    functionalities.
     """
 
     def setup_method(self):
-        """
-        Set up the test environment.
-        This method is called before each test method to set up any state that is shared between tests.
+        """Set up the test environment.
+
+        This method is called before each test method to set up any state that is shared
+        between tests.
         """
         self.wavelengths = np.arange(9e3, 1.2e4, 5)
         self.flux = np.ones_like(self.wavelengths)
@@ -61,9 +63,10 @@ class TestPipeline:
         )
 
     def test_log_rebin(self):
-        """
-        Test the log_rebin method of the Pipeline class.
-        This method tests the log rebinning of spectra and checks for expected modifications.
+        """Test the log_rebin method of the Pipeline class.
+
+        This method tests the log rebinning of spectra and checks for expected
+        modifications.
         """
         # Perform log rebinning on the spectra
         Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
@@ -85,9 +88,10 @@ class TestPipeline:
         assert "log_rebinned" in self.spectra.spectra_modifications
 
     def test_voronoi_binning(self):
-        """
-        Test the Voronoi binning functionality of the Pipeline class.
-        This method tests the creation of Voronoi bins and the extraction of binned spectra.
+        """Test the Voronoi binning functionality of the Pipeline class.
+
+        This method tests the creation of Voronoi bins and the extraction of binned
+        spectra.
         """
         # Create a grid of coordinates
         x = np.arange(11)
@@ -192,9 +196,10 @@ class TestPipeline:
         )
 
     def test_create_kinematic_map_from_bins(self):
-        """
-        Test the creation of kinematic maps from bin mappings.
-        This method tests the creation of kinematic maps using bin mappings and input values.
+        """Test the creation of kinematic maps from bin mappings.
+
+        This method tests the creation of kinematic maps using bin mappings and input
+        values.
         """
         # Define the bin mapping and test map
         bin_mapping = np.zeros((4, 4)) - 1
@@ -216,9 +221,10 @@ class TestPipeline:
         npt.assert_equal(kinematic_map, test_map)
 
     def test_get_template_from_library(self):
-        """
-        Test the retrieval of templates from a library.
-        This method tests the retrieval of templates from a specified library and checks for expected properties.
+        """Test the retrieval of templates from a library.
+
+        This method tests the retrieval of templates from a specified library and checks
+        for expected properties.
         """
         library_path = f"{os.path.dirname(__file__)}/spectra_emiles_short_9.0.npz"
 
@@ -241,9 +247,10 @@ class TestPipeline:
         assert template.flux.shape[1] == 2
 
     def test_run_ppxf(self):
-        """
-        Test the pPXF fitting functionality of the Pipeline class.
-        This method tests the pPXF fitting on spectra using templates and checks for expected results.
+        """Test the pPXF fitting functionality of the Pipeline class.
+
+        This method tests the pPXF fitting on spectra using templates and checks for
+        expected results.
         """
         # Define the wavelength range and line properties
         start_wavelength = 9100
