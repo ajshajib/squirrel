@@ -671,7 +671,7 @@ class TestPipeline:
         ppxf_fit_temp = deepcopy(ppxf_fit)
         ppxf_fit_temp.original_noise = np.diag(ppxf_fit.original_noise)
         k, n, log_likelihood = Pipeline.get_terms_in_bic(
-            ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01
+            ppxf_fit_temp, num_fixed_parameters=1, weight_threshold=0.01
         )
 
         # Assertions to check the output
