@@ -859,6 +859,8 @@ class Pipeline(object):
 
         # Extract the covariance matrix for the good pixels
         covariance = np.copy(ppxf_fit.original_noise)
+        if covariance.ndim == 1:
+            covariance = np.diag(covariance**2)
         covariance = covariance[mask == 1][:, mask == 1]
 
         # Compute the chi-squared value
