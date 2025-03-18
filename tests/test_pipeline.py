@@ -667,6 +667,22 @@ class TestPipeline:
         assert k > 0
         assert n == len(ppxf_fit.goodpixels)
 
+        # Test with 1D noise
+        ppxf_fit_temp = deepcopy(ppxf_fit)
+        ppxf_fit_temp.original_noise = np.diag(ppxf_fit.original_noise)
+        k, n, log_likelihood = Pipeline.get_terms_in_bic(
+            ppxf_fit, num_fixed_parameters=1, weight_threshold=0.01
+        )
+
+        # Assertions to check the output
+        assert isinstance(k, (int, np.integer))
+        assert isinstance(n, (int, np.integer))
+        assert isinstance(log_likelihood, (float, np.floating))
+
+        # Check the values
+        assert k > 0
+        assert n == len(ppxf_fit.goodpixels)
+
         # Test with no weights
         k, n, log_likelihood = Pipeline.get_terms_in_bic(
             ppxf_fit, num_fixed_parameters=1, weight_threshold=None
