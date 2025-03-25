@@ -375,7 +375,7 @@ class Datacube(Spectra):
     ):
         """Initialize the Datacube object with the given parameters.
 
-        :param wavelengths: wavelengths of the data
+        :param wavelengths: wavelengths of the data, must match the wavelength dimension of the provided datacube flux
         :type wavelengths: numpy.ndarray
         :param flux: flux of the data
         :type flux: numpy.ndarray
@@ -456,7 +456,7 @@ class Datacube(Spectra):
             return self._y_coordinates
 
     def get_1d_spectra(self, x=None, y=None, mask=None):
-        """Return the spectra at a given pixel, or summed within a given mask. If
+        """Return the spectra at a given pixel, or summed within a given spatial mask (over spaxels). If
         nothing is provided, the entire datacube will be summed over.
 
         :param x: x coordinate of the pixel
@@ -539,8 +539,8 @@ class VoronoiBinnedSpectra(Spectra):
         x_coordinates,
         y_coordinates,
         num_bins,
-        x_pixels_of_bins,
-        y_pixels_of_bins,
+        x_pixel_index_of_bins,
+        y_pixel_index_of_bins,
         flux_unit="arbitrary",
         noise=None,
         covariance=None,
@@ -569,10 +569,10 @@ class VoronoiBinnedSpectra(Spectra):
         :type y_coordinates: numpy.ndarray
         :param num_bins: number of bins
         :type num_bins: int
-        :param x_pixels_of_bins: pixel_x values corresponding to `bin_numbers`
-        :type x_pixels_of_bins: numpy.ndarray
-        :param y_pixels_of_bins: pixel_y values corresponding to `bin_numbers`
-        :type y_pixels_of_bins: numpy.ndarray
+        :param x_pixel_index_of_bins: pixel_x values corresponding to `bin_numbers`
+        :type x_pixel_index_of_bins: numpy.ndarray
+        :param y_pixel_index_of_bins: pixel_y values corresponding to `bin_numbers`
+        :type y_pixel_index_of_bins: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
         :param noise: noise of the data
@@ -605,8 +605,8 @@ class VoronoiBinnedSpectra(Spectra):
         self._x_coordinates = x_coordinates
         self._y_coordinates = y_coordinates
         self._bin_numbers = num_bins
-        self._x_pixels_of_bins = x_pixels_of_bins
-        self._y_pixels_of_bins = y_pixels_of_bins
+        self._x_pixels_of_bins = x_pixel_index_of_bins
+        self._y_pixels_of_bins = y_pixel_index_of_bins
         self._bin_center_x = bin_center_x
         self._bin_center_y = bin_center_y
         self._area = area
