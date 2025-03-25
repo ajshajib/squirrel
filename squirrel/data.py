@@ -375,7 +375,8 @@ class Datacube(Spectra):
     ):
         """Initialize the Datacube object with the given parameters.
 
-        :param wavelengths: wavelengths of the data, must match the wavelength dimension of the provided datacube flux
+        :param wavelengths: wavelengths of the data, must match the wavelength dimension
+            of the provided datacube flux
         :type wavelengths: numpy.ndarray
         :param flux: flux of the data
         :type flux: numpy.ndarray
@@ -391,8 +392,7 @@ class Datacube(Spectra):
         :type center_pixel_x: int
         :param center_pixel_y: y coordinate of the center pixel
         :type center_pixel_y: int
-        :param coordinate_transform_matrix: matrix to transform
-            coordinates
+        :param coordinate_transform_matrix: matrix to transform coordinates
         :type coordinate_transform_matrix: numpy.ndarray
         :param flux_unit: unit of the flux
         :type flux_unit: str
@@ -456,8 +456,8 @@ class Datacube(Spectra):
             return self._y_coordinates
 
     def get_1d_spectra(self, x=None, y=None, mask=None):
-        """Return the spectra at a given pixel, or summed within a given spatial mask (over spaxels). If
-        nothing is provided, the entire datacube will be summed over.
+        """Return the spectra at a given pixel, or summed within a given spatial mask
+        (over spaxels). If nothing is provided, the entire datacube will be summed over.
 
         :param x: x coordinate of the pixel
         :type x: int
