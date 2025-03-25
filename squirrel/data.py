@@ -457,7 +457,7 @@ class Datacube(Spectra):
 
     def get_1d_spectra(self, x=None, y=None, mask=None):
         """Return the spectra at a given pixel, or summed within a given spatial mask
-        (over spaxels). If nothing is provided, the entire datacube will be summed over.
+        (over spaxels). If nothing is provided, all the spaxels in the datacube will be summed together.
 
         :param x: x coordinate of the pixel
         :type x: int
