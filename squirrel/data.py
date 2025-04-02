@@ -382,7 +382,8 @@ class Datacube(Spectra):
         :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
-        :param fwhm: full width at half maximum of the data
+        :param fwhm: full width at half maximum of the data. Needs to be in the same
+            unit as the wavelengths.
         :type fwhm: float
         :param z_lens: lens redshift
         :type z_lens: float
@@ -558,7 +559,8 @@ class VoronoiBinnedSpectra(Spectra):
         :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
-        :param fwhm: full width at half maximum of the data
+        :param fwhm: full width at half maximum of the data. Needs to be in the same
+            unit as the wavelengths.
         :type fwhm: float
         :param z_lens: lens redshift
         :type z_lens: float
@@ -755,7 +757,8 @@ class RadiallyBinnedSpectra(Spectra):
         :type flux: numpy.ndarray
         :param wavelength_unit: unit of the wavelengths
         :type wavelength_unit: str
-        :param fwhm: full width at half maximum of the data
+        :param fwhm: full width at half maximum of the data. Needs to be in the same
+            unit as the wavelengths.
         :type fwhm: float
         :param z_lens: lens redshift
         :type z_lens: float
