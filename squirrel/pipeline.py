@@ -982,7 +982,7 @@ class Pipeline(object):
         delta_bics = bics - np.min(bics)
 
         # Perform bootstrap sampling to estimate ΔBIC uncertainties
-        delta_bics_samples = np.zeros(num_bootstrap_samples, len(ppxf_fits_list))
+        delta_bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
         for i in range(num_bootstrap_samples):
             indices = np.random.randint(
                 0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0])
