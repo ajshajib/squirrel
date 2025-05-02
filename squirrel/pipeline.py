@@ -954,8 +954,8 @@ class Pipeline(object):
         sample, performs bootstrap sampling to estimate uncertainties, and calculates
         the relative BIC weights.
 
-        :param ppxf_fits_list: The sample of pPXF fits.
-        :type ppxf_fits_list: np.ndarray
+        :param ppxf_fits_list: The 2D list of pPXF fits for the sample of galaxies or set of Voronoi bins with the dimension (n_models, n_sample).
+        :type ppxf_fits_list: list of list of ppxf.ppxf
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
         :param num_bootstrap_samples: The number of bootstrap samples to use.
@@ -969,7 +969,7 @@ class Pipeline(object):
         bics = np.zeros(len(ppxf_fits_list))
         weights = np.zeros_like(bics)
 
-        # Calculate BIC for each pPXF fit in the sample
+        # Calculate the sample-level BIC for each model.
         for i, ppxf_fits in enumerate(ppxf_fits_list):
             bics[i] = cls.get_bic_from_sample(
                 ppxf_fits,
