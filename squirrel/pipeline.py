@@ -982,7 +982,7 @@ class Pipeline(object):
         delta_bics = bics - np.min(bics)
 
         # Perform bootstrap sampling to estimate ΔBIC uncertainties
-        delta_bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
+        bic_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
         for i in range(num_bootstrap_samples):
             indices = np.random.randint(
                 0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0])
@@ -990,16 +990,16 @@ class Pipeline(object):
             ppxf_fits_list_bootstrapped = ppxf_fits_list[:, indices]
 
             for j in range(len(ppxf_fits_list)):
-                delta_bics_samples[i, j] = Pipeline.get_bic_from_sample(
+                bic_samples[i, j] = Pipeline.get_bic_from_sample(
                     ppxf_fits_list_bootstrapped[j],
                     num_fixed_parameters=num_fixed_parameters,
                     weight_threshold=weight_threshold,
                 )
 
-            delta_bics_samples[i] -= np.min(delta_bics_samples[i])
+        delta_bic_samples = bic_samples - np.min(bic_samples, axis=1)[:, np.newaxis]
 
         # Calculate the standard deviation of the BIC samples to estimate uncertainties
-        delta_bics_uncertainty = np.std(delta_bics_samples, axis=0)
+        delta_bics_uncertainty = np.std(delta_bic_samples, axis=0)
 
         # Calculate the relative BIC weights for each pPXF fit
         for i in range(len(bics)):
