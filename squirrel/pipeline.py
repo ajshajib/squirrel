@@ -1072,7 +1072,6 @@ class Pipeline(object):
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
             print("Weights:", weights / np.sum(weights))
 
-        print(weights)
         # Combine the values and uncertainties using the calculated weights
         (
             combined_values,
