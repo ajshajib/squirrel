@@ -1000,6 +1000,8 @@ class Pipeline(object):
 
         # Calculate the standard deviation of the BIC samples to estimate uncertainties
         delta_bics_uncertainty = np.std(delta_bic_samples, axis=0)
+        # replace zeros in delta_bics_uncertainty
+        delta_bics_uncertainty[delta_bics_uncertainty == 0] = 1e-10
 
         # Calculate the relative BIC weights for each pPXF fit
         for i in range(len(bics)):
@@ -1070,6 +1072,7 @@ class Pipeline(object):
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
             print("Weights:", weights / np.sum(weights))
 
+        print(weights)
         # Combine the values and uncertainties using the calculated weights
         (
             combined_values,
