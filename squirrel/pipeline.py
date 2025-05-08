@@ -954,7 +954,8 @@ class Pipeline(object):
         sample, performs bootstrap sampling to estimate uncertainties, and calculates
         the relative BIC weights.
 
-        :param ppxf_fits_list: The sample of pPXF fits.
+        :param ppxf_fits_list: 2D array containing pPXF fits for the sample of galaxies
+            or set of Voronoi bins with the dimension (n_models, n_sample).
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
@@ -969,7 +970,7 @@ class Pipeline(object):
         bics = np.zeros(len(ppxf_fits_list))
         weights = np.zeros_like(bics)
 
-        # Calculate BIC for each pPXF fit in the sample
+        # Calculate the sample-level BIC for each model.
         for i, ppxf_fits in enumerate(ppxf_fits_list):
             bics[i] = cls.get_bic_from_sample(
                 ppxf_fits,
@@ -980,28 +981,32 @@ class Pipeline(object):
         # Calculate the difference in BIC values relative to the minimum BIC
         delta_bics = bics - np.min(bics)
 
-        # Perform bootstrap sampling to estimate BIC uncertainties
-        bics_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
+        # Perform bootstrap sampling to estimate ΔBIC uncertainties
+        bic_samples = np.zeros((num_bootstrap_samples, len(ppxf_fits_list)))
         for i in range(num_bootstrap_samples):
             indices = np.random.randint(
                 0, len(ppxf_fits_list[0]), len(ppxf_fits_list[0])
             )
             ppxf_fits_list_bootstrapped = ppxf_fits_list[:, indices]
 
-            for j, ppxf_fits in enumerate(ppxf_fits_list):
-                bics_samples[i, j] = Pipeline.get_bic_from_sample(
+            for j in range(len(ppxf_fits_list)):
+                bic_samples[i, j] = Pipeline.get_bic_from_sample(
                     ppxf_fits_list_bootstrapped[j],
                     num_fixed_parameters=num_fixed_parameters,
                     weight_threshold=weight_threshold,
                 )
 
+        delta_bic_samples = bic_samples - np.min(bic_samples, axis=1)[:, np.newaxis]
+
         # Calculate the standard deviation of the BIC samples to estimate uncertainties
-        bics_uncertainty = np.std(bics_samples, axis=0)
+        delta_bics_uncertainty = np.std(delta_bic_samples, axis=0)
+        # replace zeros in delta_bics_uncertainty
+        delta_bics_uncertainty[delta_bics_uncertainty == 0] = 1e-10
 
         # Calculate the relative BIC weights for each pPXF fit
         for i in range(len(bics)):
             weights[i] = cls.calculate_weights_from_bic(
-                delta_bics[i], bics_uncertainty[i]
+                delta_bics[i], delta_bics_uncertainty[i]
             )
         return weights
 
