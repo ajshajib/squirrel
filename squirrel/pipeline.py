@@ -36,7 +36,7 @@ class Pipeline(object):
         num_samples_for_covariance=None,
         take_covariance=True,
     ):
-        """Rebin the data to log scale. The input spectra object will be modified.
+        """Rebin the data to log scale.
 
         :param spectra: data to rebin
         :type spectra: `Spectra` class
@@ -51,6 +51,8 @@ class Pipeline(object):
         """
         if "log_rebinned" in spectra.spectra_modifications:
             raise ValueError("Data has already been log rebinned.")
+
+        spectra = deepcopy(spectra)
 
         # Define the wavelength range for rebinning
         wavelength_range = spectra.wavelengths[[0, -1]]

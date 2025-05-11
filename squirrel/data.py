@@ -232,7 +232,8 @@ class Spectra(object):
         if self._noise is not None:
             self._noise = self._noise[mask, ...]
         if self._covariance is not None:
-            self._covariance = self._covariance[mask, mask, ...]
+            self._covariance = self._covariance[mask, :, ...]
+            self._covariance = self._covariance[:, mask, ...]
 
         self._spectra_modifications += ["clipped"]
 
