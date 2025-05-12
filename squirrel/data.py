@@ -232,7 +232,12 @@ class Spectra(object):
         if self._noise is not None:
             self._noise = self._noise[mask, ...]
         if self._covariance is not None:
-            self._covariance = self._covariance[mask, mask, ...]
+            # The covariance slicing is split into two steps to ensure proper masking
+            # of both the first and second dimensions independently. This approach
+            # is necessary because the covariance matrix is 3D, and applying the mask
+            # to both dimensions simultaneously is not directly supported.
+            self._covariance = self._covariance[mask, :, ...]
+            self._covariance = self._covariance[:, mask, ...]
 
         self._spectra_modifications += ["clipped"]
 

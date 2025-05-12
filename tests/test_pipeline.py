@@ -69,7 +69,7 @@ class TestPipeline:
         modifications.
         """
         # Perform log rebinning on the spectra
-        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
+        self.spectra = Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
         # Test for ValueError when log rebinning is performed again
@@ -78,13 +78,13 @@ class TestPipeline:
 
         # Test log rebinning with num_samples_for_covariance as None
         self.spectra.reset()
-        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=None)
+        self.spectra = Pipeline.log_rebin(self.spectra, num_samples_for_covariance=None)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
         # Test log rebinning when flux_flattened.shape[0] == 1
         self.spectra.reset()
         self.spectra.flux = self.spectra.flux[np.newaxis, :].T
-        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
+        self.spectra = Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         assert "log_rebinned" in self.spectra.spectra_modifications
 
     def test_voronoi_binning(self):
@@ -237,7 +237,7 @@ class TestPipeline:
             )
 
         # Perform log rebinning on the spectra
-        Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
+        self.spectra = Pipeline.log_rebin(self.spectra, num_samples_for_covariance=10)
         template = Pipeline.get_template_from_library(
             library_path,
             self.spectra,
@@ -288,12 +288,12 @@ class TestPipeline:
         template.noise = np.ones_like(template.flux) * 0.01
 
         # Perform log rebinning on the spectra and template
-        Pipeline.log_rebin(
+        spectra = Pipeline.log_rebin(
             spectra, take_covariance=False, num_samples_for_covariance=10
         )
 
         velocity_scale_ratio = 2
-        Pipeline.log_rebin(
+        template = Pipeline.log_rebin(
             template,
             velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
             take_covariance=False,
@@ -431,12 +431,12 @@ class TestPipeline:
         template.noise = np.ones_like(template.flux) * 0.01
 
         # Perform log rebinning on the spectra and template
-        Pipeline.log_rebin(
+        spectra = Pipeline.log_rebin(
             spectra, take_covariance=False, num_samples_for_covariance=10
         )
 
         velocity_scale_ratio = 2
-        Pipeline.log_rebin(
+        template = Pipeline.log_rebin(
             template,
             velocity_scale=spectra.velocity_scale / velocity_scale_ratio,
             take_covariance=False,
