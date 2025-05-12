@@ -1002,7 +1002,8 @@ class Pipeline(object):
 
         # Calculate the standard deviation of the BIC samples to estimate uncertainties
         delta_bics_uncertainty = np.std(delta_bic_samples, axis=0)
-        # replace zeros in delta_bics_uncertainty
+        # Replace zeros in delta_bics_uncertainty with a small constant (1e-10)
+        # to avoid division by zero errors in subsequent calculations.
         delta_bics_uncertainty[delta_bics_uncertainty == 0] = 1e-10
 
         # Calculate the relative BIC weights for each pPXF fit
