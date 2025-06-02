@@ -141,6 +141,7 @@ class Pipeline(object):
         min_snr_per_spaxel=1.0,
         plot=False,
         quiet=True,
+        **kwargs,
     ):
         """Get the Voronoi binning map.
 
@@ -160,6 +161,10 @@ class Pipeline(object):
         :type plot: bool
         :param quiet: suppress the output
         :type quiet: bool
+        :param kwargs: additional arguments for `voronoi_2d_binning()`
+        :type kwargs: dict
+        :return: Voronoi binning map outputs: number of bins, x pixels, y pixels, bin center x, bin center y, S/N per bin, area of each bin
+        :rtype: tuple
         """
 
         # Calculate the radius for each spaxel in the datacube
@@ -208,6 +213,7 @@ class Pipeline(object):
             target_snr,
             plot=plot,
             quiet=quiet,
+            **kwargs,
         )
 
         # Compute useful bin quantities
@@ -1070,6 +1076,8 @@ class Pipeline(object):
             )
         else:
             weights = np.ones(len(ppxf_fits_list))
+
+        weights /= np.sum(weights) * len(weights)
 
         if verbose:
             print(f"BIC weighting {'' if apply_bic_weighting else 'not'} applied")
