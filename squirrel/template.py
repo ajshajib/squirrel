@@ -69,7 +69,15 @@ class Template(Spectra):
         new_template = deepcopy(self)
 
         # Concatenate the flux arrays along the second axis
-        new_template.flux = np.concatenate((self.flux, other.flux), axis=1)
+        other_flux = np.atleast_2d(other.flux)
+        if other_flux.shape[0] == 1:
+            # If the other flux is a single row, transpose it to match the current template
+            other_flux = other_flux.T
+        self_flux = np.atleast_2d(self.flux)
+        if self_flux.shape[0] == 1:
+            # If the current flux is a single row, transpose it to match the other template
+            self_flux = self_flux.T
+        new_template.flux = np.concatenate((self_flux, other_flux), axis=1)
 
         return new_template
 
