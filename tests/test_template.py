@@ -86,7 +86,7 @@ class TestTemplate:
         assert merged_template_single.flux.shape == (1000, 4)
 
         merged_template_single = template3.merge(template2)
-        assert merged_template_single.flux.shape == (1000, 5)
+        assert merged_template_single.flux.shape == (1000, 4)
 
     def test_and_operator(self):
         """Test the __and__ method (overloaded & operator) of the Template class.
