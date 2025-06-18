@@ -734,6 +734,7 @@ class Pipeline(object):
         original_noise = deepcopy(noise)
 
         # Run the pPXF fitting
+        velocity_scale_ratio = int(data.velocity_scale / template.velocity_scale)
         ppxf_fit = ppxf(
             templates=template.flux,
             galaxy=flux,
@@ -747,7 +748,7 @@ class Pipeline(object):
             lam_temp=template.wavelengths,
             sky=background_template.flux if background_template else None,
             quiet=quiet,
-            velscale_ratio=int(data.velocity_scale / template.velocity_scale),
+            velscale_ratio=velocity_scale_ratio if velocity_scale_ratio > 1 else 1,
             **kwargs_ppxf,
         )
 
