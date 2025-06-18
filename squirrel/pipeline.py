@@ -1199,9 +1199,10 @@ class Pipeline(object):
         exp_factor = (sigma_delta_bic**2 / 8) - (delta_bic / 2)
 
         # Calculate the second integral multiplied by the exponential factor
-        if integral_2 == 0.0:
-            integral2_multiplied = 0.0
-        else:
+        integral2_multiplied = (
+            integral_2  # Default to zero if integral_2 is not positive
+        )
+        if integral_2 > 0:
             integral2_multiplied = np.exp(exp_factor + np.log(integral_2))
 
         # Calculate the relative weight of the model
