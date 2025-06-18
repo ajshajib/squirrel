@@ -82,6 +82,15 @@ class TestSpectra:
         self.spectra.covariance = np.diag([0.4, 0.5, 0.6])
         npt.assert_array_equal(self.spectra.covariance, np.diag([0.4, 0.5, 0.6]))
 
+    def test_copy(self):
+        """Test the copy method of the Spectra object."""
+        copied_spectra = self.spectra.copy()
+        npt.assert_array_equal(copied_spectra.wavelengths, self.wavelengths)
+        npt.assert_array_equal(copied_spectra.flux, self.flux)
+        assert copied_spectra.fwhm == self.fwhm
+        assert copied_spectra.z_lens == self.z_lens
+        assert copied_spectra.z_source == self.z_source
+
     def test_z_lens(self):
         """Test the z_lens property of the Spectra object."""
         assert self.spectra.z_lens == self.z_lens
