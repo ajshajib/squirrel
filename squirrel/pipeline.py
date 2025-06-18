@@ -748,7 +748,7 @@ class Pipeline(object):
             sky=background_template.flux if background_template else None,
             quiet=quiet,
             velscale_ratio=max(
-                int(round(data.velocity_scale / template.velocity_scale), 1)
+                int(round(data.velocity_scale / template.velocity_scale)), 1
             ),
             **kwargs_ppxf,
         )
