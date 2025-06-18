@@ -79,6 +79,15 @@ class TestTemplate:
         assert merged_template.flux.shape == (1000, 8)
         np.testing.assert_equal(merged_template.wavelengths, wavelengths)
 
+        # Test with single row template
+        flux3 = np.random.normal(1, 0.1, (1, 1000))
+        template3 = Template(wavelengths, flux3, wavelength_unit, fwhm)
+        merged_template_single = template2.merge(template3)
+        assert merged_template_single.flux.shape == (1000, 4)
+
+        merged_template_single = template3.merge(template2)
+        assert merged_template_single.flux.shape == (1000, 4)
+
     def test_and_operator(self):
         """Test the __and__ method (overloaded & operator) of the Template class.
 

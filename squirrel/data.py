@@ -359,6 +359,10 @@ class Spectra(object):
         self._concat(other, self)
         return self
 
+    def copy(self):
+        """Return a deep copy of the spectra object."""
+        return deepcopy(self)
+
 
 class Datacube(Spectra):
     """A class to store in 3D IFU datacubes."""
