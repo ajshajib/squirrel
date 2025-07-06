@@ -4,10 +4,11 @@
 
 |Read the Docs| |GitHub| |Codecov| |Black| |docformatter| |docstyle|
 
-`squirrel` is a Python package for kinematic measurements, designed to simplify the fitting of multiple kinematic 
+``squirrel`` is a Python package for kinematic measurements, designed to simplify the fitting of multiple kinematic 
 components at different redshifts, such as those found in the spectra of strongly lensed systems. Built on top of 
-pPXF, `squirrel` offers quality-of-life features that streamline the kinematic fitting workflow, making it easier to 
-analyze spectra with both single and multiple kinematic components.
+`pPXF <https://users.physics.ox.ac.uk/~cappellari/software/#sec:ppxf>`_, ``squirrel`` offers quality-of-life features 
+that streamline the kinematic fitting workflow, making it easier to analyze spectra with both single and multiple 
+kinematic components.
 
 Installation
 ============
@@ -40,9 +41,9 @@ Citation
 ========
 
 `squirrel` was developed in `Shajib et al. (2025) <https://ui.adsabs.harvard.edu/abs/2025arXiv250621665S/abstract>`_. 
-Please cite this paper if you use `squirrel` in your research. If you also use the methodolgy of 
+Please cite this paper if you use `squirrel` in your research. If you also use the methodology of 
 `Knabel, Mozumdar, et al. (2025) <https://ui.adsabs.harvard.edu/abs/2025arXiv250216034K/abstract>`_ 
-to combine mulitple template libraries, please cite that paper as well.
+to combine multiple template libraries, please cite that paper as well.
 
 .. |Read the Docs| image:: https://readthedocs.org/projects/squirrel-docs/badge/?version=latest
     :target: https://squirrel-docs.readthedocs.io/en/latest/?badge=latest
