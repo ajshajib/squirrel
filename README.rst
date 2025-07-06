@@ -4,8 +4,8 @@
 
 |Read the Docs| |GitHub| |Codecov| |Black| |docformatter| |docstyle|
 
-.. |Read the Docs| image:: https://readthedocs.org/projects/squirrel/badge/?version=latest
-    :target: https://squirrel.readthedocs.io/en/latest/?badge=latest
+.. |Read the Docs| image:: https://readthedocs.org/projects/squirrel-docs/badge/?version=latest
+    :target: https://squirrel-docs.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. |GitHub| image:: https://github.com/ajshajib/squirrel/workflows/CI/badge.svg
