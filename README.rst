@@ -44,8 +44,8 @@ Please cite this paper if you use `squirrel` in your research. If you also use t
 `Knabel, Mozumdar, et al. (2025) <https://ui.adsabs.harvard.edu/abs/2025arXiv250216034K/abstract>`_ 
 to combine mulitple template libraries, please cite that paper as well.
 
-.. |Read the Docs| image:: https://readthedocs.org/projects/squirrel/badge/?version=latest
-    :target: https://squirrel.readthedocs.io/en/latest/?badge=latest
+.. |Read the Docs| image:: https://readthedocs.org/projects/squirrel-docs/badge/?version=latest
+    :target: https://squirrel-docs.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. |GitHub| image:: https://github.com/ajshajib/squirrel/workflows/CI/badge.svg
