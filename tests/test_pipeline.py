@@ -626,6 +626,18 @@ class TestPipeline:
             wavelength_range_extend_factor,
         )
 
+        # Test warning for larger fwhm_template than spectra.fwhm
+        with pytest.warns(UserWarning):
+            template = Pipeline.make_template_from_array(
+                fluxes,
+                wavelengths,
+                4,  # 4 > 2
+                spectra,
+                velocity_scale_ratio,
+                wavelength_factor,
+                wavelength_range_extend_factor,
+            )
+
         # Assertions to check the output
         assert isinstance(template, Template)
         assert template.wavelength_unit == "AA"

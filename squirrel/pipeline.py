@@ -12,6 +12,7 @@ from vorbin.voronoi_2d_binning import voronoi_2d_binning
 from vorbin.voronoi_2d_binning import _compute_useful_bin_quantities
 from vorbin.voronoi_2d_binning import _sn_func
 from tqdm import tqdm
+import warnings
 
 from .data import VoronoiBinnedSpectra
 from .template import Template
@@ -610,6 +611,8 @@ class Pipeline(object):
             (wavelengths > wavelength_min - wavelength_diff)
             & (wavelengths < wavelength_max + wavelength_diff)
         ]
+        wavelengths /= wavelength_factor
+        fwhm_template /= wavelength_factor
 
         # Convolve the fluxes to match the spectral resolution if necessary
         convolved_fluxes = fluxes
@@ -618,6 +621,12 @@ class Pipeline(object):
                 np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 / wavelength_diff
             )
             convolved_fluxes = ndimage.gaussian_filter1d(fluxes, sigma_diff, axis=0)
+        else:
+            warnings.warn(
+                """The templates' resolution is lower than the spectra's resolution, 
+                threfore, the templates are not convolved further. It will be needed to 
+                subtract the offset in quadrature at the end of the kinematic extraction!"""
+            )
 
         # Perform log rebinning on the convolved fluxes
         rebinned_fluxes, log_wavelengths, velocity_scale_template = ppxf_util.log_rebin(
@@ -630,7 +639,7 @@ class Pipeline(object):
         rebinned_fluxes /= np.nanmean(rebinned_fluxes, axis=0)
 
         # Convert the log wavelengths back to linear scale
-        templates_wavelengths = np.exp(log_wavelengths) / wavelength_factor
+        templates_wavelengths = np.exp(log_wavelengths)
 
         # Create the template object
         template = Template(
