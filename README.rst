@@ -49,7 +49,7 @@ to combine multiple template libraries, please cite that paper as well.
     :target: https://squirrel-docs.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. |GitHub| image:: https://github.com/ajshajib/squirrel/workflows/CI/badge.svg
+.. |GitHub| image:: https://github.com/ajshajib/squirrel/workflows/Tests/badge.svg
     :target: https://github.com/ajshajib/squirrel/actions
     :alt: Build Status
 
