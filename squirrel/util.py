@@ -70,8 +70,8 @@ def is_positive_definite(matrix):
         return True
     except la.LinAlgError:
         return False
-    
-    
+
+
 def powerbin_capacity_spec(index, signal, noise):
     """Calculates (S/N)^2 for a bin from its pixel indices for PowerBin method.
 
@@ -85,11 +85,9 @@ def powerbin_capacity_spec(index, signal, noise):
     :type noise: array
     :return: (S/N)^2 for the bin at its pixel indices.
     :rtype: float
-
-
     """
     # Standard S/N formula for uncorrelated noise
-    sn = np.sum(signal[index]) / np.sqrt(np.sum(noise[index]**2))
+    sn = np.sum(signal[index]) / np.sqrt(np.sum(noise[index] ** 2))
     # Example for correlated noise (see full example file for details):
     # sn /= 1 + 1.07 * np.log10(len(index))
     return sn**2

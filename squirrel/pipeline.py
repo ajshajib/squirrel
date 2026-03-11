@@ -329,7 +329,7 @@ class Pipeline(object):
         voronoi_binned_spectra.velocity_scale = deepcopy(datacube.velocity_scale)
 
         return voronoi_binned_spectra
-    
+
     @staticmethod
     def get_power_binning_map(
         datacube,
@@ -398,31 +398,36 @@ class Pipeline(object):
         # Mask the coordinates and signal/noise images based on the SNR mask
         xx_coordinates_masked = datacube.x_coordinates[snr_mask]
         yy_coordinates_masked = datacube.y_coordinates[snr_mask]
-        xy_coords = np.column_stack(
-                        (xx_coordinates_masked, yy_coordinates_masked)
-                    )
+        xy_coords = np.column_stack((xx_coordinates_masked, yy_coordinates_masked))
         signal_image_per_wavelength_unit_masked = signal_image_per_wavelength_unit[
             snr_mask
         ]
         noise_image_masked = noise_image[snr_mask]
-        
+
         # set capacity_spec
         if capacity_spec is None:
             # take the default _capacity_spec function
             capacity_spec = powerbin_capacity_spec
-            cap_spec_args = (signal_image_per_wavelength_unit_masked, noise_image_masked)
+            cap_spec_args = (
+                signal_image_per_wavelength_unit_masked,
+                noise_image_masked,
+            )
             # make sure cap_spec_snr_relation is None
-            assert cap_spec_snr_relation is None, "For default capacity_spec, cap_spec_snr_relation must be None"
+            assert (
+                cap_spec_snr_relation is None
+            ), "For default capacity_spec, cap_spec_snr_relation must be None"
             target_capacity = target_snr**2
-        elif capacity_spec == 'additive' :
-            capacity_spec = (signal / noise)**2
+        elif capacity_spec == "additive":
+            capacity_spec = (signal / noise) ** 2
             target_capacity = target_snr**2
             # make sure cap_spec_snr_relation is None
-            assert cap_spec_snr_relation is None, "For 'additive' capacity_spec, cap_spec_snr_relation must be None"
+            assert (
+                cap_spec_snr_relation is None
+            ), "For 'additive' capacity_spec, cap_spec_snr_relation must be None"
             cap_spec_args = None
         else:
             target_capacity = target_snr
-            
+
         # set verbose setting
         if quiet:
             verbose = 0
@@ -443,17 +448,17 @@ class Pipeline(object):
         num_bins = powerbin.bin_num
         bin_center_x, bin_center_y = powerbin.xybin.T
         if cap_spec_snr_relation is None:
-            snr = np.sqrt( powerbin.bin_capacity )
+            snr = np.sqrt(powerbin.bin_capacity)
         else:
             snr = cap_spec_snr_relation(powerbin.bin_capacity)
         area = np.bincount(powerbin.bin_num)
-        
+
         if plot:
             # set the scale for the capacity_cnr_relation, default 'sqrt'
             if cap_spec_snr_relation is None:
-                capacity_scale = 'sqrt'
+                capacity_scale = "sqrt"
             else:
-                capacity_scale = 'raw'
+                capacity_scale = "raw"
             powerbin.plot(capacity_scale=capacity_scale)
             plt.tight_layout()
 
@@ -513,9 +518,7 @@ class Pipeline(object):
             if datacube.noise is not None:
                 power_binned_noise[:, n_bin] += datacube.noise[:, y, x] ** 2
             if datacube.covariance is not None:
-                power_binned_covariance[:, :, n_bin] += datacube.covariance[
-                    :, :, y, x
-                ]
+                power_binned_covariance[:, :, n_bin] += datacube.covariance[:, :, y, x]
 
         # Take the square root of the noise to get the standard deviation
         if datacube.noise is not None:
@@ -1475,6 +1478,3 @@ class Pipeline(object):
             noise_boosted_spectra.covariance[:, boosting_mask] *= boost_factor
 
         return noise_boosted_spectra
-    
-    
-    

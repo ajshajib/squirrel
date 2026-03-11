@@ -480,7 +480,7 @@ class Datacube(Spectra):
         :rtype: Spectra
         """
         noise = None
-        covariance = None        
+        covariance = None
 
         if mask is not None:
             # Sum flux and noise within the mask
@@ -736,12 +736,14 @@ class VoronoiBinnedSpectra(Spectra):
         spectra.velocity_scale = deepcopy(self.velocity_scale)
 
         return spectra
-    
+
+
 class PowerBinnedSpectra(VoronoiBinnedSpectra):
     """A class to store binned spectra using power binning.
 
     This class is functionally identical to VoronoiBinnedSpectra.
     """
+
     pass
 
 
