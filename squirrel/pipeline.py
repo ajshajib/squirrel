@@ -974,7 +974,7 @@ class Pipeline(object):
         the relative BIC weights.
 
         :param ppxf_fits_list: 2D array containing pPXF fits for the sample of galaxies
-            or set of Voronoi bins with the dimension (n_models, n_sample).
+            or set of Voronoi bins with the dimension [number of models (or templates), number of systems in sample (or number_of_bins)].
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
@@ -1050,9 +1050,8 @@ class Pipeline(object):
         combines the values and uncertainties from multiple templates
         using relative BIC weights.
 
-        :param values: The values to combine, with shape [number of bins
-            or systems, number of templates], or just [number of
-            templates].
+        :param values: The values to combine, with shape [number of templates, number of bins
+            or systems], or just [number of templates].
         :type values: np.ndarray
         :param uncertainties: The uncertainties in the values.
         :type uncertainties: np.ndarray
