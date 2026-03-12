@@ -208,12 +208,12 @@ class TestPipeline:
         xx, yy = np.meshgrid(x, y)
 
         # Define the center pixel and coordinate transformation matrix
-        center_pixel_x = 5
-        center_pixel_y = 5
+        center_pixel_x = 10
+        center_pixel_y = 10
         coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
 
         # Calculate the radial distance from the center pixel
-        r = np.sqrt((xx - 5) ** 2 + (yy - 5) ** 2)
+        r = np.sqrt((xx - center_pixel_x) ** 2 + (yy - center_pixel_y) ** 2)
 
         # Define the central signal-to-noise ratio (SNR)
         central_snr = 30
