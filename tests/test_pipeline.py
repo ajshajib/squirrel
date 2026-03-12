@@ -195,6 +195,114 @@ class TestPipeline:
             datacube.wavelengths_frame, voronoi_binned_spectra.wavelengths_frame
         )
 
+    def test_power_binning(self):
+        """Test the Power binning functionality of the Pipeline class.
+
+        This method tests the creation of Power bins and the extraction of binned
+        spectra.
+        """
+        # Create a grid of coordinates
+        x = np.arange(11)
+        y = np.arange(11)
+        xx, yy = np.meshgrid(x, y)
+
+        # Define the center pixel and coordinate transformation matrix
+        center_pixel_x = 5
+        center_pixel_y = 5
+        coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
+
+        # Calculate the radial distance from the center pixel
+        r = np.sqrt((xx - 5) ** 2 + (yy - 5) ** 2)
+
+        # Define the central signal-to-noise ratio (SNR)
+        central_snr = 30
+        flux = np.ones((100, 11, 11))
+        flux *= (central_snr**2 / (1 + r))[np.newaxis, :, :]
+        noise = np.sqrt(flux)
+        wavelengths = np.arange(900.0, 1000.0, 1.0)
+        datacube = Datacube(
+            wavelengths,
+            flux,
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            center_pixel_x,
+            center_pixel_y,
+            coordinate_transform_matrix,
+            noise=noise,
+        )
+        signal_image = np.ones(datacube.flux.shape[1:]) * 9
+        noise_image = np.ones_like(signal_image)
+
+        # Get the Voronoi binning map
+        bin_mapping_output = Pipeline.get_power_binning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
+        )
+
+        # Get the Voronoi binned spectra
+        power_binned_spectra = Pipeline.get_power_binned_spectra(
+            datacube, bin_mapping_output
+        )
+        npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
+        assert datacube.wavelength_unit == power_binned_spectra.wavelength_unit
+        assert datacube.fwhm == power_binned_spectra.fwhm
+        assert datacube.z_lens == power_binned_spectra.z_lens
+        assert datacube.z_source == power_binned_spectra.z_source
+        assert datacube.flux_unit == power_binned_spectra.flux_unit
+        assert power_binned_spectra.noise.shape == power_binned_spectra.noise.shape
+        assert power_binned_spectra.covariance is None
+        npt.assert_equal(
+            datacube.spectra_modifications, power_binned_spectra.spectra_modifications
+        )
+        npt.assert_equal(
+            datacube.wavelengths_frame, power_binned_spectra.wavelengths_frame
+        )
+
+        # Test Voronoi binning with covariance
+        datacube = Datacube(
+            wavelengths,
+            flux,
+            "nm",
+            2.0,
+            0.5,
+            1.0,
+            center_pixel_x,
+            center_pixel_y,
+            coordinate_transform_matrix,
+            covariance=np.ones((100, 100, 11, 11)),
+        )
+        signal_image = np.ones(datacube.flux.shape[1:]) * 9
+        noise_image = np.ones_like(signal_image)
+
+        # Get the Voronoi binning map
+        bin_mapping_output = Pipeline.get_power_binning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
+        )
+
+        # Get the Voronoi binned spectra
+        power_binned_spectra = Pipeline.get_power_binned_spectra(
+            datacube, bin_mapping_output
+        )
+        npt.assert_equal(datacube.wavelengths, power_binned_spectra.wavelengths)
+        assert datacube.wavelength_unit == power_binned_spectra.wavelength_unit
+        assert datacube.fwhm == power_binned_spectra.fwhm
+        assert datacube.z_lens == power_binned_spectra.z_lens
+        assert datacube.z_source == power_binned_spectra.z_source
+        assert datacube.flux_unit == power_binned_spectra.flux_unit
+        assert power_binned_spectra.noise is None
+        assert power_binned_spectra.covariance.shape == (
+            power_binned_spectra.flux.shape[0],
+            power_binned_spectra.flux.shape[0],
+            power_binned_spectra.flux.shape[1],
+        )
+        npt.assert_equal(
+            datacube.spectra_modifications, power_binned_spectra.spectra_modifications
+        )
+        npt.assert_equal(
+            datacube.wavelengths_frame, power_binned_spectra.wavelengths_frame
+        )
+
     def test_create_kinematic_map_from_bins(self):
         """Test the creation of kinematic maps from bin mappings.
 

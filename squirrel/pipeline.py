@@ -360,8 +360,8 @@ class Pipeline(object):
         :param min_snr_per_spaxel: minimum S/N per spaxel to include in the binning
         :type min_snr_per_spaxel: float
         :param capacity_spec: specification of bin capacity related to S/N, default will use `util.powerbin_capacity_spec()`
-        :type: callable with `cap_spec_args`, or string 'additive'
-        :param cap_spec_args: input parameters for callable `capacity_spec`
+        :type: callable with `capacity_spec_args`, or string 'additive'
+        :param capacity_spec_args: input parameters for callable `capacity_spec`
         :type: tuple
         :param cap_spec_snr_relation: functional relationship between capacity definition and S/N, so that the output is given as S/N, S/N = cap_spec_snr_relation(capacity)
         :type: callable
@@ -408,7 +408,7 @@ class Pipeline(object):
         if capacity_spec is None:
             # take the default _capacity_spec function
             capacity_spec = powerbin_capacity_spec
-            cap_spec_args = (
+            capacity_spec_args = (
                 signal_image_per_wavelength_unit_masked,
                 noise_image_masked,
             )
@@ -424,7 +424,7 @@ class Pipeline(object):
             assert (
                 cap_spec_snr_relation is None
             ), "For 'additive' capacity_spec, cap_spec_snr_relation must be None"
-            cap_spec_args = None
+            capacity_spec_args = None
         else:
             target_capacity = target_snr
 
@@ -440,7 +440,7 @@ class Pipeline(object):
             capacity_spec,
             target_capacity,
             verbose=verbose,
-            args=cap_spec_args,
+            args=capacity_spec_args,
             **kwargs,
         )
 
