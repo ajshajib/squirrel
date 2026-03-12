@@ -418,7 +418,7 @@ class Pipeline(object):
             ), "For default capacity_spec, cap_spec_snr_relation must be None"
             target_capacity = target_snr**2
         elif capacity_spec == "additive":
-            capacity_spec = (signal / noise) ** 2
+            capacity_spec = (signal_image_per_wavelength_unit_masked / noise_image_masked) ** 2
             target_capacity = target_snr**2
             # make sure cap_spec_snr_relation is None
             assert (
