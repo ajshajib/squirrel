@@ -208,7 +208,7 @@ class TestPipeline:
         xx, yy = np.meshgrid(x, y)
 
         # Define the center pixel and coordinate transformation matrix
-        center_pixel_x = grid_size // 2 # divide by 2 and round down
+        center_pixel_x = grid_size // 2  # divide by 2 and round down
         center_pixel_y = grid_size // 2
         coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
 
@@ -237,7 +237,7 @@ class TestPipeline:
         # Sum the flux along the spectral axis (axis 0) / wavelength element
         signal_image = np.sum(flux, axis=0) / num_wave_pix
         # Propagate noise: sqrt of the sum of the variance / wavelength element
-        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix )
+        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix)
 
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
@@ -279,7 +279,7 @@ class TestPipeline:
         # Sum the flux along the spectral axis (axis 0) / wavelength element
         signal_image = np.sum(flux, axis=0) / num_wave_pix
         # Propagate noise: sqrt of the sum of the variance / wavelength element
-        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix )
+        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix)
 
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
