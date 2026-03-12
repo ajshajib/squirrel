@@ -339,7 +339,7 @@ class Pipeline(object):
         max_radius=None,
         min_snr_per_spaxel=1.0,
         capacity_spec=None,
-        cap_spec_args=None,
+        capacity_spec_args=None,
         cap_spec_snr_relation=None,
         plot=False,
         quiet=True,
