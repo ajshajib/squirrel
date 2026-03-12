@@ -235,16 +235,16 @@ class TestPipeline:
         signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
 
-        # Get the Voronoi binning map
+        # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
-        # Get the Voronoi binned spectra
+        # Get the power binned spectra
         power_binned_spectra = Pipeline.get_power_binned_spectra(
             datacube, bin_mapping_output
         )
-        npt.assert_equal(datacube.wavelengths, voronoi_binned_spectra.wavelengths)
+        npt.assert_equal(datacube.wavelengths, power_binned_spectra.wavelengths)
         assert datacube.wavelength_unit == power_binned_spectra.wavelength_unit
         assert datacube.fwhm == power_binned_spectra.fwhm
         assert datacube.z_lens == power_binned_spectra.z_lens
@@ -259,7 +259,7 @@ class TestPipeline:
             datacube.wavelengths_frame, power_binned_spectra.wavelengths_frame
         )
 
-        # Test Voronoi binning with covariance
+        # Test power binning with covariance
         datacube = Datacube(
             wavelengths,
             flux,
@@ -275,12 +275,12 @@ class TestPipeline:
         signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
 
-        # Get the Voronoi binning map
+        # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
         )
 
-        # Get the Voronoi binned spectra
+        # Get the power binned spectra
         power_binned_spectra = Pipeline.get_power_binned_spectra(
             datacube, bin_mapping_output
         )
