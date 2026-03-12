@@ -49,8 +49,8 @@ to combine multiple template libraries, please cite that paper as well.
     :target: https://squirrel-docs.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. |GitHub| image:: https://github.com/ajshajib/squirrel/workflows/Tests/badge.svg
-    :target: https://github.com/ajshajib/squirrel/actions
+.. |GitHub| image:: https://github.com/ajshajib/squirrel/actions/workflows/ci.yml/badge.svg?branch=main
+    :target: https://github.com/ajshajib/squirrel/actions/workflows/ci.yml
     :alt: Build Status
 
 .. |Codecov| image:: https://codecov.io/gh/ajshajib/squirrel/graph/badge.svg?token=PyDRdtsGSX
