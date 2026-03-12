@@ -202,8 +202,9 @@ class TestPipeline:
         spectra.
         """
         # Create a grid of coordinates
-        x = np.arange(11)
-        y = np.arange(11)
+        grid_size = 21
+        x = np.arange(grid_size)
+        y = np.arange(grid_size)
         xx, yy = np.meshgrid(x, y)
 
         # Define the center pixel and coordinate transformation matrix
@@ -216,7 +217,7 @@ class TestPipeline:
 
         # Define the central signal-to-noise ratio (SNR)
         central_snr = 30
-        flux = np.ones((100, 11, 11))
+        flux = np.ones((100, grid_size, grid_size))
         flux *= (central_snr**2 / (1 + r))[np.newaxis, :, :]
         noise = np.sqrt(flux)
         wavelengths = np.arange(900.0, 1000.0, 1.0)
@@ -270,7 +271,7 @@ class TestPipeline:
             center_pixel_x,
             center_pixel_y,
             coordinate_transform_matrix,
-            covariance=np.ones((100, 100, 11, 11)),
+            covariance=np.ones((100, 100, grid_size, grid_size)),
         )
         signal_image = np.ones(datacube.flux.shape[1:]) * 9
         noise_image = np.ones_like(signal_image)
