@@ -208,16 +208,17 @@ class TestPipeline:
         xx, yy = np.meshgrid(x, y)
 
         # Define the center pixel and coordinate transformation matrix
-        center_pixel_x = 10
-        center_pixel_y = 10
+        center_pixel_x = grid_size // 2 # divide by 2 and round down
+        center_pixel_y = grid_size // 2
         coordinate_transform_matrix = np.array([[0.1, 0], [0, 0.1]])
 
         # Calculate the radial distance from the center pixel
         r = np.sqrt((xx - center_pixel_x) ** 2 + (yy - center_pixel_y) ** 2)
 
         # Define the central signal-to-noise ratio (SNR)
-        central_snr = 30
-        flux = np.ones((100, grid_size, grid_size))
+        central_snr = 5
+        num_wave_pix = 100
+        flux = np.ones((num_wave_pix, grid_size, grid_size))
         flux *= (central_snr**2 / (1 + r))[np.newaxis, :, :]
         noise = np.sqrt(flux)
         wavelengths = np.arange(900.0, 1000.0, 1.0)
@@ -233,8 +234,10 @@ class TestPipeline:
             coordinate_transform_matrix,
             noise=noise,
         )
-        signal_image = np.ones(datacube.flux.shape[1:]) * 9
-        noise_image = np.ones_like(signal_image)
+        # Sum the flux along the spectral axis (axis 0) / wavelength element
+        signal_image = np.sum(flux, axis=0) / num_wave_pix
+        # Propagate noise: sqrt of the sum of the variance / wavelength element
+        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix )
 
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
@@ -271,10 +274,12 @@ class TestPipeline:
             center_pixel_x,
             center_pixel_y,
             coordinate_transform_matrix,
-            covariance=np.ones((100, 100, grid_size, grid_size)),
+            covariance=np.ones((num_wave_pix, num_wave_pix, grid_size, grid_size)),
         )
-        signal_image = np.ones(datacube.flux.shape[1:]) * 9
-        noise_image = np.ones_like(signal_image)
+        # Sum the flux along the spectral axis (axis 0) / wavelength element
+        signal_image = np.sum(flux, axis=0) / num_wave_pix
+        # Propagate noise: sqrt of the sum of the variance / wavelength element
+        noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix )
 
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
