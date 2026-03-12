@@ -975,7 +975,7 @@ class Pipeline(object):
 
         :param ppxf_fits_list: 2D array containing pPXF fits for the sample of galaxies
             or set of Voronoi bins with the dimension [number of models (or templates),
-            number of systems in sample (or number_of_bins)].
+            number of systems (or bins) in sample].
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
