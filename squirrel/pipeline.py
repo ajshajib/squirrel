@@ -974,7 +974,8 @@ class Pipeline(object):
         the relative BIC weights.
 
         :param ppxf_fits_list: 2D array containing pPXF fits for the sample of galaxies
-            or set of Voronoi bins with the dimension (n_models, n_sample).
+            or set of Voronoi bins with the dimension [number of models (or templates),
+            number of systems (or bins) in sample].
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
@@ -1045,14 +1046,12 @@ class Pipeline(object):
     ):
         """Combine measurements using the relative BIC weights.
 
-        This function follows the methodology provided by Knabel &
-        Mozumdar et al. (2025), arxiv.org/abs/2502.16034. It
-        combines the values and uncertainties from multiple templates
-        using relative BIC weights.
+        This function follows the methodology provided by Knabel & Mozumdar et al.
+        (2025), arxiv.org/abs/2502.16034. It combines the values and uncertainties from
+        multiple templates using relative BIC weights.
 
-        :param values: The values to combine, with shape [number of bins
-            or systems, number of templates], or just [number of
-            templates].
+        :param values: The values to combine, with shape [number of templates, number of
+            bins or systems], or just [number of templates].
         :type values: np.ndarray
         :param uncertainties: The uncertainties in the values.
         :type uncertainties: np.ndarray
@@ -1060,21 +1059,19 @@ class Pipeline(object):
         :type ppxf_fits_list: np.ndarray
         :param apply_bic_weighting: Whether to apply BIC weighting.
         :type apply_bic_weighting: bool
-        :param num_fixed_parameters: The number of fixed parameters in
-            the model.
+        :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
-        :param num_bootstrap_samples: The number of bootstrap samples to
-            use.
+        :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC
-            weights. Default is 1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is
+            1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty,
-            combined statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined
+            statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         # Calculate the relative BIC weights if apply_bic_weighting is True
