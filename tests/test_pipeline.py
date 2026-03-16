@@ -307,10 +307,17 @@ class TestPipeline:
             return sn
         # Must mask the capacity_spec_args
         snr_mask = (signal_image / noise_image) > 1.0 # Use the min_snr_per_spaxel value = 1 and radius < 1.0
-        snr_mask = snr_mask & (r < 1.0 )
+        snr_mask = snr_mask & (r * 0.1 < 1.0 )
         # Mask the images
         signal_masked = signal_image[snr_mask]
         noise_masked = noise_image[snr_mask]
+        # Get the power binning map
+        # Test with incorrect ...spec_args
+        Pipeline.get_power_binning_map(
+            datacube, signal_image, noise_image, 10**2, # squared because capacity_spec is squared
+            max_radius=None, capacity_spec=test_function_snr_to_cap, capacity_spec_args=(signal_image, noise_image), cap_spec_snr_relation=test_function_cap_to_snr, plot=True
+        )
+        # Test it with the correct args
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
             datacube, signal_image, noise_image, 10**2, # squared because capacity_spec is squared
