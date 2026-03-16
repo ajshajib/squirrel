@@ -267,7 +267,14 @@ class TestPipeline:
         # Test power binning capacity_spec = "additive" and quiet=False
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
-            datacube, signal_image, noise_image, 10, max_radius=1.0, capacity_spec="additive", plot=True, quiet=False
+            datacube,
+            signal_image,
+            noise_image,
+            10,
+            max_radius=1.0,
+            capacity_spec="additive",
+            plot=True,
+            quiet=False,
         )
 
         # Get the power binned spectra
@@ -291,7 +298,7 @@ class TestPipeline:
 
         # Test power binning capacity_spec is not None and != additive
         # define the test function for the capacity
-        def test_function_snr_to_cap ( index, signal, noise ):
+        def test_function_snr_to_cap(index, signal, noise):
             # 'index' can be [0, 1] (smoke test) or [j] (actual loop)
             # Convert index to a format safe for any size array
             idx = np.atleast_1d(index)
@@ -302,9 +309,11 @@ class TestPipeline:
             sn = np.sum(signal[safe_idx]) / np.sqrt(np.sum(noise[safe_idx] ** 2))
             cap = sn**2
             return cap
-        def test_function_cap_to_snr ( capacity ):
+
+        def test_function_cap_to_snr(capacity):
             sn = np.sqrt(capacity)
             return sn
+
         # Must mask the capacity_spec_args
         snr_mask = (signal_image / noise_image) > 1.0 # Use the min_snr_per_spaxel value = 1 and radius < 1.0
         snr_mask = snr_mask & (r * 0.1 < 1.0 )
@@ -320,8 +329,15 @@ class TestPipeline:
         # Test it with the correct args
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
-            datacube, signal_image, noise_image, 10**2, # squared because capacity_spec is squared
-            max_radius=None, capacity_spec=test_function_snr_to_cap, capacity_spec_args=(signal_masked, noise_masked), cap_spec_snr_relation=test_function_cap_to_snr, plot=True
+            datacube,
+            signal_image,
+            noise_image,
+            10**2,  # squared because capacity_spec is squared
+            max_radius=None,
+            capacity_spec=test_function_snr_to_cap,
+            capacity_spec_args=(signal_masked, noise_masked),
+            cap_spec_snr_relation=test_function_cap_to_snr,
+            plot=True,
         )
 
         # Get the power binned spectra
