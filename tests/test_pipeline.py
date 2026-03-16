@@ -239,9 +239,65 @@ class TestPipeline:
         # Propagate noise: sqrt of the sum of the variance / wavelength element
         noise_image = np.sqrt(np.sum(noise**2, axis=0) / num_wave_pix)
 
+        # Test default power binning capacity_spec
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
             datacube, signal_image, noise_image, 10, max_radius=1.0, plot=True
+        )
+
+        # Get the power binned spectra
+        power_binned_spectra = Pipeline.get_power_binned_spectra(
+            datacube, bin_mapping_output
+        )
+        npt.assert_equal(datacube.wavelengths, power_binned_spectra.wavelengths)
+        assert datacube.wavelength_unit == power_binned_spectra.wavelength_unit
+        assert datacube.fwhm == power_binned_spectra.fwhm
+        assert datacube.z_lens == power_binned_spectra.z_lens
+        assert datacube.z_source == power_binned_spectra.z_source
+        assert datacube.flux_unit == power_binned_spectra.flux_unit
+        assert power_binned_spectra.noise.shape == power_binned_spectra.noise.shape
+        assert power_binned_spectra.covariance is None
+        npt.assert_equal(
+            datacube.spectra_modifications, power_binned_spectra.spectra_modifications
+        )
+        npt.assert_equal(
+            datacube.wavelengths_frame, power_binned_spectra.wavelengths_frame
+        )
+
+        # Test power binning capacity_spec = "additive" and quiet=False
+        # Get the power binning map
+        bin_mapping_output = Pipeline.get_power_binning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, capacity_spec="additive", plot=True, quiet=False
+        )
+
+        # Get the power binned spectra
+        power_binned_spectra = Pipeline.get_power_binned_spectra(
+            datacube, bin_mapping_output
+        )
+        npt.assert_equal(datacube.wavelengths, power_binned_spectra.wavelengths)
+        assert datacube.wavelength_unit == power_binned_spectra.wavelength_unit
+        assert datacube.fwhm == power_binned_spectra.fwhm
+        assert datacube.z_lens == power_binned_spectra.z_lens
+        assert datacube.z_source == power_binned_spectra.z_source
+        assert datacube.flux_unit == power_binned_spectra.flux_unit
+        assert power_binned_spectra.noise.shape == power_binned_spectra.noise.shape
+        assert power_binned_spectra.covariance is None
+        npt.assert_equal(
+            datacube.spectra_modifications, power_binned_spectra.spectra_modifications
+        )
+        npt.assert_equal(
+            datacube.wavelengths_frame, power_binned_spectra.wavelengths_frame
+        )
+
+        # Test power binning capacity_spec is not None and != additive
+        # define the test function for the capacity
+        def test_function_snr_to_cap ( target_snr ):
+            return target_snr / 2
+        def test_function_cap_to_snr ( capacity ):
+            return capacity * 2
+        # Get the power binning map
+        bin_mapping_output = Pipeline.get_power_binning_map(
+            datacube, signal_image, noise_image, 10, max_radius=1.0, capacity_spec=test_function_snr_to_cap, capacity_spec_args=(10), cap_spec_snr_relation=test_function_cap_to_snr, plot=True
         )
 
         # Get the power binned spectra
