@@ -434,14 +434,27 @@ class Pipeline(object):
             # Check if any arguments are the same size as the raw input images
             is_masked = (min_snr_per_spaxel != 0) or (max_radius is not None)
             if is_masked:
-                for arg in (capacity_spec_args if isinstance(capacity_spec_args, (tuple, list)) else [capacity_spec_args]):
-                    if isinstance(arg, np.ndarray) and arg.shape == signal_image_per_wavelength_unit.shape:
-                        print("WARNING: An argument in 'capacity_spec_args' has the same dimensions as the input images. "
-                        "Note that 'capacity_spec' runs on MASKED data. If your function expects full-sized "
-                        "images, you must manually mask them using the same 'min_snr_per_spaxel' and 'max_radius' "
-                        "criteria, or set 'min_snr_per_spaxel=0' and 'max_radius=None' to pass full images.")
+                for arg in (
+                    capacity_spec_args
+                    if isinstance(capacity_spec_args, (tuple, list))
+                    else [capacity_spec_args]
+                ):
+                    if (
+                        isinstance(arg, np.ndarray)
+                        and arg.shape == signal_image_per_wavelength_unit.shape
+                    ):
+                        print(
+                            "WARNING: An argument in 'capacity_spec_args' has the same dimensions as the input images. "
+                            "Note that 'capacity_spec' runs on MASKED data. If your function expects full-sized "
+                            "images, you must manually mask them using the same 'min_snr_per_spaxel' and 'max_radius' "
+                            "criteria, or set 'min_snr_per_spaxel=0' and 'max_radius=None' to pass full images."
+                        )
             # ensure args are a tuple
-            capacity_spec_args = tuple(capacity_spec_args) if isinstance(capacity_spec_args, (tuple, list)) else (capacity_spec_args,)
+            capacity_spec_args = (
+                tuple(capacity_spec_args)
+                if isinstance(capacity_spec_args, (tuple, list))
+                else (capacity_spec_args,)
+            )
 
         # set verbose setting
         verbose = 0 if quiet else 2
