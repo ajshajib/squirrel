@@ -267,7 +267,14 @@ class TestPipeline:
         # Test power binning capacity_spec = "additive" and quiet=False
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
-            datacube, signal_image, noise_image, 10, max_radius=1.0, capacity_spec="additive", plot=True, quiet=False
+            datacube,
+            signal_image,
+            noise_image,
+            10,
+            max_radius=1.0,
+            capacity_spec="additive",
+            plot=True,
+            quiet=False,
         )
 
         # Get the power binned spectra
@@ -291,13 +298,23 @@ class TestPipeline:
 
         # Test power binning capacity_spec is not None and != additive
         # define the test function for the capacity
-        def test_function_snr_to_cap ( target_snr ):
+        def test_function_snr_to_cap(target_snr):
             return target_snr / 2
-        def test_function_cap_to_snr ( capacity ):
+
+        def test_function_cap_to_snr(capacity):
             return capacity * 2
+
         # Get the power binning map
         bin_mapping_output = Pipeline.get_power_binning_map(
-            datacube, signal_image, noise_image, 10, max_radius=1.0, capacity_spec=test_function_snr_to_cap, capacity_spec_args=(10), cap_spec_snr_relation=test_function_cap_to_snr, plot=True
+            datacube,
+            signal_image,
+            noise_image,
+            10,
+            max_radius=1.0,
+            capacity_spec=test_function_snr_to_cap,
+            capacity_spec_args=(10),
+            cap_spec_snr_relation=test_function_cap_to_snr,
+            plot=True,
         )
 
         # Get the power binned spectra
