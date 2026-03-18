@@ -415,7 +415,7 @@ class Pipeline(object):
             # make sure capacity_spec_snr_relation is None
             assert (
                 capacity_spec_snr_relation is None
-            ), "For default capacity_spec, cap_spec_snr_relation must be None"
+            ), "For default capacity_spec, capacity_spec_snr_relation must be None"
             target_capacity = target_snr**2
 
         elif capacity_spec == "additive":
