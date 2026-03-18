@@ -332,7 +332,7 @@ class TestPipeline:
             max_radius=None,
             capacity_spec=test_function_snr_to_cap,
             capacity_spec_args=(signal_image, noise_image),
-            cap_spec_snr_relation=test_function_cap_to_snr,
+            capacity_spec_snr_relation=test_function_cap_to_snr,
             plot=True,
         )
         # Test it with the correct args
@@ -345,7 +345,7 @@ class TestPipeline:
             max_radius=None,
             capacity_spec=test_function_snr_to_cap,
             capacity_spec_args=(signal_masked, noise_masked),
-            cap_spec_snr_relation=test_function_cap_to_snr,
+            capacity_spec_snr_relation=test_function_cap_to_snr,
             plot=True,
         )
 

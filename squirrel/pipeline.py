@@ -340,7 +340,7 @@ class Pipeline(object):
         min_snr_per_spaxel=1.0,
         capacity_spec=None,
         capacity_spec_args=None,
-        cap_spec_snr_relation=None,
+        capacity_spec_snr_relation=None,
         plot=False,
         quiet=True,
         **kwargs,
@@ -363,7 +363,7 @@ class Pipeline(object):
         :type: callable with `capacity_spec_args`, or string 'additive'
         :param capacity_spec_args: input parameters for callable `capacity_spec`
         :type: tuple
-        :param cap_spec_snr_relation: functional relationship between capacity definition and S/N, so that the output is given as S/N, S/N = cap_spec_snr_relation(capacity)
+        :param capacity_spec_snr_relation: functional relationship between capacity definition and S/N, so that the output is given as S/N, S/N = capacity_spec_snr_relation(capacity)
         :type: callable
         :param plot: plot the results
         :type plot: bool
@@ -412,9 +412,9 @@ class Pipeline(object):
                 signal_image_per_wavelength_unit_masked,
                 noise_image_masked,
             )
-            # make sure cap_spec_snr_relation is None
+            # make sure capacity_spec_snr_relation is None
             assert (
-                cap_spec_snr_relation is None
+                capacity_spec_snr_relation is None
             ), "For default capacity_spec, cap_spec_snr_relation must be None"
             target_capacity = target_snr**2
 
@@ -423,10 +423,10 @@ class Pipeline(object):
                 signal_image_per_wavelength_unit_masked / noise_image_masked
             ) ** 2
             target_capacity = target_snr**2
-            # make sure cap_spec_snr_relation is None
+            # make sure capacity_spec_snr_relation is None
             assert (
-                cap_spec_snr_relation is None
-            ), "For 'additive' capacity_spec, cap_spec_snr_relation must be None"
+                capacity_spec_snr_relation is None
+            ), "For 'additive' capacity_spec, capacity_spec_snr_relation must be None"
             capacity_spec_args = ()
 
         else:
@@ -472,15 +472,15 @@ class Pipeline(object):
         # Collect and compute useful bin quantities
         num_bins = powerbin.bin_num
         bin_center_x, bin_center_y = powerbin.xybin.T
-        if cap_spec_snr_relation is None:
+        if capacity_spec_snr_relation is None:
             snr = np.sqrt(powerbin.bin_capacity)
         else:
-            snr = cap_spec_snr_relation(powerbin.bin_capacity)
+            snr = capacity_spec_snr_relation(powerbin.bin_capacity)
         area = np.bincount(powerbin.bin_num)
 
         if plot:
             # set the scale for the capacity_cnr_relation, default 'sqrt'
-            if cap_spec_snr_relation is None:
+            if capacity_spec_snr_relation is None:
                 capacity_scale = "sqrt"
             else:
                 capacity_scale = "raw"
