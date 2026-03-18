@@ -738,6 +738,18 @@ class VoronoiBinnedSpectra(Spectra):
         return spectra
 
 
+class PowerBinnedSpectra(VoronoiBinnedSpectra):
+    """A class to store binned spectra using power binning.
+
+    This class is functionally identical to `VoronoiBinnedSpectra`. This class extends the Spectra class to handle data that has been binned using
+    power-law binning. It includes additional attributes to store the coordinates of the
+    original datacube's spatial pixels, the bin numbers, and the coordinates of the bin
+    centers, among other properties.
+    """
+
+    pass
+
+
 class RadiallyBinnedSpectra(Spectra):
     """A class to store radially binned spectra.
 

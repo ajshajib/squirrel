@@ -11,13 +11,16 @@ from ppxf import sps_util
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
 from vorbin.voronoi_2d_binning import _compute_useful_bin_quantities
 from vorbin.voronoi_2d_binning import _sn_func
+from powerbin import PowerBin
 from tqdm import tqdm
 import warnings
 
 from .data import VoronoiBinnedSpectra
+from .data import PowerBinnedSpectra
 from .template import Template
 from .util import is_positive_definite
 from .util import get_nearest_positive_definite_matrix
+from .util import powerbin_capacity_spec
 
 
 class Pipeline(object):
@@ -326,6 +329,256 @@ class Pipeline(object):
         voronoi_binned_spectra.velocity_scale = deepcopy(datacube.velocity_scale)
 
         return voronoi_binned_spectra
+
+    @staticmethod
+    def get_power_binning_map(
+        datacube,
+        signal_image_per_wavelength_unit,
+        noise_image,
+        target_snr,
+        max_radius=None,
+        min_snr_per_spaxel=1.0,
+        capacity_spec=None,
+        capacity_spec_args=None,
+        capacity_spec_snr_relation=None,
+        plot=False,
+        quiet=True,
+        **kwargs,
+    ):
+        """Get the PowerBin binning map.
+
+        :param datacube: datacube to bin
+        :type datacube: `DataCube` class
+        :param signal_image_per_wavelength_unit: signal image per wavelength unit
+        :type signal_image_per_wavelength_unit: np.ndarray
+        :param noise_image: noise image
+        :type noise_image: np.ndarray
+        :param target_snr: target S/N per wavelength unit for each bin
+        :type target_snr: float
+        :param max_radius: maximum radius for binning, in the unit of in `datacube.x_coordinates`
+        :type max_radius: float
+        :param min_snr_per_spaxel: minimum S/N per spaxel to include in the binning
+        :type min_snr_per_spaxel: float
+        :param capacity_spec: specification of bin capacity related to S/N, default will use `util.powerbin_capacity_spec()`
+        :type: callable with `capacity_spec_args`, or string 'additive'
+        :param capacity_spec_args: input parameters for callable `capacity_spec`
+        :type: tuple
+        :param capacity_spec_snr_relation: functional relationship between capacity definition and S/N, so that the output is given as S/N, S/N = capacity_spec_snr_relation(capacity)
+        :type: callable
+        :param plot: plot the results
+        :type plot: bool
+        :param quiet: suppress the output
+        :type quiet: bool
+        :param kwargs: additional arguments for `PowerBin()`
+        :type kwargs: dict
+        :return: PowerBin binning map outputs: bin number assigned to each pixel, x pixels, y pixels, bin center x, bin center y, capacity per bin, area of each bin
+        :rtype: tuple
+        """
+
+        # Calculate the radius for each spaxel in the datacube
+        radius = np.sqrt(datacube.x_coordinates**2 + datacube.y_coordinates**2)
+
+        # Calculate the SNR image per wavelength unit and create a mask based on the minimum SNR per spaxel
+        snr_image_per_wavelength_unit = signal_image_per_wavelength_unit / noise_image
+        snr_mask = snr_image_per_wavelength_unit > min_snr_per_spaxel
+
+        # Apply the maximum radius mask if provided
+        if max_radius is not None:
+            snr_mask = snr_mask & (radius < max_radius)
+
+        # Create pixel coordinate grids
+        x_pixels = np.arange(datacube.flux.shape[2])
+        y_pixels = np.arange(datacube.flux.shape[1])
+        xx_pixels, yy_pixels = np.meshgrid(x_pixels, y_pixels)
+
+        # Mask the pixel coordinates based on the SNR mask
+        xx_pixels_masked = xx_pixels[snr_mask]
+        yy_pixels_masked = yy_pixels[snr_mask]
+
+        # Mask the coordinates and signal/noise images based on the SNR mask
+        xx_coordinates_masked = datacube.x_coordinates[snr_mask]
+        yy_coordinates_masked = datacube.y_coordinates[snr_mask]
+        xy_coords = np.column_stack((xx_coordinates_masked, yy_coordinates_masked))
+        signal_image_per_wavelength_unit_masked = signal_image_per_wavelength_unit[
+            snr_mask
+        ]
+        noise_image_masked = noise_image[snr_mask]
+
+        # set capacity_spec
+        if capacity_spec is None:
+            # take the default _capacity_spec function
+            capacity_spec = powerbin_capacity_spec
+            capacity_spec_args = (
+                signal_image_per_wavelength_unit_masked,
+                noise_image_masked,
+            )
+            # make sure capacity_spec_snr_relation is None
+            assert (
+                capacity_spec_snr_relation is None
+            ), "For default capacity_spec, capacity_spec_snr_relation must be None"
+            target_capacity = target_snr**2
+
+        elif capacity_spec == "additive":
+            capacity_spec = (
+                signal_image_per_wavelength_unit_masked / noise_image_masked
+            ) ** 2
+            target_capacity = target_snr**2
+            # make sure capacity_spec_snr_relation is None
+            assert (
+                capacity_spec_snr_relation is None
+            ), "For 'additive' capacity_spec, capacity_spec_snr_relation must be None"
+            capacity_spec_args = ()
+
+        else:
+            target_capacity = target_snr
+            # Check if any arguments are the same size as the raw input images
+            is_masked = (min_snr_per_spaxel != 0) or (max_radius is not None)
+            if is_masked:
+                for arg in (
+                    capacity_spec_args
+                    if isinstance(capacity_spec_args, (tuple, list))
+                    else [capacity_spec_args]
+                ):
+                    if (
+                        isinstance(arg, np.ndarray)
+                        and arg.shape == signal_image_per_wavelength_unit.shape
+                    ):
+                        print(
+                            "WARNING: An argument in 'capacity_spec_args' has the same dimensions as the input images. "
+                            "Note that 'capacity_spec' runs on MASKED data. If your function expects full-sized "
+                            "images, you must manually mask them using the same 'min_snr_per_spaxel' and 'max_radius' "
+                            "criteria, or set 'min_snr_per_spaxel=0' and 'max_radius=None' to pass full images."
+                        )
+            # ensure args are a tuple
+            capacity_spec_args = (
+                tuple(capacity_spec_args)
+                if isinstance(capacity_spec_args, (tuple, list))
+                else (capacity_spec_args,)
+            )
+
+        # set verbose setting
+        verbose = 0 if quiet else 2
+
+        # Perform PowerBin binning using the masked coordinates and signal/noise images
+        powerbin = PowerBin(
+            xy_coords,
+            capacity_spec,
+            target_capacity,
+            verbose=verbose,
+            args=capacity_spec_args,
+            **kwargs,
+        )
+
+        # Collect and compute useful bin quantities
+        num_bins = powerbin.bin_num
+        bin_center_x, bin_center_y = powerbin.xybin.T
+        if capacity_spec_snr_relation is None:
+            snr = np.sqrt(powerbin.bin_capacity)
+        else:
+            snr = capacity_spec_snr_relation(powerbin.bin_capacity)
+        area = np.bincount(powerbin.bin_num)
+
+        if plot:
+            # set the scale for the capacity_cnr_relation, default 'sqrt'
+            if capacity_spec_snr_relation is None:
+                capacity_scale = "sqrt"
+            else:
+                capacity_scale = "raw"
+            powerbin.plot(capacity_scale=capacity_scale)
+            plt.tight_layout()
+
+        return (
+            num_bins,
+            xx_pixels_masked,
+            yy_pixels_masked,
+            bin_center_x,
+            bin_center_y,
+            snr,
+            area,
+        )
+
+    @staticmethod
+    def get_power_binned_spectra(datacube, bin_mapping_output):
+        """Perform the PowerBin binning.
+
+        :param datacube: datacube to bin
+        :type datacube: `DataCube` class
+        :param bin_mapping_output: outputs from `get_power_binning_map()`
+        :type bin_mapping_output: tuple
+        :return: PowerBin binned spectra
+        :rtype: `PowerBinBinnedSpectra` class
+        """
+        (
+            num_bins,
+            xx_pixels_masked,
+            yy_pixels_masked,
+            bin_center_x,
+            bin_center_y,
+            snr,
+            area,
+        ) = bin_mapping_output
+
+        # Initialize arrays for the PowerBin binned flux, noise, and covariance
+        power_binned_flux = np.zeros(
+            (datacube.flux.shape[0], int(np.max(num_bins)) + 1)
+        )
+        if datacube.noise is not None:
+            power_binned_noise = np.zeros_like(power_binned_flux)
+        else:
+            power_binned_noise = None
+        if datacube.covariance is not None:
+            power_binned_covariance = np.zeros(
+                (
+                    power_binned_flux.shape[0],
+                    power_binned_flux.shape[0],
+                    int(np.max(num_bins)) + 1,
+                )
+            )
+        else:
+            power_binned_covariance = None
+
+        # Sum the flux, noise, and covariance for each bin
+        for x, y, n_bin in zip(xx_pixels_masked, yy_pixels_masked, num_bins):
+            power_binned_flux[:, n_bin] += datacube.flux[:, y, x]
+            if datacube.noise is not None:
+                power_binned_noise[:, n_bin] += datacube.noise[:, y, x] ** 2
+            if datacube.covariance is not None:
+                power_binned_covariance[:, :, n_bin] += datacube.covariance[:, :, y, x]
+
+        # Take the square root of the noise to get the standard deviation
+        if datacube.noise is not None:
+            power_binned_noise = np.sqrt(power_binned_noise)
+
+        # Create the PowerBinBinnedSpectra object with the binned data
+        power_binned_spectra = PowerBinnedSpectra(
+            wavelengths=datacube.wavelengths,
+            flux=power_binned_flux,
+            wavelength_unit=datacube.wavelength_unit,
+            fwhm=datacube.fwhm,
+            z_lens=datacube.z_lens,
+            z_source=datacube.z_source,
+            x_coordinates=datacube.x_coordinates,
+            y_coordinates=datacube.y_coordinates,
+            num_bins=num_bins,
+            x_pixel_index_of_bins=xx_pixels_masked,
+            y_pixel_index_of_bins=yy_pixels_masked,
+            flux_unit=datacube.flux_unit,
+            noise=power_binned_noise,
+            covariance=power_binned_covariance,
+            bin_center_x=bin_center_x,
+            bin_center_y=bin_center_y,
+            area=area,
+            snr=snr,
+        )
+
+        # Copy the spectra modifications and wavelength frame from the datacube
+        power_binned_spectra.spectra_modifications = deepcopy(
+            datacube.spectra_modifications
+        )
+        power_binned_spectra.wavelengths_frame = deepcopy(datacube.wavelengths_frame)
+        power_binned_spectra.velocity_scale = deepcopy(datacube.velocity_scale)
+
+        return power_binned_spectra
 
     @staticmethod
     def create_kinematic_map_from_bins(bin_mapping, kinematic_values):
@@ -974,8 +1227,7 @@ class Pipeline(object):
         the relative BIC weights.
 
         :param ppxf_fits_list: 2D array containing pPXF fits for the sample of galaxies
-            or set of Voronoi bins with the dimension [number of models (or templates),
-            number of systems (or bins) in sample].
+            or set of Voronoi bins with the dimension (n_models, n_sample).
         :type ppxf_fits_list: np.ndarray
         :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
@@ -1046,12 +1298,14 @@ class Pipeline(object):
     ):
         """Combine measurements using the relative BIC weights.
 
-        This function follows the methodology provided by Knabel & Mozumdar et al.
-        (2025), arxiv.org/abs/2502.16034. It combines the values and uncertainties from
-        multiple templates using relative BIC weights.
+        This function follows the methodology provided by Knabel &
+        Mozumdar et al. (2025), arxiv.org/abs/2502.16034. It
+        combines the values and uncertainties from multiple templates
+        using relative BIC weights.
 
-        :param values: The values to combine, with shape [number of templates, number of
-            bins or systems], or just [number of templates].
+        :param values: The values to combine, with shape [number of bins
+            or systems, number of templates], or just [number of
+            templates].
         :type values: np.ndarray
         :param uncertainties: The uncertainties in the values.
         :type uncertainties: np.ndarray
@@ -1059,19 +1313,21 @@ class Pipeline(object):
         :type ppxf_fits_list: np.ndarray
         :param apply_bic_weighting: Whether to apply BIC weighting.
         :type apply_bic_weighting: bool
-        :param num_fixed_parameters: The number of fixed parameters in the model.
+        :param num_fixed_parameters: The number of fixed parameters in
+            the model.
         :type num_fixed_parameters: int
-        :param num_bootstrap_samples: The number of bootstrap samples to use.
+        :param num_bootstrap_samples: The number of bootstrap samples to
+            use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC weights. Default is
-            1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC
+            weights. Default is 1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty, combined
-            statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty,
+            combined statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         # Calculate the relative BIC weights if apply_bic_weighting is True
