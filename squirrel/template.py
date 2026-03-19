@@ -129,3 +129,29 @@ class Template(Spectra):
         new_template.flux = flux
 
         return new_template
+
+    def discard_zero_weights(self, weights):
+        """Discard the templates with zero weights.
+
+        :param weights: weights for each template
+        :type weights: numpy.array
+        :return: A new Template instance with non-zero weighted flux
+        :rtype: squirrel.template.Template
+        """
+        # Create a deep copy of the current template
+        new_template = deepcopy(self)
+        
+        # If e.g. a background_spectra component (`sky` in ppxf) was used,
+        # the weights can be more numerous than the number of templates, so we need to check that the weights array is not longer than the number of templates
+        if len(weights) > new_template.flux.shape[1]:
+            weights_ = weights[:new_template.flux.shape[1]]
+        else:
+            weights_ = weights
+
+        # Select the flux columns corresponding to non-zero weights
+        non_zero_indices = np.where(weights_ > 0)[0]
+        print("non_zero_indices", non_zero_indices)
+        new_template.flux = new_template.flux[:, non_zero_indices]
+
+        return new_template
+    
