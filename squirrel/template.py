@@ -140,11 +140,11 @@ class Template(Spectra):
         """
         # Create a deep copy of the current template
         new_template = deepcopy(self)
-        
+
         # If e.g. a background_spectra component (`sky` in ppxf) was used,
         # the weights can be more numerous than the number of templates, so we need to check that the weights array is not longer than the number of templates
         if len(weights) > new_template.flux.shape[1]:
-            weights_ = weights[:new_template.flux.shape[1]]
+            weights_ = weights[: new_template.flux.shape[1]]
         else:
             weights_ = weights
 
@@ -154,4 +154,3 @@ class Template(Spectra):
         new_template.flux = new_template.flux[:, non_zero_indices]
 
         return new_template
-    

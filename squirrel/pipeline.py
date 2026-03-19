@@ -581,7 +581,9 @@ class Pipeline(object):
         return power_binned_spectra
 
     @staticmethod
-    def create_kinematic_map_from_bins(bin_mapping, kinematic_values, nan_outside_bins=False):
+    def create_kinematic_map_from_bins(
+        bin_mapping, kinematic_values, nan_outside_bins=False
+    ):
         """Create a kinematic map from the binned spectra and the kinematic values.
 
         This function generates a 2D kinematic map by assigning
@@ -594,7 +596,7 @@ class Pipeline(object):
         :param kinematic_values: A list of kinematic values
             corresponding to each bin.
         :param nan_outside_bins: Whether to set pixels outside of bins (with bin number -1) to NaN.
-        If False (default), those pixels will be set to zero. 
+        If False (default), those pixels will be set to zero.
         Having NaN values can be useful for better visualization (e.g. with plt.imshow).
         :type value_outside_bins: bool, optional
         :type kinematic_values: list of float
