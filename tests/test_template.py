@@ -16,7 +16,7 @@ class TestTemplate:
         self.wavelengths = np.array([1, 2, 3])
 
         # Initialize flux array
-        self.flux = np.array([[4, 5, 6], [7, 8, 9]])
+        self.flux = np.array([[4, 5, 6], [7, 8, 9]]).T
 
         # Define units for flux and wavelength
         self.flux_unit = "arbitrary unit"
@@ -163,6 +163,29 @@ class TestTemplate:
         assert combined_template.flux.shape == (1000, 1)
         np.testing.assert_equal(combined_template.wavelengths, wavelengths)
 
+    def test_discard_zero_weights(self):
+        """Test the discard_zero_weights method of the Template class.
+
+        This method creates a Template object and discards flux values corresponding to zero weights using the discard_zero_weights method. It then checks if the reduced
+        Template object has the expected attributes.
+        """
+        # test when the weights have the same size as the number of fluxes
+        weights = np.array([0., 1.])
+        assert weights.size == self.template.flux.shape[1]
+        reduced_template = self.template.discard_zero_weights(weights)
+        np.testing.assert_equal(reduced_template.wavelengths, self.wavelengths)
+        np.testing.assert_equal(reduced_template.flux, self.flux[:, weights > 0])
+
+        # test when there are more weights than the number of fluxes
+        weights = np.array([0., 1., 1.])
+        reduced_template = self.template.discard_zero_weights(weights)
+        np.testing.assert_equal(reduced_template.wavelengths, self.wavelengths)
+        np.testing.assert_equal(reduced_template.flux, self.flux[:, weights[:2] > 0])
+        
+        # test the raised error when there are fewer weights than the number of fluxes
+        weights = np.array([0.])
+        with pytest.raises(ValueError):
+            self.template.discard_zero_weights(weights)
 
 if __name__ == "__main__":
     pytest.main()
