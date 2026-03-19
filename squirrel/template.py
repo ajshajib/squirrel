@@ -146,7 +146,7 @@ class Template(Spectra):
         if len(weights) < new_template.flux.shape[1]:
             raise ValueError("The number of weights cannot be smaller than the number of templates.")
         elif len(weights) > new_template.flux.shape[1]:
-            weights_ = weights[: new_template.flux.shape[1]]
+            weights_ = weights[:new_template.flux.shape[1]]
         else:
             weights_ = weights
 
