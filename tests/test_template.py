@@ -166,26 +166,28 @@ class TestTemplate:
     def test_discard_zero_weights(self):
         """Test the discard_zero_weights method of the Template class.
 
-        This method creates a Template object and discards flux values corresponding to zero weights using the discard_zero_weights method. It then checks if the reduced
-        Template object has the expected attributes.
+        This method creates a Template object and discards flux values corresponding to
+        zero weights using the discard_zero_weights method. It then checks if the
+        reduced Template object has the expected attributes.
         """
         # test when the weights have the same size as the number of fluxes
-        weights = np.array([0., 1.])
+        weights = np.array([0.0, 1.0])
         assert weights.size == self.template.flux.shape[1]
         reduced_template = self.template.discard_zero_weights(weights)
         np.testing.assert_equal(reduced_template.wavelengths, self.wavelengths)
         np.testing.assert_equal(reduced_template.flux, self.flux[:, weights > 0])
 
         # test when there are more weights than the number of fluxes
-        weights = np.array([0., 1., 1.])
+        weights = np.array([0.0, 1.0, 1.0])
         reduced_template = self.template.discard_zero_weights(weights)
         np.testing.assert_equal(reduced_template.wavelengths, self.wavelengths)
         np.testing.assert_equal(reduced_template.flux, self.flux[:, weights[:2] > 0])
-        
+
         # test the raised error when there are fewer weights than the number of fluxes
-        weights = np.array([0.])
+        weights = np.array([0.0])
         with pytest.raises(ValueError):
             self.template.discard_zero_weights(weights)
+
 
 if __name__ == "__main__":
     pytest.main()

@@ -443,7 +443,9 @@ class TestPipeline:
 
         # Create the kinematic map from bins
         kinematic_map = Pipeline.create_kinematic_map_from_bins(
-            bin_mapping, [100, 200, 300], nan_outside_bins=True,
+            bin_mapping,
+            [100, 200, 300],
+            nan_outside_bins=True,
         )
         npt.assert_equal(kinematic_map, test_map)
 
