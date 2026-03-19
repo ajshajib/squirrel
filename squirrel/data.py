@@ -524,6 +524,7 @@ class Datacube(Spectra):
         )
 
         # Copy the state of the spectra
+        spectra.wavelengths_frame = deepcopy(self.wavelengths_frame)
         spectra.spectra_modifications = deepcopy(self.spectra_modifications)
         spectra.velocity_scale = deepcopy(self.velocity_scale)
 
