@@ -439,6 +439,16 @@ class TestPipeline:
         )
         npt.assert_equal(kinematic_map, test_map)
 
+        test_map = np.where(test_map == 0, np.nan, test_map)
+
+        # Create the kinematic map from bins
+        kinematic_map = Pipeline.create_kinematic_map_from_bins(
+            bin_mapping,
+            [100, 200, 300],
+            nan_outside_bins=True,
+        )
+        npt.assert_equal(kinematic_map, test_map)
+
     def test_get_template_from_library(self):
         """Test the retrieval of templates from a library.
 
