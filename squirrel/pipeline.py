@@ -596,8 +596,8 @@ class Pipeline(object):
         :param kinematic_values: A list of kinematic values
             corresponding to each bin.
         :param nan_outside_bins: Whether to set pixels outside of bins (with bin number -1) to NaN.
-        If False (default), those pixels will be set to zero.
-        Having NaN values can be useful for better visualization (e.g. with plt.imshow).
+            If False (default), those pixels will be set to zero.
+            Having NaN values can be useful for better visualization (e.g. with plt.imshow).
         :type value_outside_bins: bool, optional
         :type kinematic_values: list of float
         :return: A 2D kinematic map with the same shape as bin_mapping.
