@@ -1321,21 +1321,19 @@ class Pipeline(object):
         :type ppxf_fits_list: np.ndarray
         :param apply_bic_weighting: Whether to apply BIC weighting.
         :type apply_bic_weighting: bool
-        :param num_fixed_parameters: The number of fixed parameters in
-            the model.
+        :param num_fixed_parameters: The number of fixed parameters in the model.
         :type num_fixed_parameters: int
-        :param num_bootstrap_samples: The number of bootstrap samples to
-            use.
+        :param num_bootstrap_samples: The number of bootstrap samples to use.
         :type num_bootstrap_samples: int
-        :param weight_threshold: The threshold for the relative BIC
-            weights. Default is 1% (0.01).
+        :param weight_threshold: The threshold for the relative BIC weights. Default is
+            1% (0.01).
         :type weight_threshold: float
         :param do_bessel_correction: Whether to apply Bessel correction.
         :type do_bessel_correction: bool
         :param verbose: Whether to print the results.
         :type verbose: bool
-        :return: The combined values, combined systematic uncertainty,
-            combined statistical uncertainty, and covariance matrix.
+        :return: The combined values, combined systematic uncertainty, combined
+            statistical uncertainty, and covariance matrix.
         :rtype: tuple of np.ndarray
         """
         # Calculate the relative BIC weights if apply_bic_weighting is True
