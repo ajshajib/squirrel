@@ -13,7 +13,7 @@ kinematic components.
 Installation
 ============
 
-To install squirrel from source, first clone the repository:
+To install ``squirrel`` from source, first clone the repository:
 
 .. code-block:: bash
 
@@ -33,15 +33,15 @@ To install development dependencies (for testing, docs, etc.):
 
     pip install -r requirements_dev.txt
 
-You can now import and use squirrel in your Python scripts or notebooks.
+You can now import and use ``squirrel`` in your Python scripts or notebooks.
 
 For more details, see the documentation: https://squirrel.readthedocs.io/en/latest/
 
 Citation
 ========
 
-`squirrel` was developed in `Shajib et al. (2026) <https://ui.adsabs.harvard.edu/abs/2025arXiv250621665S/abstract>`_. 
-Please cite this paper if you use `squirrel` in your research. If you also use the methodology of 
+``squirrel`` was developed in `Shajib et al. (2026) <https://ui.adsabs.harvard.edu/abs/2025arXiv250621665S/abstract>`_. 
+Please cite this paper if you use ``squirrel`` in your research. If you also use the methodology of 
 `Knabel, Mozumdar, et al. (2025) <https://ui.adsabs.harvard.edu/abs/2025arXiv250216034K/abstract>`_ 
 to combine multiple template libraries, please cite that paper as well.
 
