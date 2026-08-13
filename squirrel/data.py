@@ -2,10 +2,11 @@
 image."""
 
 from copy import deepcopy
+
 import numpy as np
 
 
-class Spectra(object):
+class Spectra:
     """A class to store spectroscopic data."""
 
     def __init__(
@@ -411,7 +412,7 @@ class Datacube(Spectra):
         :param covariance: covariance of the data
         :type covariance: numpy.ndarray
         """
-        super(Datacube, self).__init__(
+        super().__init__(
             wavelengths=wavelengths,
             flux=flux,
             wavelength_unit=wavelength_unit,
@@ -602,7 +603,7 @@ class VoronoiBinnedSpectra(Spectra):
         :type snr: numpy.ndarray
         """
         # Initialize the parent Spectra class
-        super(VoronoiBinnedSpectra, self).__init__(
+        super().__init__(
             wavelengths=wavelengths,
             flux=flux,
             wavelength_unit=wavelength_unit,
@@ -748,7 +749,6 @@ class PowerBinnedSpectra(VoronoiBinnedSpectra):
     centers, among other properties.
     """
 
-    pass
 
 
 class RadiallyBinnedSpectra(Spectra):
@@ -802,7 +802,7 @@ class RadiallyBinnedSpectra(Spectra):
         ), "Number of bins must match the number of spectra."
 
         # Initialize the parent Spectra class
-        super(RadiallyBinnedSpectra, self).__init__(
+        super().__init__(
             wavelengths=wavelengths,
             flux=flux,
             wavelength_unit=wavelength_unit,

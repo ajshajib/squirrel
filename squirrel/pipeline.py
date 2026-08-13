@@ -1,29 +1,32 @@
 """This module contains the class to wrap the pPXF package for kinematic analysis."""
 
-import numpy as np
+import warnings
 from copy import deepcopy
+
 import matplotlib.pyplot as plt
+import numpy as np
+from powerbin import PowerBin
+from ppxf import ppxf_util, sps_util
+from ppxf.ppxf import ppxf
 from scipy import ndimage
 from scipy.special import ndtr
-from ppxf import ppxf_util
-from ppxf.ppxf import ppxf
-from ppxf import sps_util
-from vorbin.voronoi_2d_binning import voronoi_2d_binning
-from vorbin.voronoi_2d_binning import _compute_useful_bin_quantities
-from vorbin.voronoi_2d_binning import _sn_func
-from powerbin import PowerBin
 from tqdm import tqdm
-import warnings
+from vorbin.voronoi_2d_binning import (
+    _compute_useful_bin_quantities,
+    _sn_func,
+    voronoi_2d_binning,
+)
 
-from .data import VoronoiBinnedSpectra
-from .data import PowerBinnedSpectra
+from .data import PowerBinnedSpectra, VoronoiBinnedSpectra
 from .template import Template
-from .util import is_positive_definite
-from .util import get_nearest_positive_definite_matrix
-from .util import powerbin_capacity_spec
+from .util import (
+    get_nearest_positive_definite_matrix,
+    is_positive_definite,
+    powerbin_capacity_spec,
+)
 
 
-class Pipeline(object):
+class Pipeline:
     """A class to wrap the pPXF package for kinematic analysis.
 
     This class provides various static methods to perform kinematic analysis using the

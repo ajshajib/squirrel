@@ -1,7 +1,7 @@
 """This module contains class and functions for general use."""
 
-from scipy import linalg as la
 import numpy as np
+from scipy import linalg as la
 
 
 def get_nearest_positive_definite_matrix(matrix):
