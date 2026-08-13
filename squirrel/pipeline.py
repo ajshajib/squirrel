@@ -885,11 +885,11 @@ class Pipeline:
         convolved_fluxes = fluxes
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
-                np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 #/ wavelength_diff
+                np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355  # / wavelength_diff
             )
             if not isinstance(sigma_diff, np.ndarray):
                 sigma_diff = np.full(wavelengths.shape, sigma_diff)
-               
+
             convolved_fluxes = ppxf_util.varsmooth(wavelengths, fluxes, sigma_diff)
         else:
             warnings.warn(
