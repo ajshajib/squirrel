@@ -1,18 +1,18 @@
 """This module contains class and functions for diagnostics."""
 
-import numpy as np
-import matplotlib.pyplot as plt
 from copy import deepcopy
+
+import matplotlib.pyplot as plt
+import numpy as np
 from numpy.polynomial import legendre
 from ppxf.ppxf import ppxf
 from ppxf.ppxf_util import convolve_gauss_hermite
 from tqdm.notebook import tqdm
 
-from .util import is_positive_definite
-from .util import get_nearest_positive_definite_matrix
+from .util import get_nearest_positive_definite_matrix, is_positive_definite
 
 
-class Diagnostics(object):
+class Diagnostics:
     """This class contains functions to diagnose the performance of the pipeline."""
 
     @staticmethod

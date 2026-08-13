@@ -1,8 +1,10 @@
 """This module contains the class to store stellar and other templates and process
 them."""
 
-import numpy as np
 from copy import deepcopy
+
+import numpy as np
+
 from .data import Spectra
 
 
@@ -35,7 +37,7 @@ class Template(Spectra):
             flux = flux[:, np.newaxis]
 
         # Initialize the parent class Spectra with the provided parameters
-        super(Template, self).__init__(
+        super().__init__(
             wavelengths=wavelengths,
             flux=flux,
             wavelength_unit=wavelength_unit,
