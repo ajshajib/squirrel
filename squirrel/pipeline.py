@@ -8,7 +8,6 @@ import numpy as np
 from powerbin import PowerBin
 from ppxf import ppxf_util, sps_util
 from ppxf.ppxf import ppxf
-from scipy import ndimage
 from scipy.special import ndtr
 from tqdm import tqdm
 from vorbin.voronoi_2d_binning import (
@@ -863,19 +862,22 @@ class Pipeline:
             spectra.wavelengths[-1] * wavelength_range_extend_factor * wavelength_factor
         )
 
-        # Calculate the wavelength difference
-        wavelength_diff = np.mean(np.diff(wavelengths))
+        # Calculate the wavelength difference (used below only as the
+        # range-filter buffer; the convolution pixel scale is recomputed
+        # after frame-relabeling)
+        mean_wavelength_diff_restframe = np.mean(np.diff(wavelengths))
 
         # Filter the fluxes and wavelengths based on the defined range
         fluxes = fluxes[
-            (wavelengths > wavelength_min - wavelength_diff)
-            & (wavelengths < wavelength_max + wavelength_diff),
+            (wavelengths > wavelength_min - mean_wavelength_diff_restframe)
+            & (wavelengths < wavelength_max + mean_wavelength_diff_restframe),
             :,
         ]
         wavelengths = wavelengths[
-            (wavelengths > wavelength_min - wavelength_diff)
-            & (wavelengths < wavelength_max + wavelength_diff)
+            (wavelengths > wavelength_min - mean_wavelength_diff_restframe)
+            & (wavelengths < wavelength_max + mean_wavelength_diff_restframe)
         ]
+
         wavelengths /= wavelength_factor
         fwhm_template /= wavelength_factor
 
@@ -883,9 +885,12 @@ class Pipeline:
         convolved_fluxes = fluxes
         if fwhm_template < spectra.fwhm:
             sigma_diff = (
-                np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 / wavelength_diff
+                np.sqrt(spectra.fwhm**2 - fwhm_template**2) / 2.355 #/ wavelength_diff
             )
-            convolved_fluxes = ndimage.gaussian_filter1d(fluxes, sigma_diff, axis=0)
+            if not isinstance(sigma_diff, np.ndarray):
+                sigma_diff = np.full(wavelengths.shape, sigma_diff)
+               
+            convolved_fluxes = ppxf_util.varsmooth(wavelengths, fluxes, sigma_diff)
         else:
             warnings.warn(
                 """The templates' resolution is lower than the spectra's resolution, 
