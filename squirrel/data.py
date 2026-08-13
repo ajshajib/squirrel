@@ -750,7 +750,6 @@ class PowerBinnedSpectra(VoronoiBinnedSpectra):
     """
 
 
-
 class RadiallyBinnedSpectra(Spectra):
     """A class to store radially binned spectra.
 
