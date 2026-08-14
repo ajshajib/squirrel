@@ -894,7 +894,7 @@ class Pipeline:
                 threfore, the templates are not convolved further. It will be needed to 
                 subtract the offset in quadrature at the end of the kinematic extraction!"""
             )
-            
+
         # Final clip to the requested range, discarding the guard band that
         # absorbed any convolution edge effects
         final_clip = (wavelengths >= wavelength_min / wavelength_factor) & (
