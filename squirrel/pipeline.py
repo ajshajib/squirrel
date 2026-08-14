@@ -867,16 +867,13 @@ class Pipeline:
         # after frame-relabeling)
         mean_wavelength_diff_restframe = np.mean(np.diff(wavelengths))
 
-        # Filter the fluxes and wavelengths based on the defined range
-        fluxes = fluxes[
-            (wavelengths > wavelength_min - mean_wavelength_diff_restframe)
-            & (wavelengths < wavelength_max + mean_wavelength_diff_restframe),
-            :,
-        ]
-        wavelengths = wavelengths[
-            (wavelengths > wavelength_min - mean_wavelength_diff_restframe)
-            & (wavelengths < wavelength_max + mean_wavelength_diff_restframe)
-        ]
+        # Filter the fluxes and wavelengths with a padded guard based on the defined range
+        guard = 10.0 * spectra.fwhm * wavelength_factor
+        pre_clip = (wavelengths > wavelength_min - guard) & (
+            wavelengths < wavelength_max + guard
+        )
+        fluxes = fluxes[pre_clip, :]
+        wavelengths = wavelengths[pre_clip]
 
         wavelengths /= wavelength_factor
         fwhm_template /= wavelength_factor
@@ -897,6 +894,14 @@ class Pipeline:
                 threfore, the templates are not convolved further. It will be needed to 
                 subtract the offset in quadrature at the end of the kinematic extraction!"""
             )
+
+        # Final clip to the requested range, discarding the guard band that
+        # absorbed any convolution edge effects
+        final_clip = (wavelengths >= wavelength_min / wavelength_factor) & (
+            wavelengths <= wavelength_max / wavelength_factor
+        )
+        convolved_fluxes = convolved_fluxes[final_clip, :]
+        wavelengths = wavelengths[final_clip]
 
         # Perform log rebinning on the convolved fluxes
         rebinned_fluxes, log_wavelengths, velocity_scale_template = ppxf_util.log_rebin(
